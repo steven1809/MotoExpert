@@ -3,6 +3,6 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class AppService {
   getHello(): string {
-    return 'Hola mundo!';
+    return 'Bienvenido a MotoExpert! El backend esta funcionando correctamente!';
   }
 }
