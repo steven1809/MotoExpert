@@ -9,6 +9,7 @@ import { CitasModule } from './modules/citas/citas.module';
 import { PagosModule } from './modules/pagos/pagos.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AppService } from './app.service';
         synchronize: true,
       }),
     }),
+    AuthModule,
     UsuariosModule,
     VehiculosModule,
     ServiciosModule,
