@@ -6,13 +6,13 @@ export class Empleado {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   nombre: string;
 
-  @Column()
+  @Column({ nullable: true })
   cargo: string;
 
-  @Column()
+  @Column({ nullable: true })
   especialidad: string;
 
   @OneToMany(() => Cita, (cita) => cita.empleado)

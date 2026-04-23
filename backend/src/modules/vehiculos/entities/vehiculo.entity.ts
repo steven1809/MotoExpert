@@ -7,19 +7,19 @@ export class Vehiculo {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column({ nullable: true })
   placa: string;
 
-  @Column()
+  @Column({ nullable: true })
   marca: string;
 
-  @Column()
+  @Column({ nullable: true })
   modelo: string;
 
-  @Column()
+  @Column({ nullable: true })
   anio: number;
 
-  @Column()
+  @Column({ nullable: true })
   color: string;
 
   @ManyToOne(() => Usuario, (usuario) => usuario.vehiculos)

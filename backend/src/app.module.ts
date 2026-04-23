@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
+import { AuthModule } from './auth/auth.module';
 import { VehiculosModule } from './modules/vehiculos/vehiculos.module';
 import { ServiciosModule } from './modules/servicios/servicios.module';
 import { EmpleadosModule } from './modules/empleados/empleados.module';
@@ -33,6 +34,7 @@ import { AppService } from './app.service';
       }),
     }),
     UsuariosModule,
+    AuthModule,
     VehiculosModule,
     ServiciosModule,
     EmpleadosModule,
