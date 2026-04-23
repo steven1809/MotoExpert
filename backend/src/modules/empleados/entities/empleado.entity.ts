@@ -9,11 +9,14 @@ export class Empleado {
   @Column()
   nombre: string;
 
-  @Column()
-  cargo: string;
+  @Column({ unique: true })
+  documento: string;
 
-  @Column()
-  especialidad: string;
+  @Column({ default: 'activo' })
+  estado: string; // activo o inactivo
+
+  @Column({ nullable: true })
+  cargo: string;
 
   @OneToMany(() => Cita, (cita) => cita.empleado)
   citas: Cita[];
