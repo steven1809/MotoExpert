@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { Vehiculo } from '../../vehiculos/entities/vehiculo.entity';
 import { Empleado } from '../../empleados/entities/empleado.entity';
