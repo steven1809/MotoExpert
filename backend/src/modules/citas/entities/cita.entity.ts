@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { Vehiculo } from '../../vehiculos/entities/vehiculo.entity';
+import { Servicio } from '../../servicios/entities/servicio.entity';
 import { Empleado } from '../../empleados/entities/empleado.entity';
 import { Pago } from '../../pagos/entities/pago.entity';
 
@@ -16,21 +17,27 @@ export class Cita {
   id: number;
 
   @Column({ type: 'date' })
-  fecha: Date;
+  fecha: string;
 
   @Column({ type: 'time' })
-  hora: string;
+  hora_inicio: string;
 
-  @Column({ default: 'pendiente' })
+  @Column({ type: 'time' })
+  hora_fin: string;
+
+  @Column({ default: 'PENDIENTE' })
   estado: string;
 
-  @ManyToOne(() => Usuario, (usuario) => usuario.citas)
+  @ManyToOne(() => Usuario, { eager: true })
   usuario: Usuario;
 
-  @ManyToOne(() => Vehiculo, (vehiculo) => vehiculo.citas)
+  @ManyToOne(() => Vehiculo, { eager: true })
   vehiculo: Vehiculo;
 
-  @ManyToOne(() => Empleado, (empleado) => empleado.citas)
+  @ManyToOne(() => Servicio, { eager: true })
+  servicio: Servicio;
+
+  @ManyToOne(() => Empleado, { eager: true })
   empleado: Empleado;
 
   @OneToMany(() => Pago, (pago) => pago.cita)

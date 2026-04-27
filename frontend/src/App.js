@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import Login from "./components/Login/Login.jsx";
 import Register from "./components/Register/Register";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
 function App() {
   const [users, setUsers] = useState([]);
   const [view, setView] = useState("login"); // "login", "register", o "users"
 
   const fetchUsers = () => {
-    fetch("http://localhost:3000/auth")
+    fetch(`${API_BASE_URL}/auth`)
       .then(res => {
         if (!res.ok) {
           throw new Error("Error en la petición");
