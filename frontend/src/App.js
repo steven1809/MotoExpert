@@ -34,7 +34,7 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
       {/* Navegación Simple */}
       <nav className="bg-gray-800 p-4 flex justify-center space-x-4 shadow-lg">
         <button 
@@ -57,20 +57,16 @@ function App() {
         </button>
       </nav>
 
-      <main className="p-6">
+      <main className="p-6 flex justify-center items-center min-h-[calc(100vh-80px)]">
         {view === "login" && (
-          <div className="flex flex-col items-center">
-            <Login />
-          </div>
+          <Login />
         )}
 
         {view === "register" && (
-          <div className="flex flex-col items-center">
-            <Register onSuccess={() => {
-              fetchUsers();
-              setView("users");
-            }} />
-          </div>
+          <Register onSuccess={() => {
+            fetchUsers();
+            setView("users");
+          }} />
         )}
 
         {view === "users" && (
