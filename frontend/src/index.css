@@ -1,25 +1,14 @@
-/* 1. Importa el motor de Tailwind v4 */
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* 2. Configuración de tu Tema Personalizado */
-@theme {
-  /* Aquí puedes definir colores para tu proyecto del SENA */
-  --color-moto-blue: #1e40af;
-  --color-moto-dark: #111827;
-  
-  /* Si quieres personalizar fuentes, lo haces aquí */
-  --font-display: "Segoe UI", system-ui, sans-serif;
-}
-
-/* 3. Estilos globales adicionales (si los necesitas) */
 @layer base {
   body {
-    /* Tailwind v4 ya pone margin: 0 por defecto, pero puedes añadir más cosas aquí */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   code {
-    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
   }
 }
