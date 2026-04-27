@@ -23,12 +23,17 @@ export class Vehiculo {
   modelo: string;
 
   @Column({ nullable: true })
-  anio: number;
+  tipo?: string;
 
   @Column({ nullable: true })
-  color: string;
+  anio?: number;
 
-  @ManyToOne(() => Usuario, (usuario) => usuario.vehiculos)
+  @Column({ nullable: true })
+  color?: string;
+
+  @ManyToOne(() => Usuario, (usuario) => usuario.vehiculos, {
+    onDelete: 'CASCADE',
+  })
   usuario: Usuario;
 
   @OneToMany(() => Cita, (cita) => cita.vehiculo)
