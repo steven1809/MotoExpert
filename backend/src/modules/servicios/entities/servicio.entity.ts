@@ -5,12 +5,15 @@ export class Servicio {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   nombre: string;
 
-  @Column()
+  @Column({ nullable: true })
   descripcion: string;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
   precio: number;
+
+  @Column({ nullable: true })
+  duracion: number; // en minutos
 }

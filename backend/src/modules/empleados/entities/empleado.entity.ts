@@ -6,8 +6,11 @@ export class Empleado {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ nullable: true })
-  nombre: string;
+  @Column({ unique: true, nullable: true })
+  documento: string;
+
+  @Column({ default: 'activo' })
+  estado: string; // activo o inactivo
 
   @Column({ nullable: true })
   cargo: string;
