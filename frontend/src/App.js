@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import Login from "./components/Login/Login"; 
 import Servicios from "./pages/Servicios";
 import Navbar from "./components/Navbar";
+import LandingPage from './pages/LandingPage';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const [userRole, setUserRole] = useState("admin"); // 'admin' o 'user'
-  const [view, setView] = useState("dashboard"); 
+  const [view, setView] = useState("landing"); // Iniciamos en la landing
 
   const handleLoginSuccess = (role) => {
     setIsLoggedIn(true);
@@ -14,14 +15,27 @@ function App() {
     setView("dashboard");
   };
 
-  if (!isLoggedIn) {
+  // 1. SI NO ESTÁ LOGUEADO Y LA VISTA ES "LANDING"
+  if (!isLoggedIn && view === "landing") {
+    return <LandingPage onEnterLogin={() => setView("login")} />;
+  }
+
+  // 2. SI NO ESTÁ LOGUEADO Y LA VISTA ES "LOGIN"
+  if (!isLoggedIn && view === "login") {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-4">
+        <button 
+          onClick={() => setView("landing")}
+          className="mb-4 text-gray-400 hover:text-white transition text-sm"
+        >
+          ← Volver al inicio
+        </button>
         <Login onLoginSuccess={handleLoginSuccess} />
       </div>
     );
   }
 
+  // 3. SI YA ESTÁ LOGUEADO (Dashboard y Navegación)
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
       {/* Navbar Superior Global */}
