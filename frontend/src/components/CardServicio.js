@@ -8,7 +8,7 @@ export default function CardServicio({ servicio }) {
       <p className="text-secondary font-bold mt-3 text-lg">${servicio.precio}</p>
 
       <button className="mt-4 w-full bg-secondary text-white py-2 rounded-xl hover:bg-primary transition">
-        Agendar lavado 🚿
+        Agendar lavado
       </button>
     </div>
   );
