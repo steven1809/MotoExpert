@@ -1,89 +1,78 @@
-import { useEffect, useState } from "react";
-import Login from "./components/Login/Login.jsx";
-import Register from "./components/Register/Register";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+import React, { useState } from "react";
+import Login from "./components/Login/Login"; 
+import Servicios from "./pages/Servicios";
 
 function App() {
-  const [users, setUsers] = useState([]);
-  const [view, setView] = useState("login"); // "login", "register", o "users"
+  const [isLoggedIn, setIsLoggedIn] = useState(false); 
+  const [userRole, setUserRole] = useState("admin"); // 'admin' o 'user'
+  const [view, setView] = useState("dashboard"); 
 
-  const fetchUsers = () => {
-    fetch(`${API_BASE_URL}/auth`)
-      .then(res => {
-        if (!res.ok) {
-          throw new Error("Error en la petición");
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data)) {
-          setUsers(data);
-        } else {
-          setUsers([]);
-        }
-      })
-      .catch(err => {
-        console.error("Error al cargar usuarios:", err);
-        setUsers([]);
-      });
+  const handleLoginSuccess = (role) => {
+    setIsLoggedIn(true);
+    setUserRole(role);
+    setView("dashboard");
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
+        <Login onLoginSuccess={handleLoginSuccess} />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      {/* Navegación Simple */}
-      <nav className="bg-gray-800 p-4 flex justify-center space-x-4 shadow-lg">
-        <button 
-          onClick={() => setView("login")}
-          className={`px-4 py-2 rounded ${view === 'login' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
-        >
-          Iniciar Sesión
-        </button>
-        <button 
-          onClick={() => setView("register")}
-          className={`px-4 py-2 rounded ${view === 'register' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
-        >
-          Registrarse
-        </button>
-        <button 
-          onClick={() => setView("users")}
-          className={`px-4 py-2 rounded ${view === 'users' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
-        >
-          Ver Usuarios
-        </button>
-      </nav>
+    <div className="flex h-screen bg-[#0f172a] text-white">
+      {/* Sidebar Lateral */}
+      <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col shadow-2xl">
+        <div className="p-6 bg-blue-600 text-white font-bold text-xl text-center italic">
+          MotoExpert
+        </div>
+        <nav className="flex-1 p-4 space-y-2 mt-4">
+          <button onClick={() => setView("dashboard")} className={`w-full text-left px-4 py-3 rounded-lg transition ${view === 'dashboard' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
+            🏠 Inicio
+          </button>
+          <button onClick={() => setView("servicios")} className={`w-full text-left px-4 py-3 rounded-lg transition ${view === 'servicios' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
+            🛠️ Servicios
+          </button>
 
-      <main className="p-6 flex justify-center items-center min-h-[calc(100vh-80px)]">
-        {view === "login" && (
-          <Login />
-        )}
+          {/* SECCIÓN EXCLUSIVA: Solo renderiza si el rol es estrictamente admin */}
+          {userRole === 'admin' && (
+            <div className="pt-4 mt-4 border-t border-gray-800">
+              <p className="px-4 text-[10px] font-semibold text-gray-500 uppercase mb-2 tracking-widest">
+                Administración
+              </p>
+              <button 
+                onClick={() => setView("users")} 
+                className={`w-full text-left px-4 py-3 rounded-lg text-blue-400 transition ${view === 'users' ? 'bg-gray-800 font-bold' : 'hover:bg-gray-800'}`}
+              >
+                👥 Ver Usuarios
+              </button>
+            </div>
+          )}
+        </nav>
 
-        {view === "register" && (
-          <Register onSuccess={() => {
-            fetchUsers();
-            setView("users");
-          }} />
-        )}
+        {/* BOTÓN CERRAR SESIÓN: Es vital resetear el rol aquí */}
+        <button 
+          onClick={() => {
+            setIsLoggedIn(false);
+            setUserRole(null); // RESETEA EL ROL PARA QUE EL SIGUIENTE NO VEA LO MISMO
+            localStorage.removeItem("token");
+            localStorage.removeItem("role");
+          }} 
+          className="p-4 text-red-400 hover:bg-gray-800 transition text-sm border-t border-gray-800"
+        >
+          Cerrar Sesión
+        </button>
+      </aside>
 
-        {view === "users" && (
-          <div className="max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold mb-6 text-center text-blue-400">Usuarios Registrados</h2>
-            {users.length === 0 ? (
-              <p className="text-gray-400 text-center italic">No hay usuarios registrados aún.</p>
-            ) : (
-              <div className="grid gap-4">
-                {users.map(user => (
-                  <div key={user.id} className="bg-gray-800 border-l-4 border-blue-500 p-4 rounded-lg shadow-md hover:bg-gray-750 transition-colors">
-                    <p className="font-bold text-lg text-white">{user.nombre || user.email}</p>
-                    <p className="text-blue-300 text-sm">{user.email}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+      <main className="flex-1 p-8 overflow-y-auto">
+        {view === "dashboard" && <h1 className="text-3xl font-bold text-blue-400 italic">Panel MotoExpert</h1>}
+        {view === "servicios" && <Servicios />}
+        {view === "users" && userRole === "admin" && (
+          <div className="bg-gray-800 p-6 rounded-xl border border-blue-500/20">
+            <h2 className="text-2xl font-bold text-blue-400 mb-4">Usuarios en el sistema</h2>
+            {/* Lista de usuarios aquí */}
           </div>
         )}
       </main>

@@ -5,16 +5,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
-import { User } from './entities/user.entity';
+import { Usuario } from '../usuarios/usuario.entity';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 
 @Module({
   imports: [
     UsuariosModule,
     PassportModule,
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([Usuario]),
     JwtModule.register({
-      secret: 'clave_secreta', // cámbiala por una segura
+      secret: 'clave_secreta', 
       signOptions: { expiresIn: '1h' },
     }),
   ],

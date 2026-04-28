@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { Usuario } from '../usuarios/usuario.entity';
 
 @Controller('auth') // La URL será: localhost:3000/auth
 export class AuthController {
