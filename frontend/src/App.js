@@ -30,10 +30,10 @@ function App() {
         </div>
         <nav className="flex-1 p-4 space-y-2 mt-4">
           <button onClick={() => setView("dashboard")} className={`w-full text-left px-4 py-3 rounded-lg transition ${view === 'dashboard' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
-            🏠 Inicio
+            Inicio
           </button>
           <button onClick={() => setView("servicios")} className={`w-full text-left px-4 py-3 rounded-lg transition ${view === 'servicios' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
-            🛠️ Servicios
+            Servicios
           </button>
 
           {/* SECCIÓN EXCLUSIVA: Solo renderiza si el rol es estrictamente admin */}
@@ -46,7 +46,7 @@ function App() {
                 onClick={() => setView("users")} 
                 className={`w-full text-left px-4 py-3 rounded-lg text-blue-400 transition ${view === 'users' ? 'bg-gray-800 font-bold' : 'hover:bg-gray-800'}`}
               >
-                👥 Ver Usuarios
+                Ver Usuarios
               </button>
             </div>
           )}
@@ -68,7 +68,7 @@ function App() {
 
       <main className="flex-1 p-8 overflow-y-auto">
         {view === "dashboard" && <h1 className="text-3xl font-bold text-blue-400 italic">Panel MotoExpert</h1>}
-        {view === "servicios" && <Servicios />}
+        {view === "servicios" && <Servicios embedded />}
         {view === "users" && userRole === "admin" && (
           <div className="bg-gray-800 p-6 rounded-xl border border-blue-500/20">
             <h2 className="text-2xl font-bold text-blue-400 mb-4">Usuarios en el sistema</h2>
