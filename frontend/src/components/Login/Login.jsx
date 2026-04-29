@@ -23,7 +23,7 @@ class Login extends Component {
     this.setState((prevState) => ({
       isLogin: !prevState.isLogin,
       nombre: "", apellidos: "", email: "", telefono: "", password: "", confirmPassword: "",
-      loading: false // Reset por seguridad
+      loading: false 
     }));
   };
 
@@ -41,7 +41,7 @@ class Login extends Component {
     // Endpoint configurado para tu backend NestJS
     const endpoint = isLogin ? "/auth/login" : "/auth/register";
     
-    // Objeto con los datos exactos que pide el backend
+    
     const payload = isLogin 
       ? { email, password } 
       : { nombre, apellidos, email, telefono, password };

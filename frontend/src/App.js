@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Login from "./components/Login/Login"; 
 import Servicios from "./pages/Servicios";
+import UsersList from "./pages/UsersList";
 import Navbar from "./components/Navbar";
 import LandingPage from './pages/LandingPage';
 
@@ -13,6 +14,16 @@ function App() {
     setIsLoggedIn(true);
     setUserRole(role);
     setView("dashboard");
+  };
+
+  // Función para cerrar sesión correctamente
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserRole(null);
+    setView("landing"); // Redirige a la landing al salir
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    // Opcional: localStorage.clear(); para borrar todo
   };
 
   // 1. SI NO ESTÁ LOGUEADO Y LA VISTA ES "LANDING"
@@ -38,11 +49,10 @@ function App() {
   // 3. SI YA ESTÁ LOGUEADO (Dashboard y Navegación)
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
-      {/* Navbar Superior Global */}
+      {/* Navbar Superior Global - Ahora recibe handleLogout */}
       <Navbar 
         setView={setView} 
-        setIsLoggedIn={setIsLoggedIn} 
-        setUserRole={setUserRole} 
+        handleLogout={handleLogout} 
         userRole={userRole} 
       />
 
@@ -57,12 +67,7 @@ function App() {
         
         {view === "servicios" && <Servicios />}
         
-        {view === "users" && userRole === "admin" && (
-          <div className="max-w-4xl mx-auto bg-gray-800 p-6 rounded-xl border border-blue-500/20">
-            <h2 className="text-2xl font-bold text-blue-400 mb-4 text-center">Usuarios en el sistema</h2>
-            <div className="text-center text-gray-500 py-10">Lista de usuarios (próximamente)</div>
-          </div>
-        )}
+        {view === "users" && <UsersList />}
 
         {/* Acceso rápido para admin si no está en la vista de usuarios */}
         {userRole === 'admin' && view !== 'users' && (

@@ -1,14 +1,7 @@
 import React, { useState } from "react";
 
-const Navbar = ({ setView, setIsLoggedIn, setUserRole, userRole }) => {
+const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) => {
   const [open, setOpen] = useState(false);
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUserRole(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-  };
 
   const toggleMenu = () => setOpen(!open);
 

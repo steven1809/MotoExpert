@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, Delete, Param } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Usuario } from '../usuarios/usuario.entity';
@@ -21,5 +21,10 @@ export class AuthController {
   async login(@Body() body: any) {
     const user = await this.authService.validateUser(body.email, body.password);
     return this.authService.login(user);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.authService.remove(+id);
   }
 }
