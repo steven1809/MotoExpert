@@ -6,19 +6,19 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
   const toggleMenu = () => setOpen(!open);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#020617] border-b border-blue-900/30">
-      <div className="container mx-auto px-4 py-2 flex items-center justify-between">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between relative">
+        
+        {/* Espaciador invisible para mantener flex-between en móvil */}
+        <div className="md:hidden w-10"></div>
+
         {/* Logo */}
         <div 
-          className="flex items-center space-x-3 cursor-pointer group" 
+          className="flex items-center space-x-2 cursor-pointer absolute left-1/2 transform -translate-x-1/2 md:relative md:transform-none md:left-auto" 
           onClick={() => setView("dashboard")}
         >
-          <div className="relative w-12 h-12 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
-            <img 
-              src="/logoMotoExpert.ico" 
-              alt="MotoExpert Logo" 
-              className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]"
-            />
+          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-xl font-bold text-white" translate="no">M</span>
           </div>
           <span className="text-xl font-bold tracking-tighter bg-gradient-to-r from-white via-blue-100 to-slate-400 bg-clip-text text-transparent group-hover:from-blue-400 group-hover:to-white transition-all duration-500">
             MotoExpert
@@ -26,7 +26,7 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
+        <nav className="hidden md:flex items-center space-x-8 ml-auto">
           <button 
             onClick={() => setView("dashboard")} 
             className="text-sm font-medium text-slate-400 hover:text-blue-500 transition-colors"
@@ -38,6 +38,18 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
             className="text-sm font-medium text-slate-400 hover:text-blue-500 transition-colors"
           >
             Servicios
+          </button>
+          <button 
+            onClick={() => setView("vehiculos")} 
+            className="text-sm font-medium text-slate-400 hover:text-blue-500 transition-colors"
+          >
+            Vehículos
+          </button>
+          <button 
+            onClick={() => setView("citas")} 
+            className="text-sm font-medium text-slate-400 hover:text-blue-500 transition-colors"
+          >
+            Citas
           </button>
           
           {userRole === "admin" && (
@@ -106,6 +118,18 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
                 <span>Servicios</span>
+              </button>
+              <button 
+                className="text-xl font-medium text-white py-3 border-b border-blue-800 text-left flex items-center space-x-2 hover:text-blue-200 transition-colors" 
+                onClick={() => { setView("vehiculos"); toggleMenu(); }}
+              >
+                <span>🏍️</span> <span>Vehículos</span>
+              </button>
+              <button 
+                className="text-xl font-medium text-white py-3 border-b border-blue-800 text-left flex items-center space-x-2 hover:text-blue-200 transition-colors" 
+                onClick={() => { setView("citas"); toggleMenu(); }}
+              >
+                <span>📅</span> <span>Citas</span>
               </button>
               
               {userRole === "admin" && (

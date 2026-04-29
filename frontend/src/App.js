@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import Login from "./components/Login/Login"; 
 import Servicios from "./pages/Servicios";
 import UsersList from "./pages/UsersList";
+import Vehiculos from "./pages/Vehiculos";
+import Citas from "./pages/Citas";
 import Navbar from "./components/Navbar";
 import LandingPage from './pages/LandingPage';
 
@@ -68,6 +70,10 @@ function App() {
         {view === "servicios" && <Servicios />}
         
         {view === "users" && <UsersList />}
+        
+        {view === "vehiculos" && <Vehiculos />}
+        
+        {view === "citas" && <Citas />}
 
         {/* Acceso rápido para admin si no está en la vista de usuarios */}
         {userRole === 'admin' && view !== 'users' && (
