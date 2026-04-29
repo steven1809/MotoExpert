@@ -49,7 +49,8 @@ export class AuthService {
       const user = this.userRepository.create({
         ...userData,
         email: email.toLowerCase().trim(),
-        password: hashedPassword
+        password: hashedPassword,
+        role: createUserDto.role || 'user'
       });
 
       await this.userRepository.save(user);
@@ -72,5 +73,11 @@ export class AuthService {
       const { password, ...rest } = user;
       return rest;
     });
+  }
+
+  async remove(id: number) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new BadRequestException('Usuario no encontrado');
+    return this.userRepository.remove(user);
   }
 }
