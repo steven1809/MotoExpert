@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
 const Citas = () => {
   const [citas, setCitas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +22,7 @@ const Citas = () => {
   const fetchCitas = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/citas', {
+      const response = await fetch(`${API_BASE_URL}/citas`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -44,7 +46,7 @@ const Citas = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/citas', {
+      const response = await fetch(`${API_BASE_URL}/citas`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -70,7 +72,7 @@ const Citas = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3001/citas/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/citas/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
