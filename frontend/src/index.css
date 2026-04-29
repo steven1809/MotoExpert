@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth !important;
+    scroll-padding-top: 80px; /* Compensa la altura de la barra de navegación fija */
+  }
+
   body {
     margin: 0;
     -webkit-font-smoothing: antialiased;
