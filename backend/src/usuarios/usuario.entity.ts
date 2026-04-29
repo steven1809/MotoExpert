@@ -1,5 +1,6 @@
 // src/usuarios/usuario.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Vehiculo } from '../modules/vehiculos/entities/vehiculo.entity';
 
 @Entity('usuarios')
 export class Usuario {
@@ -22,5 +23,8 @@ export class Usuario {
   telefono: string;
 
   @Column({ default: 'usuario' }) 
-  role: string; 
+  role: string;
+
+  @OneToMany(() => Vehiculo, (vehiculo) => vehiculo.usuario)
+  vehiculos: Vehiculo[];
 }
