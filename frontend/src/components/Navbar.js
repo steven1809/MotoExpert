@@ -35,6 +35,18 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
           >
             Servicios
           </button>
+          <button 
+            onClick={() => setView("vehiculos")} 
+            className="text-sm font-medium text-slate-400 hover:text-blue-500 transition-colors"
+          >
+            Vehículos
+          </button>
+          <button 
+            onClick={() => setView("citas")} 
+            className="text-sm font-medium text-slate-400 hover:text-blue-500 transition-colors"
+          >
+            Citas
+          </button>
           
           {userRole === "admin" && (
             <button 
@@ -96,6 +108,18 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
                 onClick={() => { setView("servicios"); toggleMenu(); }}
               >
                 <span>🛠️</span> <span>Servicios</span>
+              </button>
+              <button 
+                className="text-xl font-medium text-white py-3 border-b border-blue-800 text-left flex items-center space-x-2 hover:text-blue-200 transition-colors" 
+                onClick={() => { setView("vehiculos"); toggleMenu(); }}
+              >
+                <span>🏍️</span> <span>Vehículos</span>
+              </button>
+              <button 
+                className="text-xl font-medium text-white py-3 border-b border-blue-800 text-left flex items-center space-x-2 hover:text-blue-200 transition-colors" 
+                onClick={() => { setView("citas"); toggleMenu(); }}
+              >
+                <span>📅</span> <span>Citas</span>
               </button>
               
               {userRole === "admin" && (

@@ -124,11 +124,10 @@ class UsersList extends Component {
     return (
       <div className="p-6">
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Gestión de Usuarios</h1>
-            <p className="text-slate-400 mt-1">Lista completa de usuarios registrados en MotoExpert</p>
-          </div>
-          <div className="bg-blue-600/10 text-blue-400 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-500/20">
+          <h1 className="text-4xl font-bold text-white bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+            Gestión de Usuarios
+          </h1>
+          <div className="bg-purple-600/10 text-purple-400 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-purple-500/20">
             {users.length} Usuarios totales
           </div>
         </div>
