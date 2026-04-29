@@ -6,17 +6,21 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
   const toggleMenu = () => setOpen(!open);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#020617] border-b border-blue-900/30">
+      <div className="container mx-auto px-4 py-2 flex items-center justify-between">
         {/* Logo */}
         <div 
-          className="flex items-center space-x-2 cursor-pointer" 
+          className="flex items-center space-x-3 cursor-pointer group" 
           onClick={() => setView("dashboard")}
         >
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-xl font-bold text-white">M</span>
+          <div className="relative w-12 h-12 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-500">
+            <img 
+              src="/logoMotoExpert.ico" 
+              alt="MotoExpert Logo" 
+              className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+            />
           </div>
-          <span className="text-2xl font-bold tracking-tighter bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+          <span className="text-xl font-bold tracking-tighter bg-gradient-to-r from-white via-blue-100 to-slate-400 bg-clip-text text-transparent group-hover:from-blue-400 group-hover:to-white transition-all duration-500">
             MotoExpert
           </span>
         </div>
@@ -73,11 +77,11 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
             onClick={toggleMenu}
           ></div>
           
-          {/* Sidebar al 75% a la derecha - FONDO AZUL OSCURO SÓLIDO */}
-          <div className="absolute top-0 right-0 w-[75%] h-full bg-[#1e3a8a] border-l border-blue-900 p-6 flex flex-col space-y-6 shadow-2xl transform transition-transform duration-300">
-            <div className="flex justify-between items-center border-b border-blue-800 pb-4">
+          {/* Sidebar al 75% a la derecha - FONDO AZUL OSCURO PROFUNDO */}
+          <div className="absolute top-0 right-0 w-[75%] h-full bg-[#020617] border-l border-blue-900/50 p-6 flex flex-col space-y-6 shadow-2xl transform transition-transform duration-300">
+            <div className="flex justify-between items-center border-b border-blue-900/30 pb-4">
               <span className="text-white font-bold tracking-tighter text-xl">Menú</span>
-              <button onClick={toggleMenu} className="p-2 bg-blue-900 text-white hover:bg-blue-800 rounded-full transition-colors">
+              <button onClick={toggleMenu} className="p-2 bg-blue-900/30 text-white hover:bg-blue-800/50 rounded-full transition-colors">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -86,24 +90,33 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
 
             <nav className="flex flex-col space-y-4">
               <button 
-                className="text-xl font-medium text-white py-3 border-b border-blue-800 text-left flex items-center space-x-2 hover:text-blue-200 transition-colors" 
+                className="text-xl font-medium text-white py-3 border-b border-blue-900/20 text-left flex items-center space-x-3 hover:text-blue-400 transition-colors" 
                 onClick={() => { setView("dashboard"); toggleMenu(); }}
               >
-                <span>🏠</span> <span>Inicio</span>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>Inicio</span>
               </button>
               <button 
-                className="text-xl font-medium text-white py-3 border-b border-blue-800 text-left flex items-center space-x-2 hover:text-blue-200 transition-colors" 
+                className="text-xl font-medium text-white py-3 border-b border-blue-900/20 text-left flex items-center space-x-3 hover:text-blue-400 transition-colors" 
                 onClick={() => { setView("servicios"); toggleMenu(); }}
               >
-                <span>🛠️</span> <span>Servicios</span>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Servicios</span>
               </button>
               
               {userRole === "admin" && (
                 <button 
-                  className="text-xl font-bold text-blue-200 py-3 border-b border-blue-800 text-left flex items-center space-x-2 hover:text-white transition-colors" 
+                  className="text-xl font-bold text-blue-400 py-3 border-b border-blue-900/20 text-left flex items-center space-x-3 hover:text-blue-300 transition-colors" 
                   onClick={() => { setView("users"); toggleMenu(); }}
                 >
-                  <span>👥</span> <span>Ver Usuarios</span>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  <span>Ver Usuarios</span>
                 </button>
               )}
             </nav>
