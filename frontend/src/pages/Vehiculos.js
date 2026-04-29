@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
 const Vehiculos = () => {
   const [vehiculos, setVehiculos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ const Vehiculos = () => {
     try {
       console.log('Obteniendo vehículos...');
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/vehiculos', {
+      const response = await fetch(`${API_BASE_URL}/vehiculos`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -68,7 +70,7 @@ const Vehiculos = () => {
 
       console.log('Datos a enviar:', dataToSend);
 
-      const response = await fetch('http://localhost:3001/vehiculos', {
+      const response = await fetch(`${API_BASE_URL}/vehiculos`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -102,7 +104,7 @@ const Vehiculos = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3001/vehiculos/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/vehiculos/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
