@@ -7,14 +7,18 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between relative">
+        
+        {/* Espaciador invisible para mantener flex-between en móvil */}
+        <div className="md:hidden w-10"></div>
+
         {/* Logo */}
         <div 
-          className="flex items-center space-x-2 cursor-pointer" 
+          className="flex items-center space-x-2 cursor-pointer absolute left-1/2 transform -translate-x-1/2 md:relative md:transform-none md:left-auto" 
           onClick={() => setView("dashboard")}
         >
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-xl font-bold text-white">M</span>
+            <span className="text-xl font-bold text-white" translate="no">M</span>
           </div>
           <span className="text-2xl font-bold tracking-tighter bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
             MotoExpert
@@ -22,7 +26,7 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
+        <nav className="hidden md:flex items-center space-x-8 ml-auto">
           <button 
             onClick={() => setView("dashboard")} 
             className="text-sm font-medium text-slate-400 hover:text-blue-500 transition-colors"
