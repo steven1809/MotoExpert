@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
 class UsersList extends Component {
   constructor(props) {
     super(props);
@@ -28,7 +30,7 @@ class UsersList extends Component {
   fetchUsers = async (token) => {
     try {
       // Usamos el endpoint configurado en el backend
-      const response = await fetch('http://localhost:3001/auth', {
+      const response = await fetch(`${API_BASE_URL}/auth`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -55,7 +57,7 @@ class UsersList extends Component {
 
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:3000/auth/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/auth/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
