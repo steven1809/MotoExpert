@@ -57,7 +57,7 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
               onClick={() => setView("users")} 
               className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors border border-blue-400/30 px-3 py-1 rounded-md bg-blue-400/10"
             >
-              Ver Usuarios
+              Administración
             </button>
           )}
 
@@ -131,7 +131,7 @@ const Navbar = ({ setView, setIsLoggedIn, setUserRole, handleLogout,userRole }) 
                   className="text-xl font-bold text-blue-200 py-3 border-b border-blue-800 text-left flex items-center space-x-2 hover:text-white transition-colors" 
                   onClick={() => { setView("users"); toggleMenu(); }}
                 >
-                  <span>👥</span> <span>Ver Usuarios</span>
+                  <span>👥</span> <span>Administración</span>
                 </button>
               )}
             </nav>

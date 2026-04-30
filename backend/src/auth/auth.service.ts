@@ -80,4 +80,51 @@ export class AuthService {
     if (!user) throw new BadRequestException('Usuario no encontrado');
     return this.userRepository.remove(user);
   }
+
+  async forgotPassword(identifier: string) {
+    const user = await this.userRepository.findOne({
+      where: [
+        { email: identifier.toLowerCase().trim() },
+        { telefono: identifier },
+        { documento: identifier }
+      ]
+    });
+
+    if (!user) throw new BadRequestException('Usuario no encontrado');
+
+    // En un sistema real, aquí se generaría y enviaría un código OTP por email/SMS
+    // Por ahora simularemos que se envió con éxito
+    return { 
+      message: 'Código de recuperación enviado con éxito',
+      identifier // Devolvemos el identificador para usarlo en el siguiente paso
+    };
+  }
+
+  async resetPassword(data: any) {
+    const { identifier, otp, password, confirmPassword } = data;
+
+    if (password !== confirmPassword) {
+      throw new BadRequestException('Las contraseñas no coinciden');
+    }
+
+    // Simulamos validación de OTP (en producción se validaría contra una tabla de tokens/OTPs)
+    if (otp !== '123456') { // Código de prueba
+      throw new BadRequestException('Código OTP inválido');
+    }
+
+    const user = await this.userRepository.findOne({
+      where: [
+        { email: identifier.toLowerCase().trim() },
+        { telefono: identifier },
+        { documento: identifier }
+      ]
+    });
+
+    if (!user) throw new BadRequestException('Usuario no encontrado');
+
+    user.password = bcrypt.hashSync(password, 10);
+    await this.userRepository.save(user);
+
+    return { message: 'Contraseña restablecida con éxito' };
+  }
 }

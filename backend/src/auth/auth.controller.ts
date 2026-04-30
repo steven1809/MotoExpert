@@ -27,4 +27,14 @@ export class AuthController {
   remove(@Param('id') id: string) {
     return this.authService.remove(+id);
   }
+
+  @Post('forgot-password')
+  forgotPassword(@Body() body: { identifier: string }) {
+    return this.authService.forgotPassword(body.identifier);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() body: any) {
+    return this.authService.resetPassword(body);
+  }
 }

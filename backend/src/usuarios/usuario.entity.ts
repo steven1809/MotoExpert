@@ -7,6 +7,9 @@ export class Usuario {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ unique: true, nullable: true })
+  documento: string;
+
   @Column({ nullable: true })
   nombre: string;
 

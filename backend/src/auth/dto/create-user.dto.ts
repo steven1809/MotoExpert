@@ -6,6 +6,10 @@ export class CreateUserDto {
   nombre: string;
 
   @IsString()
+  @IsNotEmpty({ message: 'El documento es obligatorio' })
+  documento: string;
+
+  @IsString()
   @IsNotEmpty({ message: 'Los apellidos son obligatorios' })
   apellidos: string;
 
@@ -23,4 +27,7 @@ export class CreateUserDto {
   @IsString()
   @IsOptional() 
   role?: string;
+
+  @IsNotEmpty({ message: 'Debes aceptar los términos y condiciones' })
+  aceptaTerminos: boolean;
 }

@@ -62,10 +62,18 @@ const Vehiculos = () => {
         return;
       }
 
+      const parsedUsuarioId = parseInt(formData.usuarioId, 10);
+      const parsedAnio = formData.anio ? parseInt(formData.anio, 10) : undefined;
+
+      if (isNaN(parsedUsuarioId)) {
+        alert('Por favor, selecciona un usuario válido.');
+        return;
+      }
+
       const dataToSend = {
         ...formData,
-        usuarioId: parseInt(formData.usuarioId, 10),
-        anio: formData.anio ? parseInt(formData.anio, 10) : undefined
+        usuarioId: parsedUsuarioId,
+        anio: isNaN(parsedAnio) ? undefined : parsedAnio
       };
 
       console.log('Datos a enviar:', dataToSend);
@@ -255,7 +263,7 @@ const Vehiculos = () => {
               <p><span className="font-medium text-slate-400">Año:</span> {vehiculo.anio}</p>
               <p><span className="font-medium text-slate-400">Placa:</span> {vehiculo.placa}</p>
               <p><span className="font-medium text-slate-400">Color:</span> {vehiculo.color}</p>
-              <p><span className="font-medium text-slate-400">Usuario ID:</span> {vehiculo.usuarioId}</p>
+              <p><span className="font-medium text-slate-400">Propietario ID:</span> {vehiculo.usuario?.id || vehiculo.usuarioId}</p>
             </div>
           </div>
         ))}
