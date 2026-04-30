@@ -15,5 +15,11 @@ export class Servicio {
   precio: number;
 
   @Column({ nullable: true })
-  duracion: number; // en minutos
+  duracion: number; 
+
+  @Column({ type: 'text', nullable: true })
+  incluye: string;
+
+  @Column({ type: 'text', nullable: true })
+  beneficios: string;
 }

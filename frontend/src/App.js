@@ -6,6 +6,8 @@ import Vehiculos from "./pages/Vehiculos";
 import Citas from "./pages/Citas";
 import Navbar from "./components/Navbar";
 import LandingPage from './pages/LandingPage';
+import InactivityHandler from "./components/InactivityHandler";
+import MapView from "./components/MapView";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
@@ -51,6 +53,9 @@ function App() {
   // 3. SI YA ESTÁ LOGUEADO (Dashboard y Navegación)
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
+      {/* Sistema de Seguridad por Inactividad */}
+      <InactivityHandler onLogout={handleLogout} />
+
       {/* Navbar Superior Global - Ahora recibe handleLogout */}
       <Navbar 
         setView={setView} 
@@ -61,9 +66,19 @@ function App() {
       {/* Contenido Principal con margen superior para el Navbar fixed */}
       <main className="pt-16 p-8">
         {view === "dashboard" && (
-          <div className="text-center mt-10">
-            <h1 className="text-4xl font-bold text-blue-400 italic mb-4">Panel MotoExpert</h1>
-            <p className="text-gray-400 text-lg">Bienvenido al sistema de gestión de servicios.</p>
+          <div className="mt-10">
+            <div className="text-center mb-10">
+              <h1 className="text-4xl font-bold text-blue-400 italic mb-4">Panel MotoExpert</h1>
+              <p className="text-gray-400 text-lg">Bienvenido al sistema de gestión de servicios.</p>
+            </div>
+            
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-2xl font-bold text-white mb-6 flex items-center space-x-2">
+                <span>📍</span>
+                <span>Nuestra Ubicación</span>
+              </h2>
+              <MapView />
+            </div>
           </div>
         )}
         
