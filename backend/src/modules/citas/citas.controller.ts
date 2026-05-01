@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Delete, UseGuards, Request, Query, Patch} from '@nestjs/common';
 import { CitasService } from './citas.service';
 import { CreateCitaDto } from './dto/create-cita.dto';
 import { AuthGuard } from '@nestjs/passport';
