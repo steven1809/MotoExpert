@@ -132,6 +132,9 @@ class Login extends Component {
           
           localStorage.setItem("token", data.access_token);
           localStorage.setItem("role", userRoleFromServer);
+          localStorage.setItem("userId", data.userId || "");
+          localStorage.setItem("userName", data.nombre || "");
+          localStorage.setItem("userEmail", email || "");
           this.props.onLoginSuccess(userRoleFromServer);
         } else {
           alert("¡Registro exitoso! Ya puedes iniciar sesión.");

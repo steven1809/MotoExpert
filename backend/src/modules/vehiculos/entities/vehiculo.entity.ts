@@ -31,6 +31,9 @@ export class Vehiculo {
   @Column({ nullable: true })
   color?: string;
 
+  @Column({ default: 'ACTIVO' })
+  estado: string;
+
   @ManyToOne(() => Usuario, (usuario) => usuario.vehiculos, {
     onDelete: 'CASCADE',
   })

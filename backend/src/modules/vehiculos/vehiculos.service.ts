@@ -36,7 +36,13 @@ export class VehiculosService {
     return this.repo.save(vehiculo);
   }
 
-  findAll() {
+  findAll(userId?: number) {
+    if (userId) {
+      return this.repo.find({
+        where: { usuario: { id: userId } },
+        relations: ['usuario'],
+      });
+    }
     return this.repo.find({ relations: ['usuario'] });
   }
 
@@ -45,6 +51,11 @@ export class VehiculosService {
       where: { id },
       relations: ['usuario'],
     });
+  }
+
+  async update(id: number, updateData: any) {
+    await this.repo.update(id, updateData);
+    return this.findOne(id);
   }
 
   remove(id: number) {
