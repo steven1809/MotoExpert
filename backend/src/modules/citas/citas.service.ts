@@ -31,39 +31,104 @@ export class CitasService {
     const usuario = await this.usuarioRepo.findOne({ where: { id: dto.usuarioId } });
     const vehiculo = await this.vehiculoRepo.findOne({ where: { id: dto.vehiculoId } });
     const servicio = await this.servicioRepo.findOne({ where: { id: dto.servicioId } });
-    const empleado = await this.empleadoRepo.findOne({ where: { id: dto.empleadoId } });
-
-    if (!usuario || !vehiculo || !servicio || !empleado) {
-      throw new BadRequestException('Datos inválidos: usuario, vehículo, servicio o empleado no encontrado');
+    
+    if (!usuario || !vehiculo || !servicio) {
+      throw new BadRequestException('Datos inválidos: usuario, vehículo o servicio no encontrado');
     }
 
-    const existe = await this.repo.findOne({
+    // Aseguramos formato YYYY-MM-DD para la fecha
+    const formattedFecha = new Date(dto.fecha).toISOString().split('T')[0];
+
+    // Lógica de Asignación Automática: Buscar empleado disponible
+    const todosLosEmpleados = await this.empleadoRepo.find({ where: { estado: 'activo' } });
+    
+    // Obtenemos todas las citas de ese bloque de fecha y hora
+    const citasOcupadas = await this.repo.find({
       where: {
-        fecha: dto.fecha,
+        fecha: formattedFecha,
         hora_inicio: dto.hora_inicio,
-        empleado: { id: dto.empleadoId },
       },
+      relations: ['empleado']
     });
 
-    if (existe) {
-      throw new BadRequestException('El empleado ya tiene una cita en ese horario');
+    // Filtramos empleados que ya tengan una cita en ese horario
+    const empleadosOcupadosIds = citasOcupadas.map(c => c.empleado.id);
+    const empleadosDisponibles = todosLosEmpleados.filter(e => !empleadosOcupadosIds.includes(e.id));
+
+    if (empleadosDisponibles.length === 0) {
+      throw new BadRequestException('El horario ya no está disponible por falta de personal');
     }
 
+    // Asignamos el primer empleado disponible
+    const empleadoAsignado = empleadosDisponibles[0];
+
     const cita = this.repo.create({
-      fecha: dto.fecha,
+      fecha: formattedFecha,
       hora_inicio: dto.hora_inicio,
       hora_fin: dto.hora_fin,
       usuario,
       vehiculo,
       servicio,
-      empleado,
+      empleado: empleadoAsignado,
+      estado: 'PENDIENTE',
     });
 
     return this.repo.save(cita);
   }
 
-  findAll() {
-    return this.repo.find();
+  async updateEstado(id: number, nuevoEstado: string) {
+    const cita = await this.repo.findOne({ where: { id } });
+    if (!cita) throw new NotFoundException('Cita no encontrada');
+    
+    cita.estado = nuevoEstado;
+    return this.repo.save(cita);
+  }
+
+  async getAvailableSlots(fecha: string, servicioId: number) {
+    const servicio = await this.servicioRepo.findOne({ where: { id: servicioId } });
+    if (!servicio) throw new NotFoundException('Servicio no encontrado');
+
+    // Horario Maestro: 8:00 AM a 12:00 PM y 2:00 PM a 6:00 PM
+    const masterSchedule = [
+      '08:00:00', '09:00:00', '10:00:00', '11:00:00',
+      '14:00:00', '15:00:00', '16:00:00', '17:00:00'
+    ];
+    
+    // Obtenemos todas las citas de ese día (asegurando formato YYYY-MM-DD)
+    const formattedFecha = new Date(fecha).toISOString().split('T')[0];
+    
+    const citasDelDia = await this.repo.find({
+      where: { fecha: formattedFecha },
+      relations: ['empleado']
+    });
+
+    // Generamos los slots basados en el Horario Maestro y marcamos disponibilidad
+    const slots = masterSchedule.map(horaStr => {
+      // Verificamos si hay alguna cita en este horario
+      const citaExistente = citasDelDia.find(c => c.hora_inicio === horaStr);
+      
+      return {
+        hora: horaStr,
+        disponible: !citaExistente
+      };
+    });
+
+    return slots;
+  }
+
+  findAll(userId?: number) {
+    if (userId) {
+      return this.repo.find({
+        where: [
+          { usuario: { id: userId } },
+          { empleado: { id: userId } } // Para que el empleado también vea sus citas
+        ],
+        relations: ['usuario', 'vehiculo', 'servicio', 'empleado']
+      });
+    }
+    return this.repo.find({
+      relations: ['usuario', 'vehiculo', 'servicio', 'empleado']
+    });
   }
 
   findOne(id: number) {
