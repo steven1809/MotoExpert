@@ -14,9 +14,9 @@ class Login extends Component {
       aceptaTerminos: false,
       showModal: false,
       loading: false,
-      isLogin: true, 
-      view: "auth", // "auth" (login/register), "forgot", "reset"
-      identifier: "", // email o telefono para recuperar
+      isLogin: props.initialMode !== "register", 
+      view: "auth", 
+      identifier: "", 
       otp: "",
     };
   }

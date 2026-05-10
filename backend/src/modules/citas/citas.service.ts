@@ -39,28 +39,52 @@ export class CitasService {
     // Aseguramos formato YYYY-MM-DD para la fecha
     const formattedFecha = new Date(dto.fecha).toISOString().split('T')[0];
 
-    // Lógica de Asignación Automática: Buscar empleado disponible
-    const todosLosEmpleados = await this.empleadoRepo.find({ where: { estado: 'activo' } });
-    
-    // Obtenemos todas las citas de ese bloque de fecha y hora
-    const citasOcupadas = await this.repo.find({
-      where: {
-        fecha: formattedFecha,
-        hora_inicio: dto.hora_inicio,
-      },
-      relations: ['empleado']
-    });
+    let empleadoAsignado: Empleado | null;
 
-    // Filtramos empleados que ya tengan una cita en ese horario
-    const empleadosOcupadosIds = citasOcupadas.map(c => c.empleado.id);
-    const empleadosDisponibles = todosLosEmpleados.filter(e => !empleadosOcupadosIds.includes(e.id));
+    // Si el usuario seleccionó un empleado, usarlo
+    if (dto.empleadoId) {
+      empleadoAsignado = await this.empleadoRepo.findOne({ 
+        where: { id: dto.empleadoId, estado: 'activo' } 
+      });
+      if (!empleadoAsignado) {
+        throw new BadRequestException('El especialista seleccionado no está disponible');
+      }
 
-    if (empleadosDisponibles.length === 0) {
-      throw new BadRequestException('El horario ya no está disponible por falta de personal');
+      // Verificar disponibilidad del empleado en ese horario
+      const citasEmpleado = await this.repo.find({
+        where: {
+          fecha: formattedFecha,
+          hora_inicio: dto.hora_inicio,
+          empleado: { id: dto.empleadoId }
+        }
+      });
+      if (citasEmpleado.length > 0) {
+        throw new BadRequestException('El especialista ya tiene una cita en este horario');
+      }
+    } else {
+      // Lógica de Asignación Automática: Buscar empleado disponible
+      const todosLosEmpleados = await this.empleadoRepo.find({ where: { estado: 'activo' } });
+      
+      // Obtenemos todas las citas de ese bloque de fecha y hora
+      const citasOcupadas = await this.repo.find({
+        where: {
+          fecha: formattedFecha,
+          hora_inicio: dto.hora_inicio,
+        },
+        relations: ['empleado']
+      });
+
+      // Filtramos empleados que ya tengan una cita en ese horario
+      const empleadosOcupadosIds = citasOcupadas.map(c => c.empleado.id);
+      const empleadosDisponibles = todosLosEmpleados.filter(e => !empleadosOcupadosIds.includes(e.id));
+
+      if (empleadosDisponibles.length === 0) {
+        throw new BadRequestException('El horario ya no está disponible por falta de personal');
+      }
+
+      // Asignamos el primer empleado disponible
+      empleadoAsignado = empleadosDisponibles[0];
     }
-
-    // Asignamos el primer empleado disponible
-    const empleadoAsignado = empleadosDisponibles[0];
 
     const cita = this.repo.create({
       fecha: formattedFecha,
@@ -116,23 +140,54 @@ export class CitasService {
     return slots;
   }
 
-  findAll(userId?: number) {
-    if (userId) {
+  async findAll(userId?: number, rol?: string) {
+
+    // SI ES EMPLEADO
+    if (userId && rol === 'empleado') {
+
+      const empleado = await this.empleadoRepo
+        .createQueryBuilder('empleado')
+        .innerJoin('empleado.usuario', 'usuario')
+        .where('usuario.id = :userId', { userId })
+        .getOne();
+
+      if (!empleado) {
+        return [];
+      }
+
       return this.repo.find({
-        where: [
-          { usuario: { id: userId } },
-          { empleado: { id: userId } } // Para que el empleado también vea sus citas
-        ],
+        where: {
+          empleado: {
+            id: empleado.id
+          }
+        },
         relations: ['usuario', 'vehiculo', 'servicio', 'empleado']
       });
     }
+
+    // SI ES USUARIO NORMAL
+    if (userId) {
+      return this.repo.find({
+        where: {
+          usuario: {
+            id: userId
+          }
+        },
+        relations: ['usuario', 'vehiculo', 'servicio', 'empleado']
+      });
+    }
+
+    // ADMIN
     return this.repo.find({
       relations: ['usuario', 'vehiculo', 'servicio', 'empleado']
     });
   }
 
   findOne(id: number) {
-    return this.repo.findOne({ where: { id } });
+    return this.repo.findOne({ 
+      where: { id },
+      relations: ['usuario', 'vehiculo', 'servicio', 'empleado']
+    });
   }
 
   remove(id: number) {

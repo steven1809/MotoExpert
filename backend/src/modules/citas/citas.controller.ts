@@ -13,18 +13,39 @@ export class CitasController {
     // Forzamos que la cita sea para el usuario autenticado
     return this.service.create({ ...dto, usuarioId: req.user.userId });
   }
-
   @Get()
   findAll(@Request() req, @Query('userId') userId?: string) {
-    // Si es admin puede ver todas o filtrar por un usuario específico
-    if (req.user.rol === 'admin') {
+
+    console.log('[DEBUG] req.user:', req.user);
+
+    const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+
+    console.log('[DEBUG] userRole:', userRole);
+
+    // ADMIN VE TODO
+    if (userRole === 'admin') {
+
       if (userId) {
-        return this.service.findAll(+userId);
+        return this.service.findAll(+userId, userRole);
       }
-      return this.service.findAll();
+
+      return this.service.findAll(undefined, userRole);
     }
-    // Si no es admin, solo devolvemos las suyas
-    return this.service.findAll(req.user.userId);
+
+    // EMPLEADO VE SUS CITAS
+    if (userRole === 'empleado' || userRole === 'trabajador') {
+
+      return this.service.findAll(
+        req.user.userId,
+        'empleado'
+      );
+    }
+
+    // USUARIO NORMAL
+    return this.service.findAll(
+      req.user.userId,
+      'usuario'
+    );
   }
 
   @Get('disponibilidad')

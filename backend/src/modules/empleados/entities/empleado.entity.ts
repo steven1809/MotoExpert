@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne, JoinColumn} from 'typeorm';
 import { Cita } from '../../citas/entities/cita.entity';
+import { Usuario } from '../../usuarios/entities/usuario.entity';
 
 @Entity('empleados')
 export class Empleado {
@@ -17,6 +18,13 @@ export class Empleado {
 
   @Column({ nullable: true })
   especialidad: string;
+
+  @OneToOne(() => Usuario)
+  @JoinColumn({ name: 'usuarioId' })
+  usuario: Usuario;
+
+  @Column({ nullable: true })
+  usuarioId: number;
 
   @OneToMany(() => Cita, (cita) => cita.empleado)
   citas: Cita[];

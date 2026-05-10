@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import CardServicio from "../components/CardServicio";
 
-export default function Servicios() {
+export default function Servicios({ setView }) {
   const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -108,12 +108,34 @@ export default function Servicios() {
     }
   };
 
+  const normalizeSlug = (text) => {
+    return text.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, '-')
+      .replace(/[^\w-]/g, '');
+  };
+
+  useEffect(() => {
+    if (!loading && servicios.length > 0) {
+      const hash = window.location.hash;
+      if (hash) {
+        const slug = hash.replace('#', '');
+        setTimeout(() => {
+          const element = document.getElementById(slug);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+      }
+    }
+  }, [loading, servicios]);
+
   const serviciosFiltrados = servicios.filter((servicio) =>
     servicio.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase())
   );
 
   return (
-    <section id="servicios" className="py-24 bg-slate-950 relative rounded-3xl border border-slate-800">
+    <section id="servicios-page" className="py-24 bg-slate-950 relative rounded-3xl border border-slate-800">
       <div className="container mx-auto px-4">
         {/* Modal Admin */}
         {showModal && (
@@ -158,16 +180,16 @@ export default function Servicios() {
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
           <div className="text-center md:text-left">
-            <h2 className="text-4xl font-bold mb-4 text-white">Servicios Especializados</h2>
-            <p className="text-slate-400 max-w-xl">
-              Soluciones profesionales diseñadas para mantener tus vehiculos en óptimas condiciones.
+            <h2 className="text-4xl font-bold mb-4 text-white italic tracking-tighter uppercase">Servicios <span className="text-blue-500">Especializados</span></h2>
+            <p className="text-slate-400 max-w-xl font-medium">
+              Soluciones profesionales diseñadas para mantener tus vehículos en óptimas condiciones.
             </p>
           </div>
           
           {userRole === "admin" && (
             <button 
               onClick={() => handleOpenModal()}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold shadow-xl shadow-blue-600/20 transform hover:scale-105 transition-all flex items-center space-x-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 transform hover:scale-105 transition-all flex items-center space-x-2"
             >
               <span>+ Añadir Nuevo Servicio</span>
             </button>
@@ -186,20 +208,28 @@ export default function Servicios() {
             placeholder="Buscar servicio (ej: Motor)..."
             value={filtroBusqueda}
             onChange={(e) => setFiltroBusqueda(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all shadow-lg"
+            className="w-full pl-12 pr-4 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all shadow-2xl font-medium"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {serviciosFiltrados.map((servicio) => (
-            <CardServicio 
-              key={servicio.id} 
-              servicio={servicio} 
-              isAdmin={userRole === "admin"}
-              onEdit={() => handleOpenModal(servicio)}
-              onDelete={() => handleDelete(servicio.id)}
-            />
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {serviciosFiltrados.map((servicio) => {
+            const slug = normalizeSlug(servicio.nombre);
+            const isAutoExpand = window.location.hash === `#${slug}`;
+
+            return (
+              <div key={servicio.id} id={slug} className="scroll-mt-32">
+                <CardServicio 
+                  servicio={servicio} 
+                  isAdmin={userRole === "admin"}
+                  onEdit={() => handleOpenModal(servicio)}
+                  onDelete={() => handleDelete(servicio.id)}
+                  autoExpand={isAutoExpand}
+                  setView={setView}
+                />
+              </div>
+            );
+          })}
         </div>
 
         {loading && (
