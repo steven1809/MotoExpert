@@ -16,25 +16,28 @@ export class VehiculosController {
 
   @Get()
   findAll(@Request() req, @Query('userId') userId?: string) {
-    // Si es admin y se proporciona un userId, filtramos por ese ID
-    if (req.user.rol === 'admin') {
+    const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+
+    // Si es admin o empleado puede ver todos los vehículos o filtrar por usuario
+    if (userRole === 'admin' || userRole === 'empleado' || userRole === 'trabajador') {
       if (userId) {
         return this.service.findAll(+userId);
       }
       return this.service.findAll();
     }
-    // Si no es admin, solo devolvemos los suyos (el service ya maneja el filtro)
+    // Si no es admin o empleado, solo devolvemos los suyos (el service ya maneja el filtro)
     return this.service.findAll(req.user.userId);
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string, @Request() req) {
+    const userRole = (req.user.rol || req.user.role)?.toLowerCase();
     const vehiculo = await this.service.findOne(+id);
-    // Verificamos que el vehículo pertenezca al usuario o sea admin
-    if (vehiculo && req.user.rol !== 'admin' && vehiculo.usuario.id !== req.user.userId) {
-      return null;
+    // Verificamos que el vehículo pertenezca al usuario o sea admin/empleado
+    if (vehiculo && (userRole === 'admin' || userRole === 'empleado' || userRole === 'trabajador' || vehiculo.usuario.id === req.user.userId)) {
+      return vehiculo;
     }
-    return vehiculo;
+    return null;
   }
 
   @Patch(':id')

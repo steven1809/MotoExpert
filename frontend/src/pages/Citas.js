@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
-const Citas = () => {
+const Citas = ({ setView }) => {
   const [citas, setCitas] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
   const [servicios, setServicios] = useState([]);
+  const [empleados, setEmpleados] = useState([]);
   const [disponibilidad, setDisponibilidad] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -16,12 +17,29 @@ const Citas = () => {
     fecha: '',
     hora_inicio: '',
     vehiculoId: '',
-    servicioId: ''
+    servicioId: '',
+    empleadoId: ''
   });
 
   useEffect(() => {
     fetchInitialData();
+    checkPendingAction();
   }, []);
+
+  const checkPendingAction = () => {
+    const pendingAction = localStorage.getItem('pendingAction');
+    const selectedServiceId = localStorage.getItem('selectedServiceId');
+
+    if (pendingAction === 'agendar_cita') {
+      setShowForm(true);
+      if (selectedServiceId) {
+        setFormData(prev => ({ ...prev, servicioId: selectedServiceId }));
+      }
+      // Limpiar para que no se abra solo la próxima vez
+      localStorage.removeItem('pendingAction');
+      localStorage.removeItem('selectedServiceId');
+    }
+  };
 
   const fetchInitialData = async () => {
     try {
@@ -31,21 +49,24 @@ const Citas = () => {
         'Content-Type': 'application/json',
       };
 
-      const [citasRes, vehiculosRes, serviciosRes] = await Promise.all([
+      const [citasRes, vehiculosRes, serviciosRes, empleadosRes] = await Promise.all([
         fetch(`${API_BASE_URL}/citas`, { headers }),
         fetch(`${API_BASE_URL}/vehiculos`, { headers }),
-        fetch(`${API_BASE_URL}/servicios`, { headers })
+        fetch(`${API_BASE_URL}/servicios`, { headers }),
+        fetch(`${API_BASE_URL}/empleados`, { headers })
       ]);
 
-      if (citasRes.ok && vehiculosRes.ok && serviciosRes.ok) {
-        const [citasData, vehiculosData, serviciosData] = await Promise.all([
+      if (citasRes.ok && vehiculosRes.ok && serviciosRes.ok && empleadosRes.ok) {
+        const [citasData, vehiculosData, serviciosData, empleadosData] = await Promise.all([
           citasRes.json(),
           vehiculosRes.json(),
-          serviciosRes.json()
+          serviciosRes.json(),
+          empleadosRes.json()
         ]);
         setCitas(citasData);
         setVehiculos(vehiculosData);
         setServicios(serviciosData);
+        setEmpleados(empleadosData.filter(e => e.estado === 'activo')); // Solo activos
       } else {
         setError('Error al obtener datos iniciales');
       }
@@ -104,6 +125,10 @@ const Citas = () => {
       alert('Por favor selecciona un horario disponible');
       return;
     }
+    if (!formData.empleadoId) {
+      alert('Por favor selecciona tu especialista');
+      return;
+    }
 
     try {
       const token = localStorage.getItem('token');
@@ -119,7 +144,8 @@ const Citas = () => {
         hora_fin: horaFin,
         vehiculoId: parseInt(formData.vehiculoId, 10),
         servicioId: parseInt(formData.servicioId, 10),
-        usuarioId: parseInt(userId, 10)
+        usuarioId: parseInt(userId, 10),
+        empleadoId: parseInt(formData.empleadoId, 10)
       };
 
       const response = await fetch(`${API_BASE_URL}/citas`, {
@@ -133,7 +159,7 @@ const Citas = () => {
 
       if (response.ok) {
         setShowForm(false);
-        setFormData({ fecha: '', hora_inicio: '', vehiculoId: '', servicioId: '' });
+        setFormData({ fecha: '', hora_inicio: '', vehiculoId: '', servicioId: '', empleadoId: '' });
         fetchInitialData();
         alert('Cita agendada con éxito');
       } else {
@@ -167,6 +193,9 @@ const Citas = () => {
     }
   };
 
+  const citasPendientes = citas.filter(cita => cita.estado === "PENDIENTE");
+  const historialServicios = citas.filter(cita => cita.estado === "FINALIZADO" || cita.estado === "CANCELADO");
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-950">
@@ -176,206 +205,293 @@ const Citas = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-        <div>
-          <h1 className="text-4xl font-bold text-white bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent italic">
-            Agendamiento de Citas
+    <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-[#020617]">
+      <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-white/5 mx-6 mt-6 bg-[#111827]">
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-[#2563EB]/10 rounded-full blur-[100px]" />
+        <div className="relative z-10 text-center space-y-4">
+          <div className="inline-block px-4 py-1 rounded-full bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] text-[10px] font-black uppercase tracking-[0.3em]">Reserva Online</div>
+          <h1 className="text-4xl md:text-6xl font-black text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
+            Agenda tu <span className="text-[#2563EB]">Cita</span>
           </h1>
-          <p className="text-slate-400">Gestiona tus mantenimientos y servicios</p>
+          <p className="text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Selecciona el tratamiento premium para tu vehículo.</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className={`px-8 py-3 rounded-2xl font-bold transition-all shadow-lg transform active:scale-95 flex items-center space-x-2 ${
-            showForm 
-              ? 'bg-slate-800 text-slate-300 border border-slate-700' 
-              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'
-          }`}
-        >
-          <span>{showForm ? 'Cerrar Formulario' : 'Agendar Nueva Cita'}</span>
-          <span className="text-xl">{showForm ? '×' : '+'}</span>
-        </button>
-      </div>
+      </header>
 
-      {showForm && (
-        <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-3xl p-8 mb-12 shadow-2xl animate-in slide-in-from-top duration-300">
-          <div className="flex items-center mb-8 space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center italic font-bold">M</div>
-            <h2 className="text-2xl font-bold text-white">Configura tu Cita</h2>
-          </div>
+      <div className="container mx-auto px-6 space-y-12">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter flex items-center">
+            <span className="w-2 h-2 bg-[#2563EB] rounded-full mr-4 animate-pulse" />
+            Historial de Citas
+          </h2>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-8 py-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#2563EB]/20 transition-all active:scale-95"
+          >
+            {showForm ? 'Cerrar Formulario' : 'Nueva Cita Premium'}
+          </button>
+        </div>
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Paso 1: Seleccionar Servicio */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">1. ¿Qué servicio necesitas?</label>
-              <select
-                value={formData.servicioId}
-                onChange={handleServicioChange}
-                className="w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-blue-600 outline-none appearance-none cursor-pointer"
-                required
-              >
-                <option value="">Selecciona un servicio...</option>
-                {servicios.map(s => (
-                  <option key={s.id} value={s.id}>{s.nombre} - ${s.precio}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Paso 2: Seleccionar Vehículo */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">2. Selecciona tu vehículo</label>
-              <select
-                value={formData.vehiculoId}
-                onChange={(e) => setFormData({...formData, vehiculoId: e.target.value})}
-                className="w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-blue-600 outline-none appearance-none cursor-pointer"
-                required
-              >
-                <option value="">Selecciona un vehículo...</option>
-                {vehiculos.map(v => (
-                  <option key={v.id} value={v.id}>{v.placa} - {v.marca} {v.modelo}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Paso 3: Fecha */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">3. Fecha del servicio</label>
-              <input
-                type="date"
-                min={new Date().toISOString().split('T')[0]}
-                value={formData.fecha}
-                onChange={handleDateChange}
-                className="w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-blue-600 outline-none cursor-pointer"
-                required
-              />
-            </div>
-
-            {/* Paso 4: Horarios Disponibles */}
-            <div className="md:col-span-2 space-y-3">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">4. Selecciona un horario</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
-                {!formData.fecha || !formData.servicioId ? (
-                  <div className="col-span-full text-center py-8 bg-slate-950/30 rounded-2xl border border-dashed border-slate-800 text-slate-600 text-sm italic">
-                    Selecciona fecha y servicio primero para ver horarios
+        {/* Formulario Estilo Tesla */}
+        {showForm && (
+          <div className="bg-[#111827] border border-white/5 p-10 rounded-[2.5rem] shadow-2xl animate-in slide-in-from-top duration-500">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Servicio Detailing</label>
+                  <select
+                    name="servicioId"
+                    value={formData.servicioId}
+                    onChange={handleServicioChange}
+                    className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
+                    required
+                  >
+                    <option value="">Seleccione el tratamiento...</option>
+                    {servicios.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Unidad a Tratar</label>
+                  <select
+                    name="vehiculoId"
+                    value={formData.vehiculoId}
+                    onChange={(e) => setFormData({...formData, vehiculoId: e.target.value})}
+                    className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
+                    required
+                  >
+                    <option value="">Placa...</option>
+                    {vehiculos.map(v => <option key={v.id} value={v.id}>{v.placa} - {v.modelo}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Fecha de Ingreso</label>
+                  <input
+                    type="date"
+                    name="fecha"
+                    min={new Date().toISOString().split('T')[0]}
+                    value={formData.fecha}
+                    onChange={handleDateChange}
+                    className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1 text-[#2563EB]">Slots Disponibles</label>
+                  <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-4 bg-[#020617] rounded-2xl border border-white/5">
+                    {loadingSlots ? (
+                      <div className="w-full text-center py-2 text-[#94A3B8] text-xs italic">Consultando disponibilidad...</div>
+                    ) : disponibilidad.length > 0 ? (
+                      disponibilidad.filter(slot => slot.disponible).map(slot => (
+                        <button
+                          key={slot.hora}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, hora_inicio: slot.hora })}
+                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                            formData.hora_inicio === slot.hora 
+                              ? 'bg-[#2563EB] border-[#2563EB] text-white' 
+                              : 'bg-[#111827] border-white/5 text-[#94A3B8] hover:border-white/20'
+                          }`}
+                        >
+                          {slot.hora.substring(0, 5)}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="w-full text-center py-2 text-[#94A3B8] text-xs italic">Seleccione fecha y servicio</div>
+                    )}
                   </div>
-                ) : loadingSlots ? (
-                  <div className="col-span-full text-center py-8 text-blue-500 text-sm flex items-center justify-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Cargando espacios...</span>
-                  </div>
-                ) : disponibilidad.filter(slot => slot.disponible).length > 0 ? (
-                  disponibilidad.filter(slot => slot.disponible).map(slot => (
-                    <button
-                      key={slot.hora}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, hora_inicio: slot.hora })}
-                      className={`group relative p-4 rounded-2xl text-xs font-bold transition-all border flex flex-col items-center justify-center space-y-1 ${
-                        formData.hora_inicio === slot.hora
-                          ? 'bg-blue-600 border-blue-500 text-white shadow-xl shadow-blue-600/30 scale-105 z-10'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-blue-500/50 hover:bg-slate-900'
+                </div>
+              </div>
+
+              {/* Selector de Especialista Premium */}
+              <div className="space-y-4">
+                <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Selecciona tu Especialista</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {empleados.map(empleado => (
+                    <div
+                      key={empleado.id}
+                      onClick={() => setFormData({ ...formData, empleadoId: empleado.id.toString() })}
+                      className={`cursor-pointer p-6 rounded-2xl border-2 transition-all duration-300 group ${
+                        formData.empleadoId === empleado.id.toString()
+                          ? 'bg-[#2563EB]/10 border-[#2563EB] shadow-2xl shadow-[#2563EB]/20'
+                          : 'bg-[#111827] border-white/10 hover:border-[#2563EB]/40 hover:shadow-xl'
                       }`}
                     >
-                      <span className="text-[10px] opacity-60 uppercase tracking-tighter">
-                        {parseInt(slot.hora.split(':')[0]) >= 12 ? 'Tarde' : 'Mañana'}
-                      </span>
-                      <span className="text-sm tracking-tight">{formatTimeAMPM(slot.hora)}</span>
-                    </button>
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-8 bg-red-900/10 rounded-2xl border border-red-900/20 text-red-400 text-sm">
-                    Lo sentimos, no hay espacios disponibles para este día
-                  </div>
-                )}
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="w-12 h-12 rounded-full bg-[#2563EB]/20 flex items-center justify-center text-2xl border border-[#2563EB]/30 group-hover:scale-110 transition-transform">
+                          👤
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-black text-white">{empleado.nombre || 'Especialista'}</h4>
+                          <span className="text-xs font-black text-[#2563EB] uppercase tracking-widest">
+                            {empleado.estado === 'activo' ? 'Disponible' : 'No disponible'}
+                          </span>
+                        </div>
+                      </div>
+                      {empleado.cargo && (
+                        <p className="text-sm text-[#94A3B8] font-medium italic">
+                          {empleado.cargo}
+                        </p>
+                      )}
+                      {empleado.especialidad && (
+                        <div className="mt-2">
+                          <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                            {empleado.especialidad}
+                          </span>
+                        </div>
+                      )}
+                      {formData.empleadoId === empleado.id.toString() && (
+                        <div className="mt-3 flex items-center gap-2 text-[#2563EB] text-xs font-black uppercase tracking-widest">
+                          <span className="animate-pulse">✓</span> Seleccionado
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-
-            <div className="md:col-span-2 pt-4">
               <button
                 type="submit"
                 disabled={!formData.hora_inicio}
-                className={`w-full py-4 rounded-2xl font-extrabold uppercase tracking-widest transition-all shadow-xl ${
+                className={`w-full py-5 font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all ${
                   formData.hora_inicio 
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white transform active:scale-95 shadow-blue-600/20' 
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
+                    ? 'bg-[#2563EB] hover:bg-[#1d4ed8] text-white shadow-2xl shadow-[#2563EB]/20' 
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 }`}
               >
-                Confirmar Agendamiento
+                Confirmar Reserva Premium
               </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Lista de Citas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {citas.map((cita) => (
-          <div key={cita.id} className="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl hover:border-blue-500/30 transition-all group relative overflow-hidden shadow-xl">
-            {/* Decoración de fondo */}
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-600/10 rounded-full blur-2xl group-hover:bg-blue-600/20 transition-all"></div>
-            
-            <div className="flex justify-between items-start mb-6">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest bg-blue-400/10 px-2 py-1 rounded-md">
-                  {cita.servicio?.nombre || 'Servicio'}
-                </span>
-                <h3 className="text-xl font-bold text-white mt-2">
-                  {new Date(cita.fecha).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-                </h3>
-                <div className="flex items-center text-slate-400 text-sm">
-                  <span className="mr-2">⏰</span>
-                  <span className="font-bold text-white">{cita.hora_inicio.substring(0, 5)}</span>
-                </div>
-              </div>
-              <button
-                onClick={() => handleDelete(cita.id)}
-                className="p-2 bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-lg"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* Información del Vehículo */}
-              <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50">
-                <div className="flex items-center space-x-3">
-                  <div className="text-2xl">🏍️</div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Vehículo</p>
-                    <p className="text-sm font-bold text-white">{cita.vehiculo?.placa} - {cita.vehiculo?.marca} {cita.vehiculo?.modelo}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Información de Contacto */}
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center text-xs text-blue-400">👤</div>
-                  <div className="text-[10px]">
-                    <p className="text-slate-500 uppercase font-bold tracking-tighter">Cliente</p>
-                    <p className="text-slate-300">{cita.usuario?.nombre}</p>
-                  </div>
-                </div>
-                <div className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest ${
-                  cita.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-green-500/10 text-green-500 border border-green-500/20'
-                }`}>
-                  {cita.estado}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {citas.length === 0 && (
-          <div className="col-span-full py-20 text-center">
-            <div className="w-24 h-24 bg-slate-900 rounded-3xl border border-dashed border-slate-700 flex items-center justify-center mx-auto mb-6">
-              <span className="text-4xl grayscale">📅</span>
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-2">No tienes citas agendadas</h3>
-            <p className="text-slate-400">Empieza por agendar tu primer mantenimiento preventivo</p>
+            </form>
           </div>
         )}
+
+        {/* Sección Citas Pendientes */}
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <span className="w-2 h-2 bg-[#2563EB] rounded-full animate-pulse" />
+            <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">Citas Pendientes</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {citasPendientes.length > 0 ? (
+              citasPendientes.map(cita => (
+                <div key={cita.id} className="bg-[#111827] border border-white/5 p-8 rounded-[2.5rem] hover:border-[#2563EB]/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-6 opacity-10">
+                    <span className="text-4xl font-black italic tracking-tighter text-white">#{cita.id}</span>
+                  </div>
+                  <div className="flex justify-between items-start relative z-10">
+                    <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border bg-amber-500/10 text-amber-500 border-amber-500/20">
+                      {cita.estado}
+                    </span>
+                    <button
+                      onClick={() => handleDelete(cita.id)}
+                      className="p-2 bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-lg relative z-20"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="space-y-2 relative z-10">
+                    <h4 className="text-2xl font-black text-[#F8FAFC] uppercase italic tracking-tighter">{cita.servicio?.nombre}</h4>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-black text-[#2563EB] uppercase tracking-widest bg-[#2563EB]/5 px-2 py-0.5 rounded border border-[#2563EB]/10">{cita.vehiculo?.placa}</span>
+                      <span className="text-[#94A3B8] text-xs font-bold uppercase tracking-widest italic">{cita.vehiculo?.modelo}</span>
+                    </div>
+                  </div>
+                  <div className="pt-6 border-t border-white/5 flex justify-between items-center text-xs relative z-10">
+                    <div className="flex items-center text-[#94A3B8] font-bold italic uppercase tracking-widest">
+                      <span className="mr-2 opacity-50">📅</span>
+                      {new Date(cita.fecha).toLocaleDateString()}
+                    </div>
+                    <div className="flex items-center text-[#F8FAFC] font-black italic">
+                      <span className="mr-2 opacity-50 text-[#2563EB]">⏰</span>
+                      {cita.hora_inicio.substring(0, 5)}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-16 text-center bg-[#111827]/50 rounded-[2.5rem] border border-dashed border-white/5">
+                <p className="text-[#94A3B8] italic font-medium text-sm">No hay citas pendientes actualmente.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sección Historial de Servicios */}
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full" />
+            <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">Historial de Servicios</h2>
+          </div>
+
+          <div className="bg-[#111827] border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl bg-opacity-80">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/5 bg-[#020617]/50">
+                    {["ID", "SERVICIO", "VEHÍCULO", "FECHA", "HORA", "TRABAJADOR", "ESTADO"].map((head) => (
+                      <th key={head} className="px-6 py-5 text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em]">
+                        {head}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {historialServicios.length > 0 ? (
+                    historialServicios.map((cita) => (
+                      <tr key={cita.id} className="hover:bg-[#2563EB]/5 transition-all duration-300 group">
+                        <td className="px-6 py-5">
+                          <span className="text-sm font-black text-[#94A3B8] group-hover:text-[#2563EB] transition-colors">#{cita.id}</span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="text-sm font-black text-[#F8FAFC] uppercase italic tracking-tighter">{cita.servicio?.nombre}</span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-[10px] font-black text-[#2563EB] bg-[#2563EB]/10 px-2 py-0.5 rounded border border-[#2563EB]/20">{cita.vehiculo?.placa}</span>
+                            <span className="text-[10px] font-bold text-[#94A3B8] uppercase italic">{cita.vehiculo?.modelo}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center text-[#94A3B8] text-[11px] font-bold italic uppercase tracking-wider">
+                            <span className="mr-2 opacity-50">📅</span>
+                            {new Date(cita.fecha).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center text-[#F8FAFC] text-[11px] font-black italic">
+                            <span className="mr-2 opacity-50 text-[#2563EB]">⏰</span>
+                            {cita.hora_inicio.substring(0, 5)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 rounded-full bg-[#2563EB]/10 flex items-center justify-center text-[10px]">👤</div>
+                            <span className="text-sm font-bold text-[#F8FAFC]">{cita.empleado?.nombre || 'Por asignar'}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all duration-300 ${
+                            cita.estado === 'FINALIZADO' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white' :
+                            cita.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white' :
+                            'bg-red-500/10 text-red-500 border-red-500/20 group-hover:bg-red-500 group-hover:text-white'
+                          }`}>
+                            {cita.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="px-6 py-16 text-center text-[#94A3B8] italic font-medium text-sm">
+                        No hay servicios finalizados en el historial.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

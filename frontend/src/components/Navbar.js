@@ -5,8 +5,25 @@ class Navbar extends Component {
     super(props);
     this.state = {
       open: false,
+      isScrolled: false
     };
   }
+
+  componentDidMount() {
+    window.addEventListener('scroll', this.handleScroll);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this.handleScroll);
+  }
+
+  handleScroll = () => {
+    if (window.scrollY > 20) {
+      this.setState({ isScrolled: true });
+    } else {
+      this.setState({ isScrolled: false });
+    }
+  };
 
   toggleMenu = () => {
     this.setState((prevState) => ({ open: !prevState.open }));
@@ -15,16 +32,16 @@ class Navbar extends Component {
   renderMenuItems = (isMobile = false) => {
     const { setView, userRole } = this.props;
     const baseClass = isMobile 
-      ? "text-xl font-medium text-white py-3 border-b border-slate-800 text-left hover:text-blue-400 transition-colors" 
-      : "text-sm font-medium text-slate-400 hover:text-blue-500 transition-colors";
+      ? "text-xl font-medium text-[#F8FAFC] py-4 border-b border-white/5 text-left hover:text-[#2563EB] transition-colors" 
+      : "text-sm font-medium text-[#94A3B8] hover:text-[#F8FAFC] transition-colors relative group";
     
     const adminClass = isMobile
-      ? "text-xl font-bold text-blue-400 py-3 border-b border-slate-800 text-left flex items-center space-x-2 hover:text-white transition-colors"
-      : "text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors border border-blue-400/30 px-3 py-1 rounded-md bg-blue-400/10";
+      ? "text-xl font-bold text-[#2563EB] py-4 border-b border-white/5 text-left flex items-center space-x-2 hover:text-[#F8FAFC] transition-colors"
+      : "text-xs font-bold text-[#2563EB] hover:text-[#2563EB]/80 transition-colors border border-[#2563EB]/30 px-3 py-1 rounded-full bg-[#2563EB]/10 uppercase tracking-widest";
 
     const employeeClass = isMobile
-      ? "text-xl font-bold text-green-400 py-3 border-b border-slate-800 text-left flex items-center space-x-2 hover:text-white transition-colors"
-      : "text-sm font-medium text-green-400 hover:text-green-300 transition-colors border border-green-400/30 px-3 py-1 rounded-md bg-green-400/10";
+      ? "text-xl font-bold text-emerald-400 py-4 border-b border-white/5 text-left flex items-center space-x-2 hover:text-[#F8FAFC] transition-colors"
+      : "text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors border border-emerald-400/30 px-3 py-1 rounded-full bg-emerald-400/10 uppercase tracking-widest";
 
     const handleClick = (view) => {
       setView(view);
@@ -33,8 +50,14 @@ class Navbar extends Component {
 
     // Botones base comunes para todos
     const items = [
-      <button key="inicio" onClick={() => handleClick("dashboard")} className={baseClass}>Inicio</button>,
-      <button key="servicios" onClick={() => handleClick("servicios")} className={baseClass}>Servicios</button>
+      <button key="inicio" onClick={() => handleClick("dashboard")} className={baseClass}>
+        Inicio
+        {!isMobile && <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#2563EB] transition-all group-hover:w-full"></span>}
+      </button>,
+      <button key="servicios" onClick={() => handleClick("servicios")} className={baseClass}>
+        Servicios
+        {!isMobile && <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#2563EB] transition-all group-hover:w-full"></span>}
+      </button>
     ];
 
     // Lógica condicional estricta por Rol
@@ -42,7 +65,7 @@ class Navbar extends Component {
       case 'admin':
         items.push(
           <button key="admin" onClick={() => handleClick("users")} className={adminClass}>
-            {isMobile && <span className="mr-2">👥</span>}Administración
+            {isMobile && <span className="mr-2 text-sm italic opacity-50">#</span>}Admin
           </button>
         );
         break;
@@ -50,7 +73,7 @@ class Navbar extends Component {
       case 'empleado':
         items.push(
           <button key="empleado" onClick={() => handleClick("panel_empleado")} className={employeeClass}>
-            {isMobile && <span className="mr-2">🛠️</span>}Panel de Trabajo
+            {isMobile && <span className="mr-2 text-sm italic opacity-50">#</span>}Staff
           </button>
         );
         break;
@@ -61,10 +84,16 @@ class Navbar extends Component {
       default:
         // Clientes / Usuarios por defecto ven Vehículos y Citas
         items.push(
-          <button key="vehiculos" onClick={() => handleClick("vehiculos")} className={baseClass}>Vehículos</button>
+          <button key="vehiculos" onClick={() => handleClick("vehiculos")} className={baseClass}>
+            Vehículos
+            {!isMobile && <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#2563EB] transition-all group-hover:w-full"></span>}
+          </button>
         );
         items.push(
-          <button key="citas" onClick={() => handleClick("citas")} className={baseClass}>Citas</button>
+          <button key="citas" onClick={() => handleClick("citas")} className={baseClass}>
+            Citas
+            {!isMobile && <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#2563EB] transition-all group-hover:w-full"></span>}
+          </button>
         );
         break;
     }
@@ -74,57 +103,58 @@ class Navbar extends Component {
 
   render() {
     const { handleLogout } = this.props;
-    const { open } = this.state;
-    const { setView } = this.props; // Necesario para el logo y perfil
+    const { open, isScrolled } = this.state;
+    const { setView } = this.props;
     const userName = localStorage.getItem('userName') || 'Usuario';
     const initial = userName.charAt(0).toUpperCase();
 
     return (
-      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between relative">
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        isScrolled ? 'bg-[#020617]/80 backdrop-blur-xl border-b border-white/5 py-3' : 'bg-transparent py-6'
+      }`}>
+        <div className="container mx-auto px-6 flex items-center justify-between">
           
-          {/* Espaciador invisible para mantener flex-between en móvil */}
-          <div className="md:hidden w-10"></div>
-
           {/* Logo */}
           <div 
-            className="flex items-center space-x-2 cursor-pointer absolute left-1/2 transform -translate-x-1/2 md:relative md:transform-none md:left-auto" 
+            className="flex items-center space-x-3 cursor-pointer group" 
             onClick={() => setView("dashboard")}
           >
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/20">
-              <span className="text-xl font-bold text-white" translate="no">M</span>
+            <div className="w-10 h-10 bg-[#2563EB] rounded-xl flex items-center justify-center shadow-2xl shadow-[#2563EB]/40 group-hover:scale-110 transition-transform">
+              <span className="text-xl font-black text-white italic" translate="no">M</span>
             </div>
-            <span className="text-2xl font-bold tracking-tighter bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-              MotoExpert
+            <span className="text-2xl font-black tracking-tighter text-[#F8FAFC] italic uppercase">
+              Moto<span className="text-[#2563EB]">Expert</span>
             </span>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8 ml-auto">
+          <nav className="hidden md:flex items-center space-x-10">
             {this.renderMenuItems(false)}
 
-            {/* Ícono de Perfil */}
-            <button 
-              onClick={() => setView("cuenta")} 
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-800 border border-slate-700 hover:border-blue-500 transition-all shadow-lg group overflow-hidden"
-              title="Mi Cuenta"
-            >
-              <div className="text-blue-400 font-bold text-sm group-hover:text-blue-300 transition-colors">
-                {initial}
-              </div>
-            </button>
+            <div className="flex items-center space-x-6 border-l border-white/10 pl-10">
+              {/* Ícono de Perfil */}
+              <button 
+                onClick={() => setView("cuenta")} 
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-[#111827] border border-white/10 hover:border-[#2563EB] transition-all shadow-xl group overflow-hidden"
+                title="Mi Cuenta"
+              >
+                <div className="text-[#2563EB] font-black text-sm group-hover:scale-110 transition-transform italic">
+                  {initial}
+                </div>
+              </button>
 
-            <button
-              onClick={handleLogout}
-              className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-full transition-all shadow-[0_0_20px_rgba(220,38,38,0.3)] active:scale-95"
-            >
-              Cerrar Sesión
-            </button>
+              <button
+                onClick={handleLogout}
+                className="px-6 py-2 bg-white/5 hover:bg-white/10 text-[#F8FAFC] text-xs font-black uppercase tracking-widest rounded-full border border-white/10 transition-all active:scale-95"
+              >
+                Salir
+              </button>
+            </div>
           </nav>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-all border border-slate-700 shadow-lg"
+            className="md:hidden w-10 h-10 flex items-center justify-center bg-[#111827] text-[#F8FAFC] rounded-xl border border-white/10 shadow-xl"
             onClick={this.toggleMenu}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,36 +166,34 @@ class Navbar extends Component {
         {/* Mobile Menu Overlay & Sidebar */}
         {open && (
           <div className="fixed inset-0 z-[9999] md:hidden">
-            {/* Fondo con desenfoque (Backdrop blur) */}
             <div 
-              className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-[#020617]/80 backdrop-blur-md"
               onClick={this.toggleMenu}
             ></div>
             
-            {/* Sidebar */}
-            <div className="absolute top-0 right-0 w-[75%] h-full bg-slate-900 border-l border-slate-800 p-6 flex flex-col space-y-6 shadow-2xl transform transition-transform duration-300">
-              <div className="flex items-center space-x-3 pb-6 border-b border-slate-800">
-                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-600/20">
+            <div className="absolute top-0 right-0 w-[80%] h-full bg-[#020617] border-l border-white/5 p-8 flex flex-col shadow-2xl animate-in slide-in-from-right duration-500">
+              <div className="flex items-center space-x-4 pb-8 border-b border-white/5">
+                <div className="w-14 h-14 rounded-2xl bg-[#2563EB] flex items-center justify-center text-white font-black text-2xl shadow-2xl shadow-[#2563EB]/40 italic">
                   {initial}
                 </div>
                 <div>
-                  <p className="text-white font-bold">{userName}</p>
+                  <p className="text-[#F8FAFC] font-black italic uppercase tracking-tighter text-lg leading-none">{userName}</p>
                   <button 
                     onClick={() => { setView("cuenta"); this.toggleMenu(); }}
-                    className="text-xs text-blue-400 hover:text-blue-300"
+                    className="text-xs text-[#2563EB] font-bold uppercase tracking-widest mt-2"
                   >
-                    Ver Perfil
+                    Perfil →
                   </button>
                 </div>
               </div>
 
-              <div className="flex flex-col space-y-2 flex-1">
+              <div className="flex flex-col flex-1 pt-4">
                 {this.renderMenuItems(true)}
               </div>
 
               <button
                 onClick={() => { handleLogout(); this.toggleMenu(); }}
-                className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 transition-all active:scale-95 mt-auto"
+                className="w-full py-5 bg-[#111827] text-[#F8FAFC] font-black uppercase tracking-widest rounded-2xl border border-white/10 shadow-2xl active:scale-95 transition-all mt-auto"
               >
                 Cerrar Sesión
               </button>
@@ -178,3 +206,4 @@ class Navbar extends Component {
 }
 
 export default Navbar;
+

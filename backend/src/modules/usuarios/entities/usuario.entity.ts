@@ -13,6 +13,12 @@ export class Usuario {
   @Column({ unique: true, nullable: true })
   email: string;
 
+  @Column({
+    unique: true,
+    nullable: true,
+  })
+  documento: string;
+
   @Column({ nullable: true })
   password: string;
 

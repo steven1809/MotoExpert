@@ -23,7 +23,20 @@ class Vehiculos extends Component {
 
   componentDidMount() {
     this.fetchVehiculos();
+    this.checkPendingAction();
   }
+
+  checkPendingAction = () => {
+    const pendingAction = localStorage.getItem('pendingAction');
+    if (pendingAction === 'agendar_cita') {
+      this.setState({ 
+        showForm: true,
+        error: 'Debes registrar un vehículo antes de agendar una cita.'
+      });
+      // Limpiar el error después de unos segundos si se desea, o dejarlo como mensaje informativo
+      setTimeout(() => this.setState({ error: null }), 5000);
+    }
+  };
 
   fetchVehiculos = async () => {
     try {
@@ -113,6 +126,16 @@ class Vehiculos extends Component {
         });
         this.fetchVehiculos();
         alert('Vehículo registrado con éxito');
+
+        // Verificar si hay una acción pendiente de agendamiento
+        const pendingAction = localStorage.getItem('pendingAction');
+        if (pendingAction === 'agendar_cita') {
+          // No limpiamos pendingAction aquí, lo haremos en Citas.js
+          // Pero sí redirigimos
+          if (this.props.setView) {
+            this.props.setView('citas');
+          }
+        }
       } else {
         const errorData = await response.json();
         alert(`Error: ${errorData.message || 'No se pudo crear el vehículo'}`);
@@ -123,125 +146,118 @@ class Vehiculos extends Component {
   };
 
   render() {
-    const { vehiculos, loading, error, showForm, formData } = this.state;
+    const { vehiculos, loading, showForm, formData, error } = this.state;
+
+    if (loading) return <div className="flex items-center justify-center min-h-screen bg-[#020617]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#2563EB]"></div></div>;
 
     return (
-      <div className="max-w-6xl mx-auto p-6 animate-in fade-in duration-500">
-        <div className="flex justify-between items-center mb-10">
-          <div>
-            <h1 className="text-4xl font-bold text-white italic tracking-tight">Gestión de Vehículos</h1>
-            <p className="text-slate-400 mt-2">Administra tu flota personal de forma sencilla</p>
+      <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-[#020617]">
+        <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-white/5 mx-6 mt-6 bg-[#111827]">
+          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-purple-600/10 rounded-full blur-[100px]" />
+          <div className="relative z-10 text-center space-y-4">
+            <div className="inline-block px-4 py-1 rounded-full bg-purple-600/10 border border-purple-600/20 text-purple-500 text-[10px] font-black uppercase tracking-[0.3em]">Fleet Management</div>
+            <h1 className="text-4xl md:text-6xl font-black text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
+              Mi Flota <span className="text-purple-500">Personal</span>
+            </h1>
+            <p className="text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Administra tus unidades para agilizar tus servicios premium.</p>
           </div>
-          <button 
-            onClick={() => this.setState({ showForm: !showForm })}
-            className={`px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center space-x-2 ${showForm ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'}`}
-          >
-            <span>{showForm ? 'Cerrar Formulario' : 'Añadir Vehículo'}</span>
-            <span className="text-xl">{showForm ? '×' : '+'}</span>
-          </button>
-        </div>
+        </header>
 
-        {showForm && (
-          <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 p-8 rounded-3xl mb-12 shadow-2xl animate-in slide-in-from-top duration-300">
-            <h2 className="text-2xl font-bold text-white mb-8 flex items-center">
-              <span className="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center mr-3 text-sm italic">M</span>
-              Nuevo Vehículo
+        <div className="container mx-auto px-6 space-y-12">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter flex items-center">
+              <span className="w-2 h-2 bg-purple-600 rounded-full mr-4 animate-pulse" />
+              Unidades Registradas
             </h2>
-            <form onSubmit={this.handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Tipo de Vehículo</label>
-                <div className="flex space-x-4 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => this.setState(prev => ({ formData: { ...prev.formData, tipo: 'Auto' } }))}
-                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${formData.tipo === 'Auto' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-slate-300'}`}
-                  >
-                    🚗 Auto
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => this.setState(prev => ({ formData: { ...prev.formData, tipo: 'Moto' } }))}
-                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${formData.tipo === 'Moto' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-slate-300'}`}
-                  >
-                    🏍️ Moto
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Placa</label>
-                <input name="placa" value={formData.placa} onChange={this.handleInputChange} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-600 outline-none uppercase font-bold text-center tracking-widest" required placeholder="ABC-123" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Marca</label>
-                <input name="marca" value={formData.marca} onChange={this.handleInputChange} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-600 outline-none" required placeholder="Ej: Yamaha" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Modelo</label>
-                <input name="modelo" value={formData.modelo} onChange={this.handleInputChange} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-600 outline-none" required placeholder="Ej: MT-03" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Año</label>
-                <input name="anio" type="number" value={formData.anio} onChange={this.handleInputChange} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-600 outline-none" placeholder="Ej: 2023" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Color</label>
-                <input name="color" value={formData.color} onChange={this.handleInputChange} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-600 outline-none" placeholder="Ej: Azul Racing" />
-              </div>
-              <div className="md:col-span-2 lg:col-span-3 flex justify-end pt-4">
-                <button type="submit" className="px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xl shadow-blue-600/20 transform active:scale-95 transition-all">
-                  Guardar Vehículo
-                </button>
-              </div>
-            </form>
+            <button
+              onClick={() => this.setState({ showForm: !showForm })}
+              className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-purple-600/20 transition-all active:scale-95"
+            >
+              {showForm ? 'Cerrar Registro' : 'Añadir Unidad VIP'}
+            </button>
           </div>
-        )}
 
-        {loading ? (
-          <div className="text-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-slate-400 font-medium">Sincronizando garaje...</p>
-          </div>
-        ) : error ? (
-          <div className="p-6 bg-red-900/20 border border-red-500/20 rounded-2xl text-red-400 text-center font-bold">
-            {error}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {vehiculos.map((v) => (
-              <div key={v.id} className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl hover:border-blue-600/50 transition-all group shadow-lg">
-                <div className="flex justify-between items-start mb-6">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${v.tipo === 'Auto' ? 'bg-purple-600/10 text-purple-500' : 'bg-blue-600/10 text-blue-500'}`}>
-                    {v.tipo === 'Auto' ? '🚗' : '🏍️'}
+          {error && (
+            <div className="p-6 bg-red-950/20 border border-red-500/20 rounded-[2rem] text-red-400 text-sm font-bold italic uppercase tracking-widest text-center animate-in zoom-in duration-300">
+              ⚠️ {error}
+            </div>
+          )}
+
+          {/* Formulario Estilo Porsche */}
+          {showForm && (
+            <div className="bg-[#111827] border border-white/5 p-10 rounded-[2.5rem] shadow-2xl animate-in slide-in-from-top duration-500">
+              <form onSubmit={this.handleSubmit} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Placa Identificadora</label>
+                    <input name="placa" value={formData.placa} onChange={this.handleInputChange} placeholder="ABC-123" className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all uppercase" required />
                   </div>
-                  <div className="flex flex-col items-end space-y-2">
-                    <div className="bg-slate-950 px-3 py-1 rounded-lg border border-slate-800 text-xs font-bold text-blue-400 tracking-widest">
-                      {v.placa}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Tipo de Vehículo</label>
+                    <select name="tipo" value={formData.tipo} onChange={this.handleInputChange} className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all">
+                      <option value="Moto">Motosport</option>
+                      <option value="Auto">Premium Car</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Marca / Fabricante</label>
+                    <input name="marca" value={formData.marca} onChange={this.handleInputChange} placeholder="Ej: Ducati" className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Modelo / Serie</label>
+                    <input name="modelo" value={formData.modelo} onChange={this.handleInputChange} placeholder="Ej: Panigale V4" className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Año de Fabricación</label>
+                    <input name="anio" type="number" value={formData.anio} onChange={this.handleInputChange} placeholder="2024" className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Color / Acabado</label>
+                    <input name="color" value={formData.color} onChange={this.handleInputChange} placeholder="Ej: Rosso Corsa" className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
+                  </div>
+                </div>
+                <button type="submit" className="w-full py-5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-purple-600/20 transition-all active:scale-95">Sincronizar Unidad con el Perfil</button>
+              </form>
+            </div>
+          )}
+
+          {/* Listado de Vehículos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {vehiculos.length > 0 ? (
+              vehiculos.map(v => (
+                <div key={v.id} className="bg-[#111827] border border-white/5 p-8 rounded-[2.5rem] hover:border-purple-500/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <span className="text-8xl font-black italic tracking-tighter text-white">{v.tipo === 'Moto' ? '🏍️' : '🏎️'}</span>
+                  </div>
+                  <div className="flex justify-between items-start relative z-10">
+                    <span className="px-4 py-1.5 rounded-full bg-purple-600/10 text-purple-500 border border-purple-600/20 text-[10px] font-black uppercase tracking-widest">{v.tipo}</span>
+                    <button onClick={() => this.handleDelete(v.id)} className="p-2 bg-red-950/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-lg">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                  </div>
+                  <div className="space-y-1 relative z-10">
+                    <h3 className="text-3xl font-black text-[#F8FAFC] italic uppercase tracking-tighter leading-none">{v.marca}</h3>
+                    <p className="text-xl font-bold text-[#94A3B8] uppercase italic tracking-tighter opacity-50">{v.modelo}</p>
+                  </div>
+                  <div className="pt-6 border-t border-white/5 grid grid-cols-2 gap-4 relative z-10">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest opacity-50">Placa</p>
+                      <p className="text-[#F8FAFC] font-black italic">{v.placa}</p>
                     </div>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${v.estado === 'ACTIVO' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'}`}>
-                      {v.estado || 'ACTIVO'}
-                    </span>
+                    <div className="space-y-1 text-right">
+                      <p className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest opacity-50">Serie</p>
+                      <p className="text-[#F8FAFC] font-black italic">{v.anio}</p>
+                    </div>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-1">{v.marca} {v.modelo}</h3>
-                <p className="text-slate-500 text-sm mb-4">Modelo {v.anio || 'N/A'}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 text-xs font-bold text-slate-400 bg-slate-950/50 p-2 rounded-lg inline-flex">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: v.color === 'Blanco' ? '#fff' : v.color === 'Negro' ? '#000' : v.color || '#475569' }}></span>
-                    <span>{v.color || 'Color N/A'}</span>
-                  </div>
-                  <button 
-                    onClick={() => this.handleDelete(v.id)}
-                    className="p-2 bg-red-900/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-32 text-center bg-[#111827] rounded-[3rem] border border-dashed border-white/5">
+                <p className="text-[#94A3B8] italic font-medium">No se detectan unidades registradas en su perfil.</p>
               </div>
-            ))}
+            )}
           </div>
-        )}
+        </div>
       </div>
     );
   }

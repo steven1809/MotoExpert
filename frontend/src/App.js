@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Login from "./components/Login/Login"; 
+import Register from "./components/Register/Register";
 import Servicios from "./pages/Servicios";
 import UsersList from "./pages/UsersList";
 import Vehiculos from "./pages/Vehiculos";
@@ -8,6 +9,7 @@ import MiCuenta from "./pages/MiCuenta";
 import PanelEmpleado from "./pages/PanelEmpleado";
 import Navbar from "./components/Navbar";
 import LandingPage from './pages/LandingPage';
+import DashboardAdmin from './pages/DashboardAdmin';
 import InactivityHandler from "./components/InactivityHandler";
 import MapView from "./components/MapView";
 import { useEffect } from "react";
@@ -60,27 +62,48 @@ function App() {
 
   // 1. SI NO ESTÁ LOGUEADO Y LA VISTA ES "LANDING"
   if (!isLoggedIn && view === "landing") {
-    return <LandingPage onEnterLogin={() => setView("login")} />;
+    return <LandingPage onEnterLogin={() => setView("login")} onEnterRegister={() => setView("register")} />;
   }
 
   // 2. SI NO ESTÁ LOGUEADO Y LA VISTA ES "LOGIN"
   if (!isLoggedIn && view === "login") {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-4 text-[#F8FAFC]">
         <button 
           onClick={() => setView("landing")}
-          className="mb-4 text-gray-400 hover:text-white transition text-sm"
+          className="mb-4 text-[#94A3B8] hover:text-[#F8FAFC] transition text-sm"
         >
           ← Volver al inicio
         </button>
-        <Login onLoginSuccess={handleLoginSuccess} />
+        
+        <Login 
+        initialMode="login"
+        onLoginSuccess={handleLoginSuccess} />
+      </div>
+    );
+  }
+
+  if (!isLoggedIn && view === "register") {
+    return (
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-4 text-[#F8FAFC]">
+        <button 
+          onClick={() => setView("landing")}
+          className="mb-4 text-[#94A3B8] hover:text-[#F8FAFC] transition text-sm"
+        >
+          ← Volver al inicio
+        </button>
+
+        <Login 
+          initialMode="register"
+          onLoginSuccess={handleLoginSuccess}
+        />
       </div>
     );
   }
 
   // 3. SI YA ESTÁ LOGUEADO (Dashboard y Navegación)
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white">
+    <div className="min-h-screen bg-[#020617] text-[#F8FAFC]">
       {/* Sistema de Seguridad por Inactividad */}
       <InactivityHandler onLogout={handleLogout} />
 
@@ -93,30 +116,15 @@ function App() {
 
       {/* Contenido Principal con margen superior para el Navbar fixed */}
       <main className="pt-16 p-8">
-        {view === "dashboard" && (
-          <div className="mt-10">
-            <div className="text-center mb-10">
-              <h1 className="text-4xl font-bold text-blue-400 italic mb-4">Panel MotoExpert</h1>
-              <p className="text-gray-400 text-lg">Bienvenido al sistema de gestión de servicios.</p>
-            </div>
-            
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center space-x-2">
-                <span>📍</span>
-                <span>Nuestra Ubicación</span>
-              </h2>
-              <MapView />
-            </div>
-          </div>
-        )}
+        {view === "dashboard" && <DashboardAdmin setView={setView} />}
         
-        {view === "servicios" && <Servicios />}
+        {view === "servicios" && <Servicios setView={setView} />}
         
         {view === "users" && <UsersList />}
         
-        {view === "vehiculos" && <Vehiculos />}
+        {view === "vehiculos" && <Vehiculos setView={setView} />}
         
-        {view === "citas" && <Citas />}
+        {view === "citas" && <Citas setView={setView} />}
         
         {view === "cuenta" && <MiCuenta />}
         
