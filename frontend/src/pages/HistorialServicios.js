@@ -29,8 +29,8 @@ class HistorialServicios extends Component {
 
       if (response.ok) {
         const data = await response.json();
-        // Filtramos solo las citas finalizadas o en proceso para el historial
-        const historial = data.filter(cita => cita.estado === 'FINALIZADO' || cita.estado === 'EN PROCESO');
+        // Filtramos solo las citas finalizadas para el historial
+        const historial = data.filter(cita => cita.estado === 'FINALIZADO');
         this.setState({ historial, loading: false });
       } else {
         this.setState({ error: 'No se pudo cargar el historial', loading: false });

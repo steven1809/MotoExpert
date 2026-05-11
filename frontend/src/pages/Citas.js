@@ -193,7 +193,7 @@ const Citas = ({ setView }) => {
     }
   };
 
-  const citasPendientes = citas.filter(cita => cita.estado === "PENDIENTE");
+  const citasPendientes = citas.filter(cita => cita.estado === "PENDIENTE" || cita.estado === "EN PROCESO");
   const historialServicios = citas.filter(cita => cita.estado === "FINALIZADO" || cita.estado === "CANCELADO");
 
   if (loading) {
@@ -377,7 +377,11 @@ const Citas = ({ setView }) => {
                     <span className="text-4xl font-black italic tracking-tighter text-white">#{cita.id}</span>
                   </div>
                   <div className="flex justify-between items-start relative z-10">
-                    <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border bg-amber-500/10 text-amber-500 border-amber-500/20">
+                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                      cita.estado === 'PENDIENTE' 
+                        ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
+                        : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                    }`}>
                       {cita.estado}
                     </span>
                     <button

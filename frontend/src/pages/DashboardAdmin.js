@@ -5,7 +5,7 @@ import EmployeeDashboard from './EmployeeDashboard';
 
 class DashboardAdmin extends Component {
   render() {
-    const { setView } = this.props;
+    const { setView, showToast } = this.props;
     const userRole = localStorage.getItem('role')?.toLowerCase();
 
     // Router de Roles
@@ -14,10 +14,10 @@ class DashboardAdmin extends Component {
     } else if (userRole === 'trabajador' || userRole === 'empleado') {
       return <EmployeeDashboard setView={setView} />;
     } else if (['user', 'cliente', 'usuario'].includes(userRole)) {
-      return <UserDashboard setView={setView} />;
+      return <UserDashboard setView={setView} showToast={showToast} />;
     } else {
       // Por defecto o si no hay rol, mostrar UserDashboard o una vista de error
-      return <UserDashboard setView={setView} />;
+      return <UserDashboard setView={setView} showToast={showToast} />;
     }
   }
 }
