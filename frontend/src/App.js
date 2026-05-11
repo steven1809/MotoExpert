@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Login from "./components/Login/Login"; 
 import Register from "./components/Register/Register";
 import Servicios from "./pages/Servicios";
@@ -12,32 +12,28 @@ import LandingPage from './pages/LandingPage';
 import DashboardAdmin from './pages/DashboardAdmin';
 import InactivityHandler from "./components/InactivityHandler";
 import MapView from "./components/MapView";
-import { useEffect } from "react";
+import Toast from "./components/Toast";
+import UserDashboard from './pages/UserDashboard';
+import EmployeeDashboard from './pages/EmployeeDashboard';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
-  const [userRole, setUserRole] = useState("admin"); // 'admin', 'user', 'empleado'
-  const [view, setView] = useState("landing"); // Iniciamos en la landing
+  const [userRole, setUserRole] = useState("admin");
+  const [view, setView] = useState("landing");
+  const [toasts, setToasts] = useState([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifPanel, setShowNotifPanel] = useState(false);
 
-  // Validación de Rutas y Redirección según Rol
   useEffect(() => {
     if (!isLoggedIn) return;
-
     if (userRole === "empleado") {
-      // Los empleados no pueden agendar citas ni ver vehículos generales
-      if (view === "vehiculos" || view === "citas") {
-        setView("panel_empleado");
-      }
+      if (view === "vehiculos" || view === "citas") setView("panel_empleado");
     } else if (userRole === "admin") {
-      // Los administradores no pueden agendar citas ni ver vehículos de cliente
-      if (view === "vehiculos" || view === "citas") {
-        setView("dashboard");
-      }
-    } else if (userRole === "user") {
-      // Los usuarios normales no pueden ver el panel de trabajo ni administración
-      if (view === "panel_empleado" || view === "users") {
-        setView("dashboard");
-      }
+      if (view === "vehiculos" || view === "citas") setView("dashboard");
+    } else {
+      // Cubre "user", "cliente", "usuario" y cualquier otro rol no admin/empleado
+      if (view === "panel_empleado" || view === "users") setView("dashboard");
     }
   }, [view, userRole, isLoggedIn]);
 
@@ -47,38 +43,49 @@ function App() {
     setView("dashboard");
   };
 
-  // Función para cerrar sesión correctamente
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserRole(null);
-    setView("landing"); // Redirige a la landing al salir
+    setView("landing");
+    setToasts([]);
+    setUnreadNotifications(0);
+    setNotifications([]);
+    setShowNotifPanel(false);
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("userName");
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userId");
-    // Opcional: localStorage.clear(); para borrar todo
   };
 
-  // 1. SI NO ESTÁ LOGUEADO Y LA VISTA ES "LANDING"
+  const showToast = (message, type = 'info') => {
+    const newToast = { id: Date.now(), message, type };
+    setToasts(prev => [...prev, newToast]);
+    setNotifications(prev => [{ ...newToast, read: false }, ...prev].slice(0, 20));
+    setUnreadNotifications(prev => prev + 1);
+  };
+
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  const resetUnreadNotifications = () => {
+    setUnreadNotifications(0);
+    setShowNotifPanel(prev => !prev);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
   if (!isLoggedIn && view === "landing") {
     return <LandingPage onEnterLogin={() => setView("login")} onEnterRegister={() => setView("register")} />;
   }
 
-  // 2. SI NO ESTÁ LOGUEADO Y LA VISTA ES "LOGIN"
   if (!isLoggedIn && view === "login") {
     return (
       <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-4 text-[#F8FAFC]">
-        <button 
-          onClick={() => setView("landing")}
-          className="mb-4 text-[#94A3B8] hover:text-[#F8FAFC] transition text-sm"
-        >
+        <button onClick={() => setView("landing")} className="mb-4 text-[#94A3B8] hover:text-[#F8FAFC] transition text-sm">
           ← Volver al inicio
         </button>
-        
-        <Login 
-        initialMode="login"
-        onLoginSuccess={handleLoginSuccess} />
+        <Login initialMode="login" onLoginSuccess={handleLoginSuccess} />
       </div>
     );
   }
@@ -86,51 +93,48 @@ function App() {
   if (!isLoggedIn && view === "register") {
     return (
       <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-4 text-[#F8FAFC]">
-        <button 
-          onClick={() => setView("landing")}
-          className="mb-4 text-[#94A3B8] hover:text-[#F8FAFC] transition text-sm"
-        >
+        <button onClick={() => setView("landing")} className="mb-4 text-[#94A3B8] hover:text-[#F8FAFC] transition text-sm">
           ← Volver al inicio
         </button>
-
-        <Login 
-          initialMode="register"
-          onLoginSuccess={handleLoginSuccess}
-        />
+        <Login initialMode="register" onLoginSuccess={handleLoginSuccess} />
       </div>
     );
   }
 
-  // 3. SI YA ESTÁ LOGUEADO (Dashboard y Navegación)
   return (
     <div className="min-h-screen bg-[#020617] text-[#F8FAFC]">
-      {/* Sistema de Seguridad por Inactividad */}
       <InactivityHandler onLogout={handleLogout} />
 
-      {/* Navbar Superior Global - Ahora recibe handleLogout */}
       <Navbar 
         setView={setView} 
         handleLogout={handleLogout} 
-        userRole={userRole} 
+        userRole={userRole}
+        unreadNotifications={unreadNotifications}
+        resetUnreadNotifications={resetUnreadNotifications}
+        notifications={notifications}
+        showNotifPanel={showNotifPanel}
       />
 
-      {/* Contenido Principal con margen superior para el Navbar fixed */}
+      {toasts.map(toast => (
+        <Toast 
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => removeToast(toast.id)}
+        />
+      ))}
+
       <main className="pt-16 p-8">
-        {view === "dashboard" && <DashboardAdmin setView={setView} />}
-        
+        {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} />}
+        {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard />}
+        {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
         {view === "servicios" && <Servicios setView={setView} />}
-        
         {view === "users" && <UsersList />}
-        
         {view === "vehiculos" && <Vehiculos setView={setView} />}
-        
-        {view === "citas" && <Citas setView={setView} />}
-        
+        {view === "citas" && <Citas setView={setView} showToast={showToast} />}
         {view === "cuenta" && <MiCuenta />}
-        
         {view === "panel_empleado" && <PanelEmpleado />}
 
-        {/* Acceso rápido para admin si no está en la vista de usuarios */}
         {userRole === 'admin' && view !== 'users' && (
           <div className="fixed bottom-8 right-8">
             <button 

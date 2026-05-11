@@ -34,6 +34,30 @@ class EmployeeDashboard extends Component {
     }
   };
 
+  updateEstado = async (citaId, nuevoEstado) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/citas/${citaId}/estado`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ estado: nuevoEstado }),
+      });
+
+      if (response.ok) {
+        alert('Estado actualizado exitosamente');
+        this.fetchPendingServices();
+      } else {
+        alert('Error al actualizar estado');
+      }
+    } catch (err) {
+      console.error('Error updating state:', err);
+      alert('Error de conexión');
+    }
+  };
+
   render() {
     const { pendingServices, loading } = this.state;
 
@@ -100,9 +124,24 @@ class EmployeeDashboard extends Component {
                     </div>
                   </div>
 
-                  <button className="w-full py-5 bg-[#020617] hover:bg-emerald-600 text-[#F8FAFC] text-[10px] font-black uppercase tracking-[0.3em] rounded-2xl transition-all active:scale-95 border border-white/5 hover:border-emerald-400 shadow-xl relative z-10">
-                    Actualizar Estado
-                  </button>
+                  <div className="space-y-3 relative z-10">
+                    {service.estado === 'PENDIENTE' && (
+                      <button 
+                        onClick={() => this.updateEstado(service.id, 'EN PROCESO')}
+                        className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 shadow-lg"
+                      >
+                        Iniciar Servicio
+                      </button>
+                    )}
+                    {service.estado === 'EN PROCESO' && (
+                      <button 
+                        onClick={() => this.updateEstado(service.id, 'FINALIZADO')}
+                        className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 shadow-lg"
+                      >
+                        Finalizar Servicio
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))
             ) : (

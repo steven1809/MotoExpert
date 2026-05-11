@@ -17,11 +17,23 @@ class UserDashboard extends Component {
       loading: true,
       servicios: [],
       misVehiculos: [],
+      citas: [],
+      previousCitas: [],
     };
+    this.pollingInterval = null;
   }
 
   componentDidMount() {
     this.fetchInitialFormData();
+    this.fetchCitas();
+    // Poll every 12 seconds
+    this.pollingInterval = setInterval(this.fetchCitas, 12000);
+  }
+
+  componentWillUnmount() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+    }
   }
 
   handleDirectionsClick = () => {
@@ -52,6 +64,44 @@ class UserDashboard extends Component {
       console.error('Error fetching form data:', err);
       this.setState({ loading: false });
     }
+  };
+
+  fetchCitas = async () => {
+    const token = localStorage.getItem('token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    try {
+      const response = await fetch(`${API_BASE_URL}/citas`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        this.checkForStatusChanges(data);
+        this.setState(prev => ({ 
+          citas: data, 
+          previousCitas: prev.citas 
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching citas:', err);
+    }
+  };
+
+  checkForStatusChanges = (newCitas) => {
+    const { previousCitas } = this.state;
+    const { showToast } = this.props;
+
+    if (!showToast) return;
+
+    newCitas.forEach(newCita => {
+      const oldCita = previousCitas.find(c => c.id === newCita.id);
+      
+      if (oldCita && oldCita.estado !== newCita.estado) {
+        // Status changed!
+        if (oldCita.estado === 'PENDIENTE' && newCita.estado === 'EN PROCESO') {
+          showToast(`Tu servicio ${newCita.servicio?.nombre} ha comenzado. ¡Estamos trabajando en tu vehículo!`, 'info');
+        } else if (oldCita.estado === 'EN PROCESO' && newCita.estado === 'FINALIZADO') {
+          showToast(`Tu servicio ${newCita.servicio?.nombre} ha sido completado. ¡Tu vehículo está listo!`, 'success');
+        }
+      }
+    });
   };
 
   handleSaberMas = (servicio) => {
@@ -103,7 +153,7 @@ class UserDashboard extends Component {
               Panel de Control Premium
             </div>
             <h1 className="text-5xl md:text-7xl font-black text-[#F8FAFC] sans tracking-tighter italic uppercase leading-none">
-              Bienvenido, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2563EB] to-blue-400">MotoExpert</span>
+              Bienvenido a <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2563EB] to-blue-400">MotoExpert</span>
             </h1>
             <p className="text-[#94A3B8] text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
               Gestiona tu flota personal y agenda servicios de detailing con el estándar más alto de la industria.
@@ -114,9 +164,9 @@ class UserDashboard extends Component {
         {/* BENEFICIOS / TIPS REDISEÑADOS */}
         <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
-            { title: 'Agenda Inteligente', desc: 'Reserva servicios en segundos.', icon: '⚡' },
-            { title: 'Gestión de Flota', desc: 'Control total de tus vehículos.', icon: '🏍️' },
-            { title: 'Soporte VIP', desc: 'Atención prioritaria 24/7.', icon: '💎' }
+            { title: 'Agenda Inteligente', desc: 'Reserva servicios en segundos.', icon: '' },
+            { title: 'Gestión de Flota', desc: 'Control total de tus vehículos.', icon: '' },
+            { title: 'Soporte VIP', desc: 'Atención prioritaria 24/7.', icon: '' }
           ].map((item, i) => (
             <div key={i} className="p-8 rounded-3xl bg-[#111827] border border-white/5 hover:border-[#2563EB]/30 transition-all duration-500 shadow-2xl group">
               <div className="text-3xl mb-4 group-hover:scale-110 transition-transform duration-500">{item.icon}</div>
