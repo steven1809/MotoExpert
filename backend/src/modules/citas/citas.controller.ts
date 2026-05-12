@@ -51,9 +51,10 @@ export class CitasController {
   @Get('disponibilidad')
   checkAvailability(
     @Query('fecha') fecha: string,
-    @Query('servicioId') servicioId: string
+    @Query('servicioId') servicioId: string,
+    @Query('empleadoId') empleadoId?: string
   ) {
-    return this.service.getAvailableSlots(fecha, +servicioId);
+    return this.service.getAvailableSlots(fecha, +servicioId, empleadoId ? +empleadoId : undefined);
   }
 
   @Get(':id')

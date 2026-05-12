@@ -77,12 +77,14 @@ const Citas = ({ setView }) => {
     }
   };
 
-  const fetchDisponibilidad = async (fecha, servicioId) => {
+  const fetchDisponibilidad = async (fecha, servicioId, empleadoId = null) => {
     if (!fecha || !servicioId) return;
     setLoadingSlots(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/citas/disponibilidad?fecha=${fecha}&servicioId=${servicioId}`, {
+      let url = `${API_BASE_URL}/citas/disponibilidad?fecha=${fecha}&servicioId=${servicioId}`;
+      if (empleadoId) url += `&empleadoId=${empleadoId}`;
+      const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -99,14 +101,21 @@ const Citas = ({ setView }) => {
   const handleDateChange = (e) => {
     const fecha = e.target.value;
     setFormData({ ...formData, fecha, hora_inicio: '' });
-    fetchDisponibilidad(fecha, formData.servicioId);
+    setDisponibilidad([]);
   };
 
   const handleServicioChange = (e) => {
     const servicioId = e.target.value;
     setFormData({ ...formData, servicioId, hora_inicio: '' });
-    if (formData.fecha) {
-      fetchDisponibilidad(formData.fecha, servicioId);
+    setDisponibilidad([]);
+  };
+
+  const handleEmpleadoSelect = (empleadoId) => {
+    const newEmpleadoId = empleadoId.toString();
+    setFormData(prev => ({ ...prev, empleadoId: newEmpleadoId, hora_inicio: '' }));
+    setDisponibilidad([]);
+    if (formData.fecha && formData.servicioId) {
+      fetchDisponibilidad(formData.fecha, formData.servicioId, empleadoId);
     }
   };
 
@@ -198,34 +207,30 @@ const Citas = ({ setView }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-950">
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-slate-950">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-[#020617]">
-      <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-white/5 mx-6 mt-6 bg-[#111827]">
+    <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-white dark:bg-[#020617]">
+      <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-slate-200 dark:border-white/5 mx-6 mt-6 bg-slate-100 dark:bg-[#111827]">
         <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-[#2563EB]/10 rounded-full blur-[100px]" />
         <div className="relative z-10 text-center space-y-4">
           <div className="inline-block px-4 py-1 rounded-full bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] text-[10px] font-black uppercase tracking-[0.3em]">Reserva Online</div>
-          <h1 className="text-4xl md:text-6xl font-black text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
+          <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
             Agenda tu <span className="text-[#2563EB]">Cita</span>
           </h1>
-          <p className="text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Selecciona el tratamiento premium para tu vehículo.</p>
+          <p className="text-slate-500 dark:text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Selecciona el tratamiento premium para tu vehículo.</p>
         </div>
       </header>
 
       <div className="container mx-auto px-6 space-y-12">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter flex items-center">
-            <span className="w-2 h-2 bg-[#2563EB] rounded-full mr-4 animate-pulse" />
-            Historial de Citas
-          </h2>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="px-8 py-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#2563EB]/20 transition-all active:scale-95"
+            className="px-8 py-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-slate-900 dark:text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#2563EB]/20 transition-all active:scale-95"
           >
             {showForm ? 'Cerrar Formulario' : 'Nueva Cita Premium'}
           </button>
@@ -233,29 +238,66 @@ const Citas = ({ setView }) => {
 
         {/* Formulario Estilo Tesla */}
         {showForm && (
-          <div className="bg-[#111827] border border-white/5 p-10 rounded-[2.5rem] shadow-2xl animate-in slide-in-from-top duration-500">
+          <div className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-10 rounded-[2.5rem] shadow-2xl animate-in slide-in-from-top duration-500">
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Servicio Detailing</label>
+                  <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
+                    Servicio Detailing
+                  </label>
                   <select
                     name="servicioId"
                     value={formData.servicioId}
                     onChange={handleServicioChange}
-                    className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
+                    className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
                     required
                   >
                     <option value="">Seleccione el tratamiento...</option>
                     {servicios.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                   </select>
+                  
+                  {formData.servicioId && (() => {
+                    const servicioSeleccionado = servicios.find(s => s.id.toString() === formData.servicioId.toString());
+                    return servicioSeleccionado ? (
+                      <div className="mt-3 p-4 bg-[#2563EB]/5 border border-[#2563EB]/20 rounded-2xl animate-in fade-in duration-300 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#2563EB] text-sm">✦</span>
+                          <span className="text-[10px] font-black text-[#2563EB] uppercase tracking-widest">
+                            ¿Qué incluye?
+                          </span>
+                        </div>
+
+                        {/* Descripción del servicio */}
+                        {servicioSeleccionado.descripcion && (
+                          <p className="text-slate-500 dark:text-[#94A3B8] text-xs font-medium italic leading-relaxed">
+                            {servicioSeleccionado.descripcion}
+                          </p>
+                        )}
+
+                        {/* Precio y duración si los tienes en el objeto */}
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {servicioSeleccionado.precio && (
+                            <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                              💰 ${servicioSeleccionado.precio.toLocaleString()}
+                            </span>
+                          )}
+                          {servicioSeleccionado.duracion && (
+                            <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                              ⏱ {servicioSeleccionado.duracion} min
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Unidad a Tratar</label>
+                  <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Unidad a Tratar</label>
                   <select
                     name="vehiculoId"
                     value={formData.vehiculoId}
                     onChange={(e) => setFormData({...formData, vehiculoId: e.target.value})}
-                    className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
+                    className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
                     required
                   >
                     <option value="">Placa...</option>
@@ -263,22 +305,22 @@ const Citas = ({ setView }) => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Fecha de Ingreso</label>
+                  <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Fecha de Ingreso</label>
                   <input
                     type="date"
                     name="fecha"
                     min={new Date().toISOString().split('T')[0]}
                     value={formData.fecha}
                     onChange={handleDateChange}
-                    className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
+                    className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1 text-[#2563EB]">Slots Disponibles</label>
-                  <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-4 bg-[#020617] rounded-2xl border border-white/5">
+                  <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1 text-[#2563EB]">Slots Disponibles</label>
+                  <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-4 bg-white dark:bg-[#020617] rounded-2xl border border-slate-200 dark:border-white/5">
                     {loadingSlots ? (
-                      <div className="w-full text-center py-2 text-[#94A3B8] text-xs italic">Consultando disponibilidad...</div>
+                      <div className="w-full text-center py-2 text-slate-500 dark:text-[#94A3B8] text-xs italic">Consultando disponibilidad...</div>
                     ) : disponibilidad.length > 0 ? (
                       disponibilidad.filter(slot => slot.disponible).map(slot => (
                         <button
@@ -287,15 +329,19 @@ const Citas = ({ setView }) => {
                           onClick={() => setFormData({ ...formData, hora_inicio: slot.hora })}
                           className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
                             formData.hora_inicio === slot.hora 
-                              ? 'bg-[#2563EB] border-[#2563EB] text-white' 
-                              : 'bg-[#111827] border-white/5 text-[#94A3B8] hover:border-white/20'
+                              ? 'bg-[#2563EB] border-[#2563EB] text-slate-900 dark:text-white' 
+                              : 'bg-slate-100 dark:bg-[#111827] border-slate-200 dark:border-white/5 text-slate-500 dark:text-[#94A3B8] hover:border-white/20'
                           }`}
                         >
                           {slot.hora.substring(0, 5)}
                         </button>
                       ))
                     ) : (
-                      <div className="w-full text-center py-2 text-[#94A3B8] text-xs italic">Seleccione fecha y servicio</div>
+                      <div className="w-full text-center py-2 text-slate-500 dark:text-[#94A3B8] text-xs italic">
+                        {!formData.empleadoId 
+                          ? 'Selecciona un especialista para ver horarios' 
+                          : 'No hay horarios disponibles para este especialista'}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -303,48 +349,57 @@ const Citas = ({ setView }) => {
 
               {/* Selector de Especialista Premium */}
               <div className="space-y-4">
-                <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Selecciona tu Especialista</label>
+                <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Selecciona tu Especialista</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {empleados.map(empleado => (
-                    <div
-                      key={empleado.id}
-                      onClick={() => setFormData({ ...formData, empleadoId: empleado.id.toString() })}
-                      className={`cursor-pointer p-6 rounded-2xl border-2 transition-all duration-300 group ${
-                        formData.empleadoId === empleado.id.toString()
-                          ? 'bg-[#2563EB]/10 border-[#2563EB] shadow-2xl shadow-[#2563EB]/20'
-                          : 'bg-[#111827] border-white/10 hover:border-[#2563EB]/40 hover:shadow-xl'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className="w-12 h-12 rounded-full bg-[#2563EB]/20 flex items-center justify-center text-2xl border border-[#2563EB]/30 group-hover:scale-110 transition-transform">
-                          👤
+                  {empleados.map(empleado => {
+                    const isSelected = formData.empleadoId === empleado.id.toString();
+                    const isLoading = isSelected && loadingSlots && formData.fecha && formData.servicioId;
+                    
+                    return (
+                      <div
+                        key={empleado.id}
+                        onClick={() => handleEmpleadoSelect(empleado.id)}
+                        className={`cursor-pointer p-6 rounded-2xl border-2 transition-all duration-300 group ${
+                          isSelected
+                            ? 'bg-[#2563EB]/10 border-[#2563EB] shadow-2xl shadow-[#2563EB]/20'
+                            : 'bg-slate-100 dark:bg-[#111827] border-white/10 hover:border-[#2563EB]/40 hover:shadow-xl'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4 mb-3">
+                          <div className="w-12 h-12 rounded-full bg-[#2563EB]/20 flex items-center justify-center text-2xl border border-[#2563EB]/30 group-hover:scale-110 transition-transform">
+                            {isLoading ? (
+                              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#2563EB]"></div>
+                            ) : (
+                              '👤'
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="text-lg font-black text-slate-900 dark:text-white">{empleado.nombre || 'Especialista'}</h4>
+                            <span className="text-xs font-black text-[#2563EB] uppercase tracking-widest">
+                              {empleado.estado === 'activo' ? 'Disponible' : 'No disponible'}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-lg font-black text-white">{empleado.nombre || 'Especialista'}</h4>
-                          <span className="text-xs font-black text-[#2563EB] uppercase tracking-widest">
-                            {empleado.estado === 'activo' ? 'Disponible' : 'No disponible'}
-                          </span>
-                        </div>
+                        {empleado.cargo && (
+                          <p className="text-sm text-slate-500 dark:text-[#94A3B8] font-medium italic">
+                            {empleado.cargo}
+                          </p>
+                        )}
+                        {empleado.especialidad && (
+                          <div className="mt-2">
+                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                              {empleado.especialidad}
+                            </span>
+                          </div>
+                        )}
+                        {isSelected && !isLoading && (
+                          <div className="mt-3 flex items-center gap-2 text-[#2563EB] text-xs font-black uppercase tracking-widest">
+                            <span className="animate-pulse">✓</span> Seleccionado
+                          </div>
+                        )}
                       </div>
-                      {empleado.cargo && (
-                        <p className="text-sm text-[#94A3B8] font-medium italic">
-                          {empleado.cargo}
-                        </p>
-                      )}
-                      {empleado.especialidad && (
-                        <div className="mt-2">
-                          <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                            {empleado.especialidad}
-                          </span>
-                        </div>
-                      )}
-                      {formData.empleadoId === empleado.id.toString() && (
-                        <div className="mt-3 flex items-center gap-2 text-[#2563EB] text-xs font-black uppercase tracking-widest">
-                          <span className="animate-pulse">✓</span> Seleccionado
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
               <button
@@ -352,7 +407,7 @@ const Citas = ({ setView }) => {
                 disabled={!formData.hora_inicio}
                 className={`w-full py-5 font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all ${
                   formData.hora_inicio 
-                    ? 'bg-[#2563EB] hover:bg-[#1d4ed8] text-white shadow-2xl shadow-[#2563EB]/20' 
+                    ? 'bg-[#2563EB] hover:bg-[#1d4ed8] text-slate-900 dark:text-white shadow-2xl shadow-[#2563EB]/20' 
                     : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 }`}
               >
@@ -366,15 +421,15 @@ const Citas = ({ setView }) => {
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
             <span className="w-2 h-2 bg-[#2563EB] rounded-full animate-pulse" />
-            <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">Citas Pendientes</h2>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">Citas Pendientes</h2>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {citasPendientes.length > 0 ? (
               citasPendientes.map(cita => (
-                <div key={cita.id} className="bg-[#111827] border border-white/5 p-8 rounded-[2.5rem] hover:border-[#2563EB]/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
+                <div key={cita.id} className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-8 rounded-[2.5rem] hover:border-[#2563EB]/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-6 opacity-10">
-                    <span className="text-4xl font-black italic tracking-tighter text-white">#{cita.id}</span>
+                    <span className="text-4xl font-black italic tracking-tighter text-slate-900 dark:text-white">#{cita.id}</span>
                   </div>
                   <div className="flex justify-between items-start relative z-10">
                     <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
@@ -386,7 +441,7 @@ const Citas = ({ setView }) => {
                     </span>
                     <button
                       onClick={() => handleDelete(cita.id)}
-                      className="p-2 bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-lg relative z-20"
+                      className="p-2 bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-slate-900 dark:text-white transition-all opacity-0 group-hover:opacity-100 shadow-lg relative z-20"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -394,18 +449,18 @@ const Citas = ({ setView }) => {
                     </button>
                   </div>
                   <div className="space-y-2 relative z-10">
-                    <h4 className="text-2xl font-black text-[#F8FAFC] uppercase italic tracking-tighter">{cita.servicio?.nombre}</h4>
+                    <h4 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] uppercase italic tracking-tighter">{cita.servicio?.nombre}</h4>
                     <div className="flex items-center space-x-2">
                       <span className="text-xs font-black text-[#2563EB] uppercase tracking-widest bg-[#2563EB]/5 px-2 py-0.5 rounded border border-[#2563EB]/10">{cita.vehiculo?.placa}</span>
-                      <span className="text-[#94A3B8] text-xs font-bold uppercase tracking-widest italic">{cita.vehiculo?.modelo}</span>
+                      <span className="text-slate-500 dark:text-[#94A3B8] text-xs font-bold uppercase tracking-widest italic">{cita.vehiculo?.modelo}</span>
                     </div>
                   </div>
-                  <div className="pt-6 border-t border-white/5 flex justify-between items-center text-xs relative z-10">
-                    <div className="flex items-center text-[#94A3B8] font-bold italic uppercase tracking-widest">
+                  <div className="pt-6 border-t border-slate-200 dark:border-white/5 flex justify-between items-center text-xs relative z-10">
+                    <div className="flex items-center text-slate-500 dark:text-[#94A3B8] font-bold italic uppercase tracking-widest">
                       <span className="mr-2 opacity-50">📅</span>
                       {new Date(cita.fecha).toLocaleDateString()}
                     </div>
-                    <div className="flex items-center text-[#F8FAFC] font-black italic">
+                    <div className="flex items-center text-slate-900 dark:text-[#F8FAFC] font-black italic">
                       <span className="mr-2 opacity-50 text-[#2563EB]">⏰</span>
                       {cita.hora_inicio.substring(0, 5)}
                     </div>
@@ -413,8 +468,8 @@ const Citas = ({ setView }) => {
                 </div>
               ))
             ) : (
-              <div className="col-span-full py-16 text-center bg-[#111827]/50 rounded-[2.5rem] border border-dashed border-white/5">
-                <p className="text-[#94A3B8] italic font-medium text-sm">No hay citas pendientes actualmente.</p>
+              <div className="col-span-full py-16 text-center bg-slate-100 dark:bg-[#111827]/50 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-white/5">
+                <p className="text-slate-500 dark:text-[#94A3B8] italic font-medium text-sm">No hay citas pendientes actualmente.</p>
               </div>
             )}
           </div>
@@ -424,16 +479,16 @@ const Citas = ({ setView }) => {
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
             <span className="w-2 h-2 bg-emerald-500 rounded-full" />
-            <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">Historial de Servicios</h2>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">Historial de Servicios</h2>
           </div>
 
-          <div className="bg-[#111827] border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl bg-opacity-80">
+          <div className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl bg-opacity-80">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-white/5 bg-[#020617]/50">
+                  <tr className="border-b border-slate-200 dark:border-white/5 bg-white dark:bg-[#020617]/50">
                     {["ID", "SERVICIO", "VEHÍCULO", "FECHA", "HORA", "TRABAJADOR", "ESTADO"].map((head) => (
-                      <th key={head} className="px-6 py-5 text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em]">
+                      <th key={head} className="px-6 py-5 text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-[0.2em]">
                         {head}
                       </th>
                     ))}
@@ -444,25 +499,25 @@ const Citas = ({ setView }) => {
                     historialServicios.map((cita) => (
                       <tr key={cita.id} className="hover:bg-[#2563EB]/5 transition-all duration-300 group">
                         <td className="px-6 py-5">
-                          <span className="text-sm font-black text-[#94A3B8] group-hover:text-[#2563EB] transition-colors">#{cita.id}</span>
+                          <span className="text-sm font-black text-slate-500 dark:text-[#94A3B8] group-hover:text-[#2563EB] transition-colors">#{cita.id}</span>
                         </td>
                         <td className="px-6 py-5">
-                          <span className="text-sm font-black text-[#F8FAFC] uppercase italic tracking-tighter">{cita.servicio?.nombre}</span>
+                          <span className="text-sm font-black text-slate-900 dark:text-[#F8FAFC] uppercase italic tracking-tighter">{cita.servicio?.nombre}</span>
                         </td>
                         <td className="px-6 py-5">
                           <div className="flex items-center space-x-2">
                             <span className="text-[10px] font-black text-[#2563EB] bg-[#2563EB]/10 px-2 py-0.5 rounded border border-[#2563EB]/20">{cita.vehiculo?.placa}</span>
-                            <span className="text-[10px] font-bold text-[#94A3B8] uppercase italic">{cita.vehiculo?.modelo}</span>
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-[#94A3B8] uppercase italic">{cita.vehiculo?.modelo}</span>
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <div className="flex items-center text-[#94A3B8] text-[11px] font-bold italic uppercase tracking-wider">
+                          <div className="flex items-center text-slate-500 dark:text-[#94A3B8] text-[11px] font-bold italic uppercase tracking-wider">
                             <span className="mr-2 opacity-50">📅</span>
                             {new Date(cita.fecha).toLocaleDateString()}
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <div className="flex items-center text-[#F8FAFC] text-[11px] font-black italic">
+                          <div className="flex items-center text-slate-900 dark:text-[#F8FAFC] text-[11px] font-black italic">
                             <span className="mr-2 opacity-50 text-[#2563EB]">⏰</span>
                             {cita.hora_inicio.substring(0, 5)}
                           </div>
@@ -470,14 +525,14 @@ const Citas = ({ setView }) => {
                         <td className="px-6 py-5">
                           <div className="flex items-center space-x-2">
                             <div className="w-6 h-6 rounded-full bg-[#2563EB]/10 flex items-center justify-center text-[10px]">👤</div>
-                            <span className="text-sm font-bold text-[#F8FAFC]">{cita.empleado?.nombre || 'Por asignar'}</span>
+                            <span className="text-sm font-bold text-slate-900 dark:text-[#F8FAFC]">{cita.empleado?.nombre || 'Por asignar'}</span>
                           </div>
                         </td>
                         <td className="px-6 py-5">
                           <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all duration-300 ${
-                            cita.estado === 'FINALIZADO' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white' :
-                            cita.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white' :
-                            'bg-red-500/10 text-red-500 border-red-500/20 group-hover:bg-red-500 group-hover:text-white'
+                            cita.estado === 'FINALIZADO' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-slate-900 dark:text-white' :
+                            cita.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 group-hover:bg-amber-500 group-hover:text-slate-900 dark:text-white' :
+                            'bg-red-500/10 text-red-500 border-red-500/20 group-hover:bg-red-500 group-hover:text-slate-900 dark:text-white'
                           }`}>
                             {cita.estado}
                           </span>
@@ -486,7 +541,7 @@ const Citas = ({ setView }) => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="7" className="px-6 py-16 text-center text-[#94A3B8] italic font-medium text-sm">
+                      <td colSpan="7" className="px-6 py-16 text-center text-slate-500 dark:text-[#94A3B8] italic font-medium text-sm">
                         No hay servicios finalizados en el historial.
                       </td>
                     </tr>

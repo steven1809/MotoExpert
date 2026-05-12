@@ -120,13 +120,13 @@ class AdminDashboard extends Component {
   };
 
   renderStatCard = (title, value, icon, colorClass) => (
-    <div className="bg-[#111827] border border-white/5 p-8 rounded-[2rem] shadow-2xl hover:border-[#2563EB]/30 transition-all duration-500 group relative overflow-hidden">
+    <div className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-8 rounded-[2rem] shadow-2xl hover:border-[#2563EB]/30 transition-all duration-500 group relative overflow-hidden">
       <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-[#2563EB]/5 rounded-full blur-2xl group-hover:bg-[#2563EB]/10 transition-colors" />
       <div className="flex justify-between items-start mb-6 relative z-10">
-        <div className="w-12 h-12 bg-[#020617] rounded-xl flex items-center justify-center text-xl shadow-inner border border-white/5">{icon}</div>
-        <span className="text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em] opacity-50 italic">Live Data</span>
+        <div className="w-12 h-12 bg-white dark:bg-[#020617] rounded-xl flex items-center justify-center text-xl shadow-inner border border-slate-200 dark:border-white/5">{icon}</div>
+        <span className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-[0.2em] opacity-50 italic">Live Data</span>
       </div>
-      <p className="text-[#94A3B8] text-xs font-black mb-2 uppercase tracking-widest italic">{title}</p>
+      <p className="text-slate-500 dark:text-[#94A3B8] text-xs font-black mb-2 uppercase tracking-widest italic">{title}</p>
       <h4 className={`text-4xl font-black italic tracking-tighter ${colorClass} relative z-10`}>
         {typeof value === 'number' && title.includes('Ingresos') ? `$${value.toLocaleString()}` : value}
       </h4>
@@ -137,81 +137,81 @@ class AdminDashboard extends Component {
     const { stats, incomeData, serviceStatusData, loading, vehiculoForm, citaForm, servicios, misVehiculos, disponibilidad } = this.state;
     const COLORS = ['#2563EB', '#3b82f6', '#60a5fa'];
 
-    if (loading) return <div className="flex items-center justify-center min-h-screen bg-[#020617]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#2563EB]"></div></div>;
+    if (loading) return <div className="flex items-center justify-center min-h-screen bg-white dark:bg-[#020617]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#2563EB]"></div></div>;
 
     return (
-      <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-[#020617]">
-        <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-white/5 mx-6 mt-6 bg-[#111827]">
+      <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-white dark:bg-[#020617]">
+        <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-slate-200 dark:border-white/5 mx-6 mt-6 bg-slate-100 dark:bg-[#111827]">
           <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-[#2563EB]/10 rounded-full blur-[100px]" />
           <div className="relative z-10 text-center space-y-4">
             <div className="inline-block px-4 py-1 rounded-full bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] text-[10px] font-black uppercase tracking-[0.3em]">System Overview</div>
-            <h1 className="text-4xl md:text-6xl font-black text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
               Control <span className="text-[#2563EB]">Administrativo</span>
             </h1>
-            <p className="text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Monitoreo de métricas críticas y gestión global del ecosistema MotoExpert.</p>
+            <p className="text-slate-500 dark:text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Monitoreo de métricas críticas y gestión global del ecosistema MotoExpert.</p>
           </div>
         </header>
 
         <div className="container mx-auto px-6 space-y-12">
           {/* GESTIÓN UNIFICADA PREMIUM */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div id="registro-vehiculo" className="bg-[#111827] border border-white/5 p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-              <h2 className="text-2xl font-black text-[#F8FAFC] mb-8 flex items-center italic uppercase tracking-tighter">
-                <span className="bg-[#2563EB] w-10 h-10 rounded-xl flex items-center justify-center mr-4 text-sm font-black text-white shadow-lg shadow-[#2563EB]/20">V</span>
+            <div id="registro-vehiculo" className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+              <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] mb-8 flex items-center italic uppercase tracking-tighter">
+                <span className="bg-[#2563EB] w-10 h-10 rounded-xl flex items-center justify-center mr-4 text-sm font-black text-slate-900 dark:text-white shadow-lg shadow-[#2563EB]/20">V</span>
                 Registrar Vehículo
               </h2>
               <form className="space-y-6 relative z-10">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Placa Identificadora</label>
-                    <input name="placa" value={vehiculoForm.placa} onChange={this.handleVehiculoInputChange} placeholder="ABC-123" className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] outline-none focus:border-[#2563EB]/50 transition-all font-bold uppercase tracking-widest placeholder:opacity-20" />
+                    <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Placa Identificadora</label>
+                    <input name="placa" value={vehiculoForm.placa} onChange={this.handleVehiculoInputChange} placeholder="ABC-123" className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] outline-none focus:border-[#2563EB]/50 transition-all font-bold uppercase tracking-widest placeholder:opacity-20" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Tipo de Unidad</label>
-                    <select name="tipo" value={vehiculoForm.tipo} onChange={this.handleVehiculoInputChange} className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] outline-none focus:border-[#2563EB]/50 transition-all font-bold">
+                    <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Tipo de Unidad</label>
+                    <select name="tipo" value={vehiculoForm.tipo} onChange={this.handleVehiculoInputChange} className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] outline-none focus:border-[#2563EB]/50 transition-all font-bold">
                       <option value="Moto">Motosport</option>
                       <option value="Auto">Premium Car</option>
                     </select>
                   </div>
                 </div>
-                <button type="submit" className="w-full py-5 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#2563EB]/20 transition-all active:scale-95">Sincronizar Unidad</button>
+                <button type="submit" className="w-full py-5 bg-[#2563EB] hover:bg-[#1d4ed8] text-slate-900 dark:text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#2563EB]/20 transition-all active:scale-95">Sincronizar Unidad</button>
               </form>
             </div>
 
-            <div id="agendar-cita" className="bg-[#111827] border border-white/5 p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-              <h2 className="text-2xl font-black text-[#F8FAFC] mb-8 flex items-center italic uppercase tracking-tighter">
-                <span className="bg-purple-600 w-10 h-10 rounded-xl flex items-center justify-center mr-4 text-sm font-black text-white shadow-lg shadow-purple-600/20">C</span>
+            <div id="agendar-cita" className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+              <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] mb-8 flex items-center italic uppercase tracking-tighter">
+                <span className="bg-purple-600 w-10 h-10 rounded-xl flex items-center justify-center mr-4 text-sm font-black text-slate-900 dark:text-white shadow-lg shadow-purple-600/20">C</span>
                 Programar Servicio
               </h2>
               <div className="space-y-6 relative z-10">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Nivel de Detailing</label>
-                  <select name="servicioId" value={citaForm.servicioId} onChange={this.handleCitaInputChange} className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold">
+                  <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Nivel de Detailing</label>
+                  <select name="servicioId" value={citaForm.servicioId} onChange={this.handleCitaInputChange} className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold">
                     <option value="">Seleccione el tratamiento...</option>
                     {servicios.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                   </select>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Unidad Asignada</label>
-                    <select name="vehiculoId" value={citaForm.vehiculoId} onChange={this.handleCitaInputChange} className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold">
+                    <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Unidad Asignada</label>
+                    <select name="vehiculoId" value={citaForm.vehiculoId} onChange={this.handleCitaInputChange} className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold">
                       <option value="">Placa...</option>
                       {misVehiculos.map(v => <option key={v.id} value={v.id}>{v.placa}</option>)}
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Fecha de Ingreso</label>
-                    <input type="date" name="fecha" value={citaForm.fecha} onChange={this.handleCitaInputChange} className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold" />
+                    <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Fecha de Ingreso</label>
+                    <input type="date" name="fecha" value={citaForm.fecha} onChange={this.handleCitaInputChange} className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold" />
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-2 bg-[#020617] rounded-2xl border border-white/5">
+                <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-2 bg-white dark:bg-[#020617] rounded-2xl border border-slate-200 dark:border-white/5">
                   {disponibilidad.filter(slot => slot.disponible).map(slot => (
-                    <button key={slot.hora} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${citaForm.hora_inicio === slot.hora ? 'bg-[#2563EB] border-[#2563EB] text-white' : 'bg-[#111827] border-white/5 text-[#94A3B8] hover:border-white/20'}`}>
+                    <button key={slot.hora} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${citaForm.hora_inicio === slot.hora ? 'bg-[#2563EB] border-[#2563EB] text-slate-900 dark:text-white' : 'bg-slate-100 dark:bg-[#111827] border-slate-200 dark:border-white/5 text-slate-500 dark:text-[#94A3B8] hover:border-white/20'}`}>
                       {slot.hora.substring(0, 5)}
                     </button>
                   ))}
                 </div>
-                <button className={`w-full py-5 font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all ${citaForm.hora_inicio ? 'bg-gradient-to-r from-[#2563EB] to-purple-600 text-white shadow-2xl shadow-[#2563EB]/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}>Confirmar Agenda VIP</button>
+                <button className={`w-full py-5 font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all ${citaForm.hora_inicio ? 'bg-gradient-to-r from-[#2563EB] to-purple-600 text-slate-900 dark:text-white shadow-2xl shadow-[#2563EB]/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}>Confirmar Agenda VIP</button>
               </div>
             </div>
           </div>
@@ -220,7 +220,7 @@ class AdminDashboard extends Component {
           <div className="space-y-8 pt-10">
             <div className="flex items-center space-x-4">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-              <h3 className="text-xl font-black text-[#F8FAFC] italic uppercase tracking-[0.3em]">Métricas de Rendimiento</h3>
+              <h3 className="text-xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-[0.3em]">Métricas de Rendimiento</h3>
               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             </div>
             
@@ -232,11 +232,11 @@ class AdminDashboard extends Component {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-6">
-              <div className="bg-[#111827] border border-white/5 p-10 rounded-[2.5rem] shadow-2xl h-[450px] relative overflow-hidden group">
+              <div className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-10 rounded-[2.5rem] shadow-2xl h-[450px] relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-8 opacity-5">
                   <div className="text-8xl font-black italic uppercase tracking-tighter">Growth</div>
                 </div>
-                <h2 className="text-xl font-black text-[#F8FAFC] mb-10 italic uppercase tracking-tighter relative z-10 flex items-center">
+                <h2 className="text-xl font-black text-slate-900 dark:text-[#F8FAFC] mb-10 italic uppercase tracking-tighter relative z-10 flex items-center">
                   <span className="w-2 h-2 bg-[#2563EB] rounded-full mr-3 animate-pulse" />
                   Ingresos Mensuales
                 </h2>
@@ -256,8 +256,8 @@ class AdminDashboard extends Component {
                 </div>
               </div>
 
-              <div className="bg-[#111827] border border-white/5 p-10 rounded-[2.5rem] shadow-2xl h-[450px] relative overflow-hidden">
-                <h2 className="text-xl font-black text-[#F8FAFC] mb-10 italic uppercase tracking-tighter flex items-center">
+              <div className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-10 rounded-[2.5rem] shadow-2xl h-[450px] relative overflow-hidden">
+                <h2 className="text-xl font-black text-slate-900 dark:text-[#F8FAFC] mb-10 italic uppercase tracking-tighter flex items-center">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3 animate-pulse" />
                   Status de Operaciones
                 </h2>
@@ -277,7 +277,7 @@ class AdminDashboard extends Component {
                   {serviceStatusData.map((item, i) => (
                     <div key={i} className="flex items-center space-x-2">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest">{item.name}</span>
+                      <span className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest">{item.name}</span>
                     </div>
                   ))}
                 </div>

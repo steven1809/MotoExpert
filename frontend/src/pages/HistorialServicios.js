@@ -44,12 +44,12 @@ class HistorialServicios extends Component {
     const { historial, loading, error } = this.state;
 
     return (
-      <div className="max-w-6xl mx-auto p-4 md:p-8 animate-in fade-in duration-500">
+      <div className="max-w-6xl mx-auto p-4 md:p-8 animate-in fade-in duration-500 bg-white dark:bg-[#020617]">
         <div className="mb-10">
-          <h1 className="text-4xl font-bold text-white bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent italic tracking-tighter">
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-white bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent italic tracking-tighter">
             Historial de Servicios
           </h1>
-          <p className="text-slate-400 mt-2">Consulta los mantenimientos realizados a tus vehículos</p>
+          <p className="text-slate-500 dark:text-slate-400 mt-2">Consulta los mantenimientos realizados a tus vehículos</p>
         </div>
 
         {loading ? (
@@ -62,11 +62,11 @@ class HistorialServicios extends Component {
             {error}
           </div>
         ) : historial.length > 0 ? (
-          <div className="bg-slate-900/50 border border-slate-800 rounded-[32px] overflow-hidden shadow-2xl backdrop-blur-md">
+          <div className="bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-[32px] overflow-hidden shadow-2xl backdrop-blur-md">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-950/50 border-b border-slate-800">
+                  <tr className="bg-slate-200 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800">
                     <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Fecha</th>
                     <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Vehículo</th>
                     <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Servicio</th>
@@ -78,24 +78,24 @@ class HistorialServicios extends Component {
                   {historial.map((item) => (
                     <tr key={item.id} className="hover:bg-blue-600/5 transition-colors group">
                       <td className="px-6 py-4">
-                        <div className="text-sm font-bold text-white">
+                        <div className="text-sm font-bold text-slate-900 dark:text-white">
                           {new Date(item.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </div>
                         <div className="text-[10px] text-slate-500 font-medium">{item.hora_inicio.substring(0, 5)}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-sm">
+                          <div className="w-8 h-8 bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center text-sm">
                             {item.vehiculo?.tipo === 'Auto' ? '🚗' : '🏍️'}
                           </div>
                           <div>
-                            <div className="text-sm font-bold text-white uppercase tracking-wider">{item.vehiculo?.placa}</div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">{item.vehiculo?.placa}</div>
                             <div className="text-[10px] text-slate-500">{item.vehiculo?.marca} {item.vehiculo?.modelo}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-medium text-slate-300 group-hover:text-blue-400 transition-colors">
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300 group-hover:text-blue-400 transition-colors">
                           {item.servicio?.nombre}
                         </span>
                       </td>
@@ -109,7 +109,7 @@ class HistorialServicios extends Component {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-black text-white italic">
+                        <div className="text-sm font-black text-slate-900 dark:text-white italic">
                           ${item.servicio?.precio?.toLocaleString() || '0'}
                         </div>
                       </td>
@@ -120,9 +120,9 @@ class HistorialServicios extends Component {
             </div>
           </div>
         ) : (
-          <div className="py-24 text-center bg-slate-900/30 rounded-[40px] border border-dashed border-slate-800">
+          <div className="py-24 text-center bg-slate-100 dark:bg-slate-900/30 rounded-[40px] border border-dashed border-slate-200 dark:border-slate-800">
             <div className="text-5xl mb-6 grayscale">📋</div>
-            <h3 className="text-2xl font-bold text-white mb-2 italic">Sin actividad reciente</h3>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2 italic">Sin actividad reciente</h3>
             <p className="text-slate-500 max-w-xs mx-auto">
               Aún no tienes servicios registrados en tu historial. ¡Agenda tu primera cita hoy!
             </p>

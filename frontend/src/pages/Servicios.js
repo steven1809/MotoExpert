@@ -135,43 +135,43 @@ export default function Servicios({ setView }) {
   );
 
   return (
-    <section id="servicios-page" className="py-24 bg-slate-950 relative rounded-3xl border border-slate-800">
+    <section id="servicios-page" className="py-24 bg-white dark:bg-slate-950 relative rounded-3xl border border-slate-200 dark:border-slate-800">
       <div className="container mx-auto px-4">
         {/* Modal Admin */}
         {showModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-2xl w-full p-8">
-              <h3 className="text-2xl font-bold text-white mb-6 italic">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl max-w-2xl w-full p-8">
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-6 italic">
                 {editServicio ? "Editar Servicio" : "Añadir Nuevo Servicio"}
               </h3>
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Nombre del Servicio</label>
-                  <input name="nombre" value={formData.nombre} onChange={handleInputChange} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-600" required />
+                  <input name="nombre" value={formData.nombre} onChange={handleInputChange} className="w-full p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-600" required />
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Descripción</label>
-                  <textarea name="descripcion" value={formData.descripcion} onChange={handleInputChange} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-600 h-24 resize-none" required />
+                  <textarea name="descripcion" value={formData.descripcion} onChange={handleInputChange} className="w-full p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-600 h-24 resize-none" required />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Precio ($)</label>
-                  <input name="precio" type="number" value={formData.precio} onChange={handleInputChange} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-600" required />
+                  <input name="precio" type="number" value={formData.precio} onChange={handleInputChange} className="w-full p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-600" required />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Duración (min)</label>
-                  <input name="duracion" type="number" value={formData.duracion} onChange={handleInputChange} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-600" required />
+                  <input name="duracion" type="number" value={formData.duracion} onChange={handleInputChange} className="w-full p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-600" required />
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Incluye (separado por comas)</label>
-                  <input name="incluye" value={formData.incluye} onChange={handleInputChange} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-600" />
+                  <input name="incluye" value={formData.incluye} onChange={handleInputChange} className="w-full p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-600" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Beneficios (separado por comas)</label>
-                  <input name="beneficios" value={formData.beneficios} onChange={handleInputChange} className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-600" />
+                  <input name="beneficios" value={formData.beneficios} onChange={handleInputChange} className="w-full p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-600" />
                 </div>
                 <div className="md:col-span-2 flex justify-end space-x-4 mt-4">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-6 py-2 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-slate-700 transition-all">Cancelar</button>
-                  <button type="submit" className="px-8 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-95 transition-all">Guardar</button>
+                  <button type="button" onClick={() => setShowModal(false)} className="px-6 py-2 bg-slate-800 text-slate-500 dark:text-slate-400 font-bold rounded-xl hover:bg-slate-700 transition-all">Cancelar</button>
+                  <button type="submit" className="px-8 py-2 bg-blue-600 text-slate-900 dark:text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-95 transition-all">Guardar</button>
                 </div>
               </form>
             </div>
@@ -180,8 +180,8 @@ export default function Servicios({ setView }) {
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
           <div className="text-center md:text-left">
-            <h2 className="text-4xl font-bold mb-4 text-white italic tracking-tighter uppercase">Servicios <span className="text-blue-500">Especializados</span></h2>
-            <p className="text-slate-400 max-w-xl font-medium">
+            <h2 className="text-4xl font-bold mb-4 text-slate-900 dark:text-white italic tracking-tighter uppercase">Servicios <span className="text-blue-500">Especializados</span></h2>
+            <p className="text-slate-500 dark:text-slate-400 max-w-xl font-medium">
               Soluciones profesionales diseñadas para mantener tus vehículos en óptimas condiciones.
             </p>
           </div>
@@ -189,7 +189,7 @@ export default function Servicios({ setView }) {
           {userRole === "admin" && (
             <button 
               onClick={() => handleOpenModal()}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 transform hover:scale-105 transition-all flex items-center space-x-2"
+              className="bg-blue-600 hover:bg-blue-700 text-slate-900 dark:text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 transform hover:scale-105 transition-all flex items-center space-x-2"
             >
               <span>+ Añadir Nuevo Servicio</span>
             </button>
@@ -208,7 +208,7 @@ export default function Servicios({ setView }) {
             placeholder="Buscar servicio (ej: Motor)..."
             value={filtroBusqueda}
             onChange={(e) => setFiltroBusqueda(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all shadow-2xl font-medium"
+            className="w-full pl-12 pr-4 py-4 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all shadow-2xl font-medium"
           />
         </div>
 
@@ -233,7 +233,7 @@ export default function Servicios({ setView }) {
         </div>
 
         {loading && (
-          <div className="text-center text-slate-400 mt-10 flex flex-col items-center">
+          <div className="text-center text-slate-500 dark:text-slate-400 mt-10 flex flex-col items-center">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-4"></div>
             Cargando servicios...
           </div>
@@ -246,10 +246,10 @@ export default function Servicios({ setView }) {
         )}
 
         {!loading && !error && servicios.length > 0 && serviciosFiltrados.length === 0 && (
-          <div className="text-center py-16 bg-slate-900/50 rounded-3xl border border-dashed border-slate-800 mt-10">
+          <div className="text-center py-16 bg-slate-100 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 mt-10">
             <div className="text-4xl mb-4">🔍</div>
-            <h3 className="text-xl font-bold text-white mb-2">No se encontraron servicios</h3>
-            <p className="text-slate-400">No se encontraron servicios que coincidan con tu búsqueda: <span className="text-blue-500 font-bold">"{filtroBusqueda}"</span></p>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No se encontraron servicios</h3>
+            <p className="text-slate-500 dark:text-slate-400">No se encontraron servicios que coincidan con tu búsqueda: <span className="text-blue-500 font-bold">"{filtroBusqueda}"</span></p>
             <button 
               onClick={() => setFiltroBusqueda("")}
               className="mt-6 text-sm text-blue-400 hover:text-blue-300 font-medium underline"
@@ -260,7 +260,7 @@ export default function Servicios({ setView }) {
         )}
 
         {!loading && !error && servicios.length === 0 && (
-          <div className="text-center text-slate-400 mt-10">
+          <div className="text-center text-slate-500 dark:text-slate-400 mt-10">
             No hay servicios registrados todavía.
           </div>
         )}
