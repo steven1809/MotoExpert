@@ -18,10 +18,6 @@ L.Marker.prototype.options.icon = DefaultIcon;
 const MapView = () => {
   const position = [4.4447, -75.2015]; // Coordenadas SENA Ibagué
 
-  const handleDirectionsClick = () => {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${position[0]},${position[1]}`, '_blank');
-  };
-
   return (
     <div className="w-full max-w-4xl mx-auto mt-12 mb-12 animate-in fade-in duration-700">
       <div className="bg-slate-800/50 backdrop-blur-sm p-1 rounded-3xl border border-slate-700 shadow-2xl overflow-hidden">
