@@ -15,6 +15,7 @@ import MapView from "./components/MapView";
 import Toast from "./components/Toast";
 import UserDashboard from './pages/UserDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
+import OnboardingModal from './components/OnboardingModal';
 import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -37,6 +39,19 @@ function App() {
       if (view === "panel_empleado" || view === "users") setView("dashboard");
     }
   }, [view, userRole, isLoggedIn]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      const userId = localStorage.getItem('userId');
+      if (userId) {
+        const onboardingKey = `motoexpert_onboarding_done_${userId}`;
+        const onboardingDone = localStorage.getItem(onboardingKey);
+        if (!onboardingDone && (userRole === 'user' || userRole === 'cliente' || userRole === 'usuario')) {
+          setShowOnboarding(true);
+        }
+      }
+    }
+  }, [isLoggedIn, userRole]);
 
   const handleLoginSuccess = (role) => {
     setIsLoggedIn(true);
@@ -78,6 +93,11 @@ function App() {
 
   return (
     <ThemeProvider>
+      <OnboardingModal 
+        isOpen={showOnboarding} 
+        onClose={() => setShowOnboarding(false)} 
+        userId={localStorage.getItem('userId')}
+      />
       {!isLoggedIn && view === "landing" && (
         <LandingPage onEnterLogin={() => setView("login")} onEnterRegister={() => setView("register")} />
       )}
