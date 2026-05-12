@@ -229,59 +229,83 @@ class LandingPage extends Component {
         </section>
 
         {/* SERVICES */}
-        <section id="servicios" className="py-28 relative z-10">
-          <div className="container mx-auto px-6">
+<section id="servicios" className="py-28 relative z-10">
+  <div className="container mx-auto px-6">
 
-            <div className="text-center mb-20">
+    <div className="text-center mb-20">
 
-              <span className="text-blue-400 text-sm">
-                Nuestros servicios
-              </span>
+      <span className="text-blue-400 text-sm">
+        Nuestros servicios
+      </span>
 
-              <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6 tracking-tight">
-                Cuidado completo para tu vehículo
-              </h2>
+      <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6 tracking-tight">
+        Cuidado completo para tu vehículo
+      </h2>
 
-              <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-                Servicios profesionales diseñados para mantener tu vehículo
-                limpio, protegido y en excelentes condiciones.
-              </p>
-            </div>
+      <p className="text-slate-400 max-w-2xl mx-auto text-lg">
+        Servicios profesionales diseñados para mantener tu vehículo
+        limpio, protegido y en excelentes condiciones.
+      </p>
+    </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 
-              {[
-                'Lavado Premium',
-                'Lavado Express',
-                'Lavado de Motor',
-                'Limpieza Profunda',
-                'Protección Cerámica',
-                'Pulido Profesional',
-              ].map((service, i) => (
-                <div
-                  key={i}
-                  className="group rounded-3xl border border-white/5 bg-white/[0.03] p-8 hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2"
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
-                    <div className="w-6 h-6 rounded-full bg-blue-400"></div>
-                  </div>
-
-                  <h3 className="text-2xl font-semibold mb-4">
-                    {service}
-                  </h3>
-
-                  <p className="text-slate-400 leading-relaxed mb-8">
-                    Servicio profesional con acabados de alta calidad y atención especializada.
-                  </p>
-
-                  <button className="text-blue-400 hover:text-blue-300 transition-colors">
-                    Saber más →
-                  </button>
-                </div>
-              ))}
-            </div>
+      {[
+        {
+          title: 'Lavado Premium',
+          description:
+            'Lavado completo con productos de alta calidad, brillo profundo y acabado impecable para todo tipo de vehículos.',
+        },
+        {
+          title: 'Lavado Express',
+          description:
+            'Servicio rápido y eficiente ideal para mantener tu vehículo limpio en poco tiempo y con excelentes resultados.',
+        },
+        {
+          title: 'Lavado de Motor',
+          description:
+            'Limpieza especializada del motor eliminando grasa y suciedad sin afectar los componentes eléctricos.',
+        },
+        {
+          title: 'Limpieza Profunda',
+          description:
+            'Desinfección y limpieza interior detallada de tapicería, alfombras, techo y paneles del vehículo.',
+        },
+        {
+          title: 'Protección Cerámica',
+          description:
+            'Aplicación de recubrimiento cerámico que protege la pintura contra rayos UV, agua y contaminantes.',
+        },
+        {
+          title: 'Pulido Profesional',
+          description:
+            'Corrección de imperfecciones y recuperación del brillo original de la pintura con técnicas profesionales.',
+        },
+      ].map((service, i) => (
+        <div
+          key={i}
+          className="group rounded-3xl border border-white/5 bg-white/[0.03] p-8 hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
+            <div className="w-6 h-6 rounded-full bg-blue-400"></div>
           </div>
-        </section>
+
+          <h3 className="text-2xl font-semibold mb-4">
+            {service.title}
+          </h3>
+
+          <p className="text-slate-400 leading-relaxed mb-8">
+            {service.description}
+          </p>
+
+          <button className="text-blue-400 hover:text-blue-300 transition-colors">
+            Saber más →
+          </button>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
 
         {/* NOSOTROS */}
         <section id="nosotros" className="py-28 relative z-10">
