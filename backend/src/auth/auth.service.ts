@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -8,44 +8,13 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UsuariosService } from '../usuarios/usuarios.service';
 
 @Injectable()
-export class AuthService implements OnModuleInit {
-  private readonly logger = new Logger(AuthService.name);
-
+export class AuthService {
   constructor(
     @InjectRepository(Usuario)
     private readonly userRepository: Repository<Usuario>,
     private usuariosService: UsuariosService,
     private jwtService: JwtService,
   ) {}
-
-  async onModuleInit() {
-    await this.ensureSuperAdmin();
-  }
-
-  private async ensureSuperAdmin() {
-    const email = String(process.env.SUPERADMIN_EMAIL || 'admin@motoexpert.local')
-      .toLowerCase()
-      .trim();
-
-    const existing = await this.userRepository.findOne({ where: { email } });
-    if (existing) return;
-
-    const passwordPlain = String(process.env.SUPERADMIN_PASSWORD || 'MotoExpert@123');
-    const password = bcrypt.hashSync(passwordPlain, 10);
-
-    const user = this.userRepository.create({
-      email,
-      password,
-      nombre: String(process.env.SUPERADMIN_NOMBRE || 'Super'),
-      apellidos: String(process.env.SUPERADMIN_APELLIDOS || 'Admin'),
-      documento: String(process.env.SUPERADMIN_DOCUMENTO || 'SUPERADMIN'),
-      telefono: String(process.env.SUPERADMIN_TELEFONO || '0000000000'),
-      role: 'admin',
-    });
-
-    await this.userRepository.save(user);
-    this.logger.log(`Super admin creado: ${email}`);
-  }
 
   async validateUser(email: string, password: string) {
     const usuario = await this.usuariosService.findByEmail(email);

@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 class Vehiculos extends Component {
   constructor(props) {
@@ -8,7 +8,6 @@ class Vehiculos extends Component {
     this.state = {
       vehiculos: [],
       loading: true,
-      refreshing: false,
       error: null,
       showForm: false,
       formData: {
@@ -23,7 +22,7 @@ class Vehiculos extends Component {
   }
 
   componentDidMount() {
-    this.fetchVehiculos(true);
+    this.fetchVehiculos();
     this.checkPendingAction();
   }
 
@@ -39,12 +38,7 @@ class Vehiculos extends Component {
     }
   };
 
-  fetchVehiculos = async (initial = false) => {
-    if (initial) {
-      this.setState({ loading: true });
-    } else {
-      this.setState({ refreshing: true });
-    }
+  fetchVehiculos = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/vehiculos`, {
@@ -54,24 +48,14 @@ class Vehiculos extends Component {
         },
       });
 
-      if (!response.ok) {
-        this.setState({ vehiculos: [], error: 'No se pudo conectar con el servidor' });
-        return;
+      if (response.ok) {
+        const data = await response.json();
+        this.setState({ vehiculos: data, loading: false });
+      } else {
+        this.setState({ error: 'Error al obtener vehículos', loading: false });
       }
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        this.setState({ vehiculos: [], error: 'No se pudo conectar con el servidor' });
-        return;
-      }
-
-      const data = await response.json();
-      this.setState({ vehiculos: Array.isArray(data) ? data : [], error: null });
     } catch (err) {
-      this.setState({ vehiculos: [], error: 'No se pudo conectar con el servidor' });
-    } finally {
-      if (initial) this.setState({ loading: false });
-      this.setState({ refreshing: false });
+      this.setState({ error: 'No se pudo conectar con el servidor', loading: false });
     }
   };
 
@@ -162,146 +146,118 @@ class Vehiculos extends Component {
   };
 
   render() {
-    const { vehiculos, loading, refreshing, showForm, formData, error } = this.state;
+    const { vehiculos, loading, showForm, formData, error } = this.state;
 
-    if (loading) {
-      return (
-        <div className="flex items-center justify-center min-h-[420px]">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[var(--mx-blue)]"></div>
-        </div>
-      );
-    }
+    if (loading) return <div className="flex items-center justify-center min-h-screen bg-[#020617]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#2563EB]"></div></div>;
 
     return (
-      <div className="mx-container py-10 space-y-12">
-        <section className="mx-card bg-white border-[var(--mx-border)] p-8 mx-diagonal-cut overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
-            <div className="lg:col-span-8 relative">
-              <div className="absolute -top-10 -left-2 mx-h1 text-[160px] leading-none text-[var(--mx-text)] opacity-[0.06] select-none pointer-events-none" aria-hidden="true">
-                01
-              </div>
-              <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Flota</div>
-              <h1 className="mx-h1 text-[72px] sm:text-[86px] text-[var(--mx-text)]">
-                MIS<br />
-                <span className="text-[var(--mx-blue)]">VEHÍCULOS</span>
-              </h1>
-              <div className="mt-4 text-[14px] text-[var(--mx-text-2)] max-w-[70ch]">
-                Registra y administra tus unidades para agilizar citas y seguimiento.
-              </div>
-            </div>
-
-            <div className="lg:col-span-4">
-              <button
-                onClick={() => this.setState({ showForm: !showForm })}
-                className={`w-full mx-btn ${showForm ? 'mx-btn-outline' : 'mx-btn-primary'} py-4 text-[11px]`}
-              >
-                {showForm ? 'Cerrar' : 'Añadir vehículo'}
-              </button>
-            </div>
+      <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-[#020617]">
+        <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-white/5 mx-6 mt-6 bg-[#111827]">
+          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-purple-600/10 rounded-full blur-[100px]" />
+          <div className="relative z-10 text-center space-y-4">
+            <div className="inline-block px-4 py-1 rounded-full bg-purple-600/10 border border-purple-600/20 text-purple-500 text-[10px] font-black uppercase tracking-[0.3em]">Fleet Management</div>
+            <h1 className="text-4xl md:text-6xl font-black text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
+              Mi Flota <span className="text-purple-500">Personal</span>
+            </h1>
+            <p className="text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Administra tus unidades para agilizar tus servicios premium.</p>
           </div>
-        </section>
+        </header>
 
-        {error && (
-          <div className="mx-card bg-white border border-[rgba(193,18,31,0.35)] p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[#C1121F]">{error}</div>
-              <button onClick={() => this.fetchVehiculos(false)} className="mx-btn mx-btn-outline px-4 py-2 text-[11px]" disabled={refreshing}>
-                {refreshing ? 'Reintentando…' : 'Reintentar'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showForm && (
-          <div className="mx-card bg-white border-[var(--mx-border)] p-8">
-            <div className="flex items-center gap-6">
-              <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Registro</div>
-              <div className="h-[2px] flex-1 bg-[var(--mx-blue)] opacity-20" />
-              <div className="mx-h1 text-[40px] leading-none text-[var(--mx-text)] opacity-[0.18]">02</div>
-            </div>
-
-            <form onSubmit={this.handleSubmit} className="mt-8 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <label className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Placa</label>
-                  <input name="placa" value={formData.placa} onChange={this.handleInputChange} placeholder="ABC-123" className="w-full px-4 py-3 border border-[var(--mx-border)] rounded-[8px] bg-white text-[var(--mx-text)] outline-none focus:border-[var(--mx-blue)] tracking-[0.12em] uppercase" required />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Tipo</label>
-                  <select name="tipo" value={formData.tipo} onChange={this.handleInputChange} className="w-full px-4 py-3 border border-[var(--mx-border)] rounded-[8px] bg-white text-[var(--mx-text)] outline-none focus:border-[var(--mx-blue)] tracking-[0.12em] uppercase">
-                    <option value="Moto">Moto</option>
-                    <option value="Auto">Auto</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Marca</label>
-                  <input name="marca" value={formData.marca} onChange={this.handleInputChange} placeholder="Ej: Ducati" className="w-full px-4 py-3 border border-[var(--mx-border)] rounded-[8px] bg-white text-[var(--mx-text)] outline-none focus:border-[var(--mx-blue)]" required />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Modelo</label>
-                  <input name="modelo" value={formData.modelo} onChange={this.handleInputChange} placeholder="Ej: Panigale V4" className="w-full px-4 py-3 border border-[var(--mx-border)] rounded-[8px] bg-white text-[var(--mx-text)] outline-none focus:border-[var(--mx-blue)]" required />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Año</label>
-                  <input name="anio" type="number" value={formData.anio} onChange={this.handleInputChange} placeholder="2024" className="w-full px-4 py-3 border border-[var(--mx-border)] rounded-[8px] bg-white text-[var(--mx-text)] outline-none focus:border-[var(--mx-blue)]" required />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Color</label>
-                  <input name="color" value={formData.color} onChange={this.handleInputChange} placeholder="Ej: Azul" className="w-full px-4 py-3 border border-[var(--mx-border)] rounded-[8px] bg-white text-[var(--mx-text)] outline-none focus:border-[var(--mx-blue)]" required />
-                </div>
-              </div>
-
-              <button type="submit" className="w-full mx-btn mx-btn-primary py-4 text-[11px]">
-                Guardar
-              </button>
-            </form>
-          </div>
-        )}
-
-        <section className="space-y-6">
-          <div className="flex items-center gap-6">
-            <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Registrados</div>
-            <div className="h-[2px] flex-1 bg-[var(--mx-blue)] opacity-20" />
-            <div className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">{vehiculos.length}</div>
+        <div className="container mx-auto px-6 space-y-12">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter flex items-center">
+              <span className="w-2 h-2 bg-purple-600 rounded-full mr-4 animate-pulse" />
+              Unidades Registradas
+            </h2>
+            <button
+              onClick={() => this.setState({ showForm: !showForm })}
+              className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-purple-600/20 transition-all active:scale-95"
+            >
+              {showForm ? 'Cerrar Registro' : 'Añadir Unidad VIP'}
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {vehiculos.length > 0 ? (
-              vehiculos.map((v, idx) => (
-                <div key={v.id} className="mx-card mx-card-hover-up bg-white border-[var(--mx-border)] p-7 relative overflow-hidden">
-                  <div className="absolute top-6 right-6 mx-h1 text-[54px] leading-none text-[var(--mx-blue)] opacity-[0.10] pointer-events-none">
-                    {String(idx + 1).padStart(2, '0')}
+          {error && (
+            <div className="p-6 bg-red-950/20 border border-red-500/20 rounded-[2rem] text-red-400 text-sm font-bold italic uppercase tracking-widest text-center animate-in zoom-in duration-300">
+              ⚠️ {error}
+            </div>
+          )}
+
+          {/* Formulario Estilo Porsche */}
+          {showForm && (
+            <div className="bg-[#111827] border border-white/5 p-10 rounded-[2.5rem] shadow-2xl animate-in slide-in-from-top duration-500">
+              <form onSubmit={this.handleSubmit} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Placa Identificadora</label>
+                    <input name="placa" value={formData.placa} onChange={this.handleInputChange} placeholder="ABC-123" className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all uppercase" required />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Tipo de Vehículo</label>
+                    <select name="tipo" value={formData.tipo} onChange={this.handleInputChange} className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all">
+                      <option value="Moto">Motosport</option>
+                      <option value="Auto">Premium Car</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Marca / Fabricante</label>
+                    <input name="marca" value={formData.marca} onChange={this.handleInputChange} placeholder="Ej: Ducati" className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Modelo / Serie</label>
+                    <input name="modelo" value={formData.modelo} onChange={this.handleInputChange} placeholder="Ej: Panigale V4" className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Año de Fabricación</label>
+                    <input name="anio" type="number" value={formData.anio} onChange={this.handleInputChange} placeholder="2024" className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Color / Acabado</label>
+                    <input name="color" value={formData.color} onChange={this.handleInputChange} placeholder="Ej: Rosso Corsa" className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
+                  </div>
+                </div>
+                <button type="submit" className="w-full py-5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-purple-600/20 transition-all active:scale-95">Sincronizar Unidad con el Perfil</button>
+              </form>
+            </div>
+          )}
 
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="min-w-0">
-                      <div className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">{v.tipo || 'Vehículo'}</div>
-                      <div className="mt-2 mx-subtitle text-[14px] tracking-[0.12em] uppercase text-[var(--mx-text)] truncate">
-                        {v.marca} {v.modelo}
-                      </div>
-                      <div className="mt-2 text-[12px] text-[var(--mx-text-2)]">{v.placa} · {v.anio} · {v.color}</div>
-                    </div>
-                    <button onClick={() => this.handleDelete(v.id)} className="mx-btn mx-btn-outline px-4 py-2 text-[11px]">
-                      Eliminar
+          {/* Listado de Vehículos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {vehiculos.length > 0 ? (
+              vehiculos.map(v => (
+                <div key={v.id} className="bg-[#111827] border border-white/5 p-8 rounded-[2.5rem] hover:border-purple-500/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <span className="text-8xl font-black italic tracking-tighter text-white">{v.tipo === 'Moto' ? '🏍️' : '🏎️'}</span>
+                  </div>
+                  <div className="flex justify-between items-start relative z-10">
+                    <span className="px-4 py-1.5 rounded-full bg-purple-600/10 text-purple-500 border border-purple-600/20 text-[10px] font-black uppercase tracking-widest">{v.tipo}</span>
+                    <button onClick={() => this.handleDelete(v.id)} className="p-2 bg-red-950/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-lg">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
+                  </div>
+                  <div className="space-y-1 relative z-10">
+                    <h3 className="text-3xl font-black text-[#F8FAFC] italic uppercase tracking-tighter leading-none">{v.marca}</h3>
+                    <p className="text-xl font-bold text-[#94A3B8] uppercase italic tracking-tighter opacity-50">{v.modelo}</p>
+                  </div>
+                  <div className="pt-6 border-t border-white/5 grid grid-cols-2 gap-4 relative z-10">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest opacity-50">Placa</p>
+                      <p className="text-[#F8FAFC] font-black italic">{v.placa}</p>
+                    </div>
+                    <div className="space-y-1 text-right">
+                      <p className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest opacity-50">Serie</p>
+                      <p className="text-[#F8FAFC] font-black italic">{v.anio}</p>
+                    </div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="col-span-full">
-                <div className="mx-card bg-white border-[var(--mx-border)] p-10 text-center">
-                  <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Sin registros</div>
-                  <div className="mt-3 text-[13px] text-[var(--mx-text-2)]">No se detectan unidades registradas.</div>
-                </div>
+              <div className="col-span-full py-32 text-center bg-[#111827] rounded-[3rem] border border-dashed border-white/5">
+                <p className="text-[#94A3B8] italic font-medium">No se detectan unidades registradas en su perfil.</p>
               </div>
             )}
           </div>
-        </section>
+        </div>
       </div>
     );
   }

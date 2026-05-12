@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 class EmployeeDashboard extends Component {
   constructor(props) {
@@ -9,46 +9,11 @@ class EmployeeDashboard extends Component {
       loading: true,
       pendingServices: [],
     };
-    this.revealObserver = null;
   }
 
   componentDidMount() {
     this.fetchPendingServices();
-    this.setupReveal();
   }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.loading && !this.state.loading) this.setupReveal();
-  }
-
-  componentWillUnmount() {
-    if (this.revealObserver) this.revealObserver.disconnect();
-  }
-
-  setupReveal = () => {
-    const nodes = Array.from(document.querySelectorAll('[data-reveal]'));
-    if (nodes.length === 0) return;
-
-    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion) {
-      nodes.forEach((n) => n.classList.add('mx-reveal--in'));
-      return;
-    }
-
-    if (this.revealObserver) this.revealObserver.disconnect();
-    this.revealObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add('mx-reveal--in');
-          this.revealObserver?.unobserve(entry.target);
-        });
-      },
-      { threshold: 0.15 },
-    );
-
-    nodes.forEach((n) => this.revealObserver.observe(n));
-  };
 
   fetchPendingServices = async () => {
     const token = localStorage.getItem('token');
@@ -96,120 +61,92 @@ class EmployeeDashboard extends Component {
   render() {
     const { pendingServices, loading } = this.state;
 
-    if (loading) {
-      return (
-        <div className="mx-container py-14">
-          <div className="mx-card bg-white border-[var(--mx-border)] p-10 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[var(--mx-blue)]" />
-          </div>
-        </div>
-      );
-    }
+    if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500"></div></div>;
 
     return (
-      <div className="mx-container py-10 space-y-10">
-        <section data-reveal className="mx-reveal mx-card bg-white border-[var(--mx-border)] p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
-            <div className="lg:col-span-8 relative">
-              <div className="absolute -top-10 -left-2 mx-h1 text-[140px] leading-none text-[var(--mx-text)] opacity-[0.06] select-none pointer-events-none" aria-hidden="true">
-                01
-              </div>
-              <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Empleado</div>
-              <h1 className="mx-h1 text-[72px] sm:text-[86px] text-[var(--mx-text)]">
-                PANEL<br />
-                <span className="text-[var(--mx-blue)]">TÉCNICO</span>
-              </h1>
-              <div className="mt-4 text-[14px] text-[var(--mx-text-2)] max-w-[70ch]">
-                Cola activa y ejecución. Estados claros, botones directos, sin ruido visual.
-              </div>
-            </div>
-            <div className="lg:col-span-4">
-              <div className="mx-card bg-[var(--mx-bg-2)] border-[var(--mx-border)] p-6">
-                <div className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Unidades activas</div>
-                <div className="mt-2 mx-h1 text-[56px] leading-none text-[var(--mx-text)]">{pendingServices.length}</div>
-                <div className="mt-3 h-[2px] w-20 bg-[var(--mx-blue)] opacity-25" />
-              </div>
+      <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-[#020617]">
+        <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-white/5 mx-6 mt-6 bg-[#111827]">
+          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px]" />
+          <div className="relative z-10 text-center space-y-4">
+            <div className="inline-block px-4 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-[0.3em]">Operational Unit</div>
+            <h1 className="text-4xl md:text-6xl font-black text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
+              Panel de <span className="text-emerald-500">Trabajo</span>
+            </h1>
+            <p className="text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Gestión de servicios activos y optimización de flujo técnico.</p>
+          </div>
+        </header>
+
+        <section className="container mx-auto px-6 space-y-12">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter flex items-center">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full mr-4 animate-pulse" />
+              Servicios en Curso
+            </h2>
+            <div className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full bg-white/5 italic">
+              {pendingServices.length} Unidades Activas
             </div>
           </div>
-        </section>
 
-        <section className="space-y-6">
-          <div className="flex items-center gap-6">
-            <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Servicios en curso</div>
-            <div className="h-[2px] flex-1 bg-[var(--mx-blue)] opacity-20" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {pendingServices.length > 0 ? (
-              pendingServices.map((service, idx) => {
-                const status = service.estado || 'PENDIENTE';
-                const badge =
-                  status === 'PENDIENTE'
-                    ? 'bg-[#C08A00] text-white'
-                    : status === 'EN PROCESO'
-                      ? 'bg-[#0E9F6E] text-white'
-                      : 'bg-[var(--mx-blue)] text-white';
+              pendingServices.map(service => (
+                <div key={service.id} className="bg-[#111827] border border-white/5 p-8 rounded-[2.5rem] hover:border-emerald-500/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-6">
+                    <span className="text-slate-800 text-4xl font-black italic opacity-20">#{service.id}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-start relative z-10">
+                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                      service.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                    }`}>
+                      {service.estado}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-2 relative z-10">
+                    <h4 className="text-2xl font-black text-[#F8FAFC] uppercase italic tracking-tighter">{service.servicio?.nombre || 'Servicio'}</h4>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10">{service.vehiculo?.placa}</span>
+                      <span className="text-[#94A3B8] text-xs font-bold uppercase tracking-widest italic">{service.vehiculo?.modelo}</span>
+                    </div>
+                  </div>
 
-                return (
-                  <div key={service.id} data-reveal className="mx-reveal" style={{ transitionDelay: `${idx * 80}ms` }}>
-                    <div className="mx-card mx-card-hover-up bg-white border-[var(--mx-border)] p-7">
-                      <div className="flex items-start justify-between gap-6">
-                        <div className="min-w-0">
-                          <div className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">
-                            Orden #{service.id}
-                          </div>
-                          <div className="mt-2 mx-subtitle text-[14px] tracking-[0.12em] uppercase text-[var(--mx-text)] truncate">
-                            {service.servicio?.nombre || 'Servicio'}
-                          </div>
-                          <div className="mt-2 text-[12px] text-[var(--mx-text-2)]">
-                            {service.vehiculo?.placa ? `${service.vehiculo?.placa} · ${service.vehiculo?.modelo || ''}` : 'Vehículo no asignado'}
-                          </div>
-                        </div>
-                        <div className={`px-3 py-2 rounded-[8px] mx-subtitle text-[10px] tracking-[0.22em] uppercase ${badge}`}>
-                          {status}
-                        </div>
+                  <div className="pt-6 border-t border-white/5 space-y-4 relative z-10">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center text-[#94A3B8] font-bold">
+                        <span className="mr-2 opacity-50">📅</span>
+                        {new Date(service.fecha).toLocaleDateString()}
                       </div>
-
-                      <div className="mt-6 grid grid-cols-2 gap-4 border-t border-t-[var(--mx-border)] pt-5">
-                        <div>
-                          <div className="mx-subtitle text-[10px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Fecha</div>
-                          <div className="mt-1 text-[12px] text-[var(--mx-text)]">{new Date(service.fecha).toLocaleDateString()}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="mx-subtitle text-[10px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Hora</div>
-                          <div className="mt-1 text-[12px] text-[var(--mx-text)]">
-                            {service.hora_inicio?.substring(0, 5)}–{service.hora_fin?.substring(0, 5)}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-6 flex gap-3">
-                        {status === 'PENDIENTE' && (
-                          <button onClick={() => this.updateEstado(service.id, 'EN PROCESO')} className="flex-1 mx-btn mx-btn-primary py-3 text-[11px]">
-                            Iniciar
-                          </button>
-                        )}
-                        {status === 'EN PROCESO' && (
-                          <>
-                            <button onClick={() => this.updateEstado(service.id, 'FINALIZADO')} className="flex-1 mx-btn mx-btn-primary py-3 text-[11px]">
-                              Finalizar
-                            </button>
-                            <button onClick={() => this.updateEstado(service.id, 'PENDIENTE')} className="flex-1 mx-btn mx-btn-outline py-3 text-[11px]">
-                              Pausar
-                            </button>
-                          </>
-                        )}
+                      <div className="flex items-center text-[#F8FAFC] font-black italic">
+                        <span className="mr-2 opacity-50 text-emerald-500 font-normal">⏰</span>
+                        {service.hora_inicio.substring(0, 5)} - {service.hora_fin.substring(0, 5)}
                       </div>
                     </div>
                   </div>
-                );
-              })
-            ) : (
-              <div className="col-span-full">
-                <div className="mx-card bg-white border-[var(--mx-border)] p-10 text-center">
-                  <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Sin cola activa</div>
-                  <div className="mt-3 text-[13px] text-[var(--mx-text-2)]">No se detectan servicios pendientes o en proceso.</div>
+
+                  <div className="space-y-3 relative z-10">
+                    {service.estado === 'PENDIENTE' && (
+                      <button 
+                        onClick={() => this.updateEstado(service.id, 'EN PROCESO')}
+                        className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 shadow-lg"
+                      >
+                        Iniciar Servicio
+                      </button>
+                    )}
+                    {service.estado === 'EN PROCESO' && (
+                      <button 
+                        onClick={() => this.updateEstado(service.id, 'FINALIZADO')}
+                        className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 shadow-lg"
+                      >
+                        Finalizar Servicio
+                      </button>
+                    )}
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="col-span-full py-32 text-center bg-[#111827] rounded-[3rem] border border-dashed border-white/5">
+                <p className="text-[#94A3B8] italic font-medium">No se detectan servicios activos en la cola.</p>
               </div>
             )}
           </div>

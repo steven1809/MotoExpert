@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 const Citas = ({ setView }) => {
-  console.log('Citas component rendered');
   const [citas, setCitas] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
   const [servicios, setServicios] = useState([]);
@@ -57,58 +56,22 @@ const Citas = ({ setView }) => {
         fetch(`${API_BASE_URL}/empleados`, { headers })
       ]);
 
-      const readJsonOrThrow = async (response) => {
-        if (!response.ok) throw new Error('Network response was not ok');
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error('Response is not JSON');
-        }
-        return response.json();
-      };
-
-      let hadError = false;
-
-      try {
-        const citasData = await readJsonOrThrow(citasRes);
-        setCitas(Array.isArray(citasData) ? citasData : []);
-      } catch (e) {
-        hadError = true;
-        console.error('Error fetching citas:', e);
-        setCitas([]);
+      if (citasRes.ok && vehiculosRes.ok && serviciosRes.ok && empleadosRes.ok) {
+        const [citasData, vehiculosData, serviciosData, empleadosData] = await Promise.all([
+          citasRes.json(),
+          vehiculosRes.json(),
+          serviciosRes.json(),
+          empleadosRes.json()
+        ]);
+        setCitas(citasData);
+        setVehiculos(vehiculosData);
+        setServicios(serviciosData);
+        setEmpleados(empleadosData.filter(e => e.estado === 'activo')); // Solo activos
+      } else {
+        setError('Error al obtener datos iniciales');
       }
-
-      try {
-        const vehiculosData = await readJsonOrThrow(vehiculosRes);
-        setVehiculos(Array.isArray(vehiculosData) ? vehiculosData : []);
-      } catch (e) {
-        hadError = true;
-        console.error('Error fetching vehiculos:', e);
-        setVehiculos([]);
-      }
-
-      try {
-        const serviciosData = await readJsonOrThrow(serviciosRes);
-        setServicios(Array.isArray(serviciosData) ? serviciosData : []);
-      } catch (e) {
-        hadError = true;
-        console.error('Error fetching servicios:', e);
-        setServicios([]);
-      }
-
-      try {
-        const empleadosData = await readJsonOrThrow(empleadosRes);
-        const list = Array.isArray(empleadosData) ? empleadosData : [];
-        setEmpleados(list.filter(e => e.estado === 'activo'));
-      } catch (e) {
-        hadError = true;
-        console.error('Error fetching empleados:', e);
-        setEmpleados([]);
-      }
-
-      if (hadError) setError('No se pudo conectar con el servidor');
     } catch (err) {
       setError('No se pudo conectar con el servidor');
-      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -122,20 +85,12 @@ const Citas = ({ setView }) => {
       const response = await fetch(`${API_BASE_URL}/citas/disponibilidad?fecha=${fecha}&servicioId=${servicioId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!response.ok) {
-        setDisponibilidad([]);
-        return;
+      if (response.ok) {
+        const data = await response.json();
+        setDisponibilidad(data);
       }
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        setDisponibilidad([]);
-        return;
-      }
-      const data = await response.json();
-      setDisponibilidad(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error al cargar disponibilidad:', err);
-      setDisponibilidad([]);
     } finally {
       setLoadingSlots(false);
     }
@@ -164,27 +119,6 @@ const Citas = ({ setView }) => {
     return `${h12}:${minutes} ${ampm}`;
   };
 
-  const normalizeTimeToHms = (timeStr) => {
-    if (!timeStr) return '';
-    const parts = String(timeStr).split(':');
-    const hh = (parts[0] || '00').padStart(2, '0');
-    const mm = (parts[1] || '00').padStart(2, '0');
-    const ss = (parts[2] || '00').padStart(2, '0');
-    return `${hh}:${mm}:${ss}`;
-  };
-
-  const addMinutesToHms = (timeStr, minutesToAdd) => {
-    const normalized = normalizeTimeToHms(timeStr);
-    if (!normalized) return '';
-    const [hh, mm, ss] = normalized.split(':').map((v) => parseInt(v, 10));
-    const base = new Date(2000, 0, 1, hh || 0, mm || 0, ss || 0);
-    base.setMinutes(base.getMinutes() + (Number(minutesToAdd) || 0));
-    const outH = String(base.getHours()).padStart(2, '0');
-    const outM = String(base.getMinutes()).padStart(2, '0');
-    const outS = String(base.getSeconds()).padStart(2, '0');
-    return `${outH}:${outM}:${outS}`;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.hora_inicio) {
@@ -200,14 +134,13 @@ const Citas = ({ setView }) => {
       const token = localStorage.getItem('token');
       const userId = localStorage.getItem('userId');
       
-      const selectedServicio = servicios.find((s) => String(s.id) === String(formData.servicioId));
-      const duracionMin = selectedServicio?.duracion ? Number(selectedServicio.duracion) : 60;
-      const horaInicio = normalizeTimeToHms(formData.hora_inicio);
-      const horaFin = addMinutesToHms(horaInicio, duracionMin);
+      // Calculamos hora_fin (sumando 1 hora por defecto para simplificar)
+      const [h, m, s] = formData.hora_inicio.split(':');
+      const horaFin = `${(parseInt(h) + 1).toString().padStart(2, '0')}:${m}:${s}`;
 
       const payload = {
         fecha: formData.fecha,
-        hora_inicio: horaInicio,
+        hora_inicio: formData.hora_inicio,
         hora_fin: horaFin,
         vehiculoId: parseInt(formData.vehiculoId, 10),
         servicioId: parseInt(formData.servicioId, 10),
@@ -230,14 +163,8 @@ const Citas = ({ setView }) => {
         fetchInitialData();
         alert('Cita agendada con éxito');
       } else {
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const errorData = await response.json();
-          alert(errorData.message || 'Error al agendar cita');
-        } else {
-          const errorText = await response.text();
-          alert(errorText || 'Error al agendar cita');
-        }
+        const errorData = await response.json();
+        alert(errorData.message || 'Error al agendar cita');
       }
     } catch (err) {
       alert('Error de conexión');
@@ -271,360 +198,307 @@ const Citas = ({ setView }) => {
 
   if (loading) {
     return (
-      <div className="mx-container py-10">
-        <div className="mx-card bg-white border-[var(--mx-border)] p-8">
-          <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Cargando citas...</div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-slate-950">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
-  const shouldShowEmptyState = Boolean(error) || citas.length === 0;
-
-  try {
-    return (
-      <div className="mx-container py-10 space-y-12">
-      <section data-reveal className="mx-reveal mx-reveal--in mx-card bg-white border-[var(--mx-border)] p-8 mx-diagonal-cut overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
-          <div className="lg:col-span-8 relative">
-            <div className="absolute -top-10 -left-2 mx-h1 text-[160px] leading-none text-[var(--mx-text)] opacity-[0.06] select-none pointer-events-none" aria-hidden="true">
-              01
-            </div>
-            <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Reserva</div>
-            <h1 className="mx-h1 text-[72px] sm:text-[86px] text-[var(--mx-text)]">
-              CITAS<br />
-              <span className="text-[var(--mx-blue)]">ONLINE</span>
-            </h1>
-            <div className="mt-4 text-[14px] text-[var(--mx-text-2)] max-w-[70ch]">
-              Selecciona servicio, unidad, fecha, hora y especialista. Confirmación directa.
-            </div>
-          </div>
-
-          <div className="lg:col-span-4">
-            <button onClick={() => setShowForm(!showForm)} className={`w-full mx-btn ${showForm ? 'mx-btn-outline' : 'mx-btn-primary'} py-4 text-[11px]`}>
-              {showForm ? 'Cerrar' : 'Nueva cita'}
-            </button>
-          </div>
+  return (
+    <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-[#020617]">
+      <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-white/5 mx-6 mt-6 bg-[#111827]">
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-[#2563EB]/10 rounded-full blur-[100px]" />
+        <div className="relative z-10 text-center space-y-4">
+          <div className="inline-block px-4 py-1 rounded-full bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] text-[10px] font-black uppercase tracking-[0.3em]">Reserva Online</div>
+          <h1 className="text-4xl md:text-6xl font-black text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
+            Agenda tu <span className="text-[#2563EB]">Cita</span>
+          </h1>
+          <p className="text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Selecciona el tratamiento premium para tu vehículo.</p>
         </div>
-      </section>
+      </header>
 
-      {shouldShowEmptyState && (
-        <div data-reveal className="mx-reveal mx-reveal--in mx-card bg-white border-[var(--mx-border)] p-8">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">
-                {error ? 'No se pudo conectar con el servidor' : 'No tienes citas registradas aún'}
-              </div>
-              <div className="mt-3 text-[13px] text-[var(--mx-text-2)]">
-                {error ? 'Revisa tu conexión o intenta nuevamente.' : 'Cuando agendes una cita, aparecerá aquí.'}
-              </div>
-            </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="mx-btn mx-btn-primary px-5 py-3 text-[11px]"
-            >
-              Agendar cita
-            </button>
-          </div>
+      <div className="container mx-auto px-6 space-y-12">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter flex items-center">
+            <span className="w-2 h-2 bg-[#2563EB] rounded-full mr-4 animate-pulse" />
+            Historial de Citas
+          </h2>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-8 py-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#2563EB]/20 transition-all active:scale-95"
+          >
+            {showForm ? 'Cerrar Formulario' : 'Nueva Cita Premium'}
+          </button>
         </div>
-      )}
 
-      {showForm && (
-        <section data-reveal className="mx-reveal mx-reveal--in">
-          <div className="mx-card bg-white border-[var(--mx-border)] p-8">
-            <div className="flex items-center gap-6">
-              <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Formulario</div>
-              <div className="h-[2px] flex-1 bg-[var(--mx-blue)] opacity-20" />
-              <div className="mx-h1 text-[40px] leading-none text-[var(--mx-text)] opacity-[0.18]">02</div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="mt-8 space-y-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Formulario Estilo Tesla */}
+        {showForm && (
+          <div className="bg-[#111827] border border-white/5 p-10 rounded-[2.5rem] shadow-2xl animate-in slide-in-from-top duration-500">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
-                  <label className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Servicio</label>
+                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Servicio Detailing</label>
                   <select
                     name="servicioId"
                     value={formData.servicioId}
                     onChange={handleServicioChange}
-                    className="w-full px-4 py-3 border border-[var(--mx-border)] rounded-[8px] bg-white text-[var(--mx-text)] outline-none focus:border-[var(--mx-blue)]"
+                    className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
                     required
                   >
-                    <option value="">Selecciona…</option>
-                    {servicios.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.nombre}
-                      </option>
-                    ))}
+                    <option value="">Seleccione el tratamiento...</option>
+                    {servicios.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                   </select>
                 </div>
-
                 <div className="space-y-2">
-                  <label className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Vehículo</label>
+                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Unidad a Tratar</label>
                   <select
                     name="vehiculoId"
                     value={formData.vehiculoId}
-                    onChange={(e) => setFormData({ ...formData, vehiculoId: e.target.value })}
-                    className="w-full px-4 py-3 border border-[var(--mx-border)] rounded-[8px] bg-white text-[var(--mx-text)] outline-none focus:border-[var(--mx-blue)]"
+                    onChange={(e) => setFormData({...formData, vehiculoId: e.target.value})}
+                    className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
                     required
                   >
-                    <option value="">Placa…</option>
-                    {vehiculos.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.placa} - {v.modelo}
-                      </option>
-                    ))}
+                    <option value="">Placa...</option>
+                    {vehiculos.map(v => <option key={v.id} value={v.id}>{v.placa} - {v.modelo}</option>)}
                   </select>
                 </div>
-
                 <div className="space-y-2">
-                  <label className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Fecha</label>
+                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Fecha de Ingreso</label>
                   <input
                     type="date"
                     name="fecha"
                     min={new Date().toISOString().split('T')[0]}
                     value={formData.fecha}
                     onChange={handleDateChange}
-                    className="w-full px-4 py-3 border border-[var(--mx-border)] rounded-[8px] bg-white text-[var(--mx-text)] outline-none focus:border-[var(--mx-blue)]"
+                    className="w-full p-4 bg-[#020617] border border-white/5 rounded-2xl text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
                     required
                   />
                 </div>
-
                 <div className="space-y-2">
-                  <label className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Hora</label>
-                  <div className="mx-card bg-[var(--mx-bg-2)] border-[var(--mx-border)] p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="text-[11px] tracking-[0.14em] uppercase text-[var(--mx-text-2)]">
-                        {loadingSlots ? 'Cargando…' : disponibilidad.filter((s) => s.disponible).length ? 'Disponibles' : 'Selecciona fecha y servicio'}
-                      </div>
-                      <div className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-blue)]">
-                        {formData.hora_inicio ? formatTimeAMPM(formData.hora_inicio) : '—'}
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {loadingSlots ? (
-                        <div className="text-[12px] text-[var(--mx-text-2)]">Consultando disponibilidad…</div>
-                      ) : (
-                        disponibilidad
-                          .filter((slot) => slot.disponible)
-                          .map((slot) => (
-                            <button
-                              key={slot.hora}
-                              type="button"
-                              onClick={() => setFormData({ ...formData, hora_inicio: slot.hora })}
-                              className={`px-4 py-2 rounded-[8px] border mx-subtitle text-[11px] tracking-[0.22em] uppercase transition-colors ${
-                                formData.hora_inicio === slot.hora
-                                  ? 'bg-[var(--mx-blue)] border-[var(--mx-blue)] text-white'
-                                  : 'bg-white border-[var(--mx-border)] text-[var(--mx-text)] hover:border-[var(--mx-blue)]'
-                              }`}
-                            >
-                              {slot.hora.substring(0, 5)}
-                            </button>
-                          ))
-                      )}
-                    </div>
+                  <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1 text-[#2563EB]">Slots Disponibles</label>
+                  <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-4 bg-[#020617] rounded-2xl border border-white/5">
+                    {loadingSlots ? (
+                      <div className="w-full text-center py-2 text-[#94A3B8] text-xs italic">Consultando disponibilidad...</div>
+                    ) : disponibilidad.length > 0 ? (
+                      disponibilidad.filter(slot => slot.disponible).map(slot => (
+                        <button
+                          key={slot.hora}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, hora_inicio: slot.hora })}
+                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                            formData.hora_inicio === slot.hora 
+                              ? 'bg-[#2563EB] border-[#2563EB] text-white' 
+                              : 'bg-[#111827] border-white/5 text-[#94A3B8] hover:border-white/20'
+                          }`}
+                        >
+                          {slot.hora.substring(0, 5)}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="w-full text-center py-2 text-[#94A3B8] text-xs italic">Seleccione fecha y servicio</div>
+                    )}
                   </div>
                 </div>
               </div>
 
+              {/* Selector de Especialista Premium */}
               <div className="space-y-4">
-                <div className="flex items-center gap-6">
-                  <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Especialista</div>
-                  <div className="h-[2px] flex-1 bg-[var(--mx-blue)] opacity-20" />
-                </div>
-
+                <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest ml-1">Selecciona tu Especialista</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {empleados.map((empleado) => (
-                    <button
-                      type="button"
+                  {empleados.map(empleado => (
+                    <div
                       key={empleado.id}
                       onClick={() => setFormData({ ...formData, empleadoId: empleado.id.toString() })}
-                      className={`text-left mx-card p-6 border transition-all ${
+                      className={`cursor-pointer p-6 rounded-2xl border-2 transition-all duration-300 group ${
                         formData.empleadoId === empleado.id.toString()
-                          ? 'bg-[var(--mx-bg-2)] border-[var(--mx-blue)]'
-                          : 'bg-white border-[var(--mx-border)] hover:border-[var(--mx-blue)]'
+                          ? 'bg-[#2563EB]/10 border-[#2563EB] shadow-2xl shadow-[#2563EB]/20'
+                          : 'bg-[#111827] border-white/10 hover:border-[#2563EB]/40 hover:shadow-xl'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <div className="mx-subtitle text-[12px] tracking-[0.18em] uppercase text-[var(--mx-text)] truncate">
-                            {empleado.nombre || 'Especialista'}
-                          </div>
-                          <div className="mt-2 text-[12px] text-[var(--mx-text-2)]">{empleado.cargo || '—'}</div>
-                          {empleado.especialidad && (
-                            <div className="mt-3">
-                              <span className="inline-flex px-3 py-2 rounded-[8px] mx-subtitle text-[10px] tracking-[0.22em] uppercase bg-[var(--mx-blue)] text-white">
-                                {empleado.especialidad}
-                              </span>
-                            </div>
-                          )}
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="w-12 h-12 rounded-full bg-[#2563EB]/20 flex items-center justify-center text-2xl border border-[#2563EB]/30 group-hover:scale-110 transition-transform">
+                          👤
                         </div>
-                        <div className="mx-subtitle text-[10px] tracking-[0.22em] uppercase text-[var(--mx-blue)]">
-                          {empleado.estado === 'activo' ? 'OK' : 'OFF'}
+                        <div>
+                          <h4 className="text-lg font-black text-white">{empleado.nombre || 'Especialista'}</h4>
+                          <span className="text-xs font-black text-[#2563EB] uppercase tracking-widest">
+                            {empleado.estado === 'activo' ? 'Disponible' : 'No disponible'}
+                          </span>
                         </div>
                       </div>
-                    </button>
+                      {empleado.cargo && (
+                        <p className="text-sm text-[#94A3B8] font-medium italic">
+                          {empleado.cargo}
+                        </p>
+                      )}
+                      {empleado.especialidad && (
+                        <div className="mt-2">
+                          <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                            {empleado.especialidad}
+                          </span>
+                        </div>
+                      )}
+                      {formData.empleadoId === empleado.id.toString() && (
+                        <div className="mt-3 flex items-center gap-2 text-[#2563EB] text-xs font-black uppercase tracking-widest">
+                          <span className="animate-pulse">✓</span> Seleccionado
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
-
-              <button type="submit" disabled={!formData.hora_inicio || !formData.empleadoId} className={`w-full mx-btn py-4 text-[11px] ${formData.hora_inicio && formData.empleadoId ? 'mx-btn-primary' : 'mx-btn-outline opacity-40 cursor-not-allowed'}`}>
-                Confirmar
+              <button
+                type="submit"
+                disabled={!formData.hora_inicio}
+                className={`w-full py-5 font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all ${
+                  formData.hora_inicio 
+                    ? 'bg-[#2563EB] hover:bg-[#1d4ed8] text-white shadow-2xl shadow-[#2563EB]/20' 
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                Confirmar Reserva Premium
               </button>
             </form>
           </div>
-        </section>
-      )}
+        )}
 
-      <section data-reveal className="mx-reveal mx-reveal--in space-y-6">
-        <div className="flex items-center gap-6">
-          <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Citas pendientes</div>
-          <div className="h-[2px] flex-1 bg-[var(--mx-blue)] opacity-20" />
-          <div className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">{citasPendientes.length}</div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {citasPendientes.length > 0 ? (
-            citasPendientes.map((cita) => {
-              const estado = (cita.estado || '').toUpperCase();
-              const badge =
-                estado === 'PENDIENTE'
-                  ? 'bg-[#C08A00] text-white'
-                  : estado === 'EN PROCESO'
-                    ? 'bg-[#0E9F6E] text-white'
-                    : 'bg-[var(--mx-blue)] text-white';
-
-              return (
-                <div key={cita.id} className="mx-card mx-card-hover-up bg-white border-[var(--mx-border)] p-7 relative overflow-hidden">
-                  <div className="absolute top-6 right-6 mx-h1 text-[54px] leading-none text-[var(--mx-blue)] opacity-[0.10] pointer-events-none">
-                    {String(cita.id).slice(-2).padStart(2, '0')}
+        {/* Sección Citas Pendientes */}
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <span className="w-2 h-2 bg-[#2563EB] rounded-full animate-pulse" />
+            <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">Citas Pendientes</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {citasPendientes.length > 0 ? (
+              citasPendientes.map(cita => (
+                <div key={cita.id} className="bg-[#111827] border border-white/5 p-8 rounded-[2.5rem] hover:border-[#2563EB]/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-6 opacity-10">
+                    <span className="text-4xl font-black italic tracking-tighter text-white">#{cita.id}</span>
                   </div>
-
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="min-w-0">
-                      <div className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Orden #{cita.id}</div>
-                      <div className="mt-2 mx-subtitle text-[14px] tracking-[0.12em] uppercase text-[var(--mx-text)] truncate">
-                        {cita.servicio?.nombre || 'Servicio'}
-                      </div>
-                      <div className="mt-2 text-[12px] text-[var(--mx-text-2)]">
-                        {cita.vehiculo?.placa || '—'} · {cita.vehiculo?.modelo || '—'}
-                      </div>
-                    </div>
-                    <div className={`px-3 py-2 rounded-[8px] mx-subtitle text-[10px] tracking-[0.22em] uppercase ${badge}`}>
+                  <div className="flex justify-between items-start relative z-10">
+                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                      cita.estado === 'PENDIENTE' 
+                        ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
+                        : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                    }`}>
                       {cita.estado}
+                    </span>
+                    <button
+                      onClick={() => handleDelete(cita.id)}
+                      className="p-2 bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-lg relative z-20"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="space-y-2 relative z-10">
+                    <h4 className="text-2xl font-black text-[#F8FAFC] uppercase italic tracking-tighter">{cita.servicio?.nombre}</h4>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-black text-[#2563EB] uppercase tracking-widest bg-[#2563EB]/5 px-2 py-0.5 rounded border border-[#2563EB]/10">{cita.vehiculo?.placa}</span>
+                      <span className="text-[#94A3B8] text-xs font-bold uppercase tracking-widest italic">{cita.vehiculo?.modelo}</span>
                     </div>
                   </div>
-
-                  <div className="mt-6 grid grid-cols-2 gap-4 border-t border-t-[var(--mx-border)] pt-5">
-                    <div>
-                      <div className="mx-subtitle text-[10px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Fecha</div>
-                      <div className="mt-1 text-[12px] text-[var(--mx-text)]">{new Date(cita.fecha).toLocaleDateString()}</div>
+                  <div className="pt-6 border-t border-white/5 flex justify-between items-center text-xs relative z-10">
+                    <div className="flex items-center text-[#94A3B8] font-bold italic uppercase tracking-widest">
+                      <span className="mr-2 opacity-50">📅</span>
+                      {new Date(cita.fecha).toLocaleDateString()}
                     </div>
-                    <div className="text-right">
-                      <div className="mx-subtitle text-[10px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Hora</div>
-                      <div className="mt-1 text-[12px] text-[var(--mx-text)]">{formatTimeAMPM(cita.hora_inicio?.substring(0, 5))}</div>
+                    <div className="flex items-center text-[#F8FAFC] font-black italic">
+                      <span className="mr-2 opacity-50 text-[#2563EB]">⏰</span>
+                      {cita.hora_inicio.substring(0, 5)}
                     </div>
                   </div>
-
-                  <button onClick={() => handleDelete(cita.id)} className="mt-6 w-full mx-btn mx-btn-outline py-3 text-[11px]">
-                    Eliminar
-                  </button>
                 </div>
-              );
-            })
-          ) : (
-            <div className="col-span-full">
-              <div className="mx-card bg-white border-[var(--mx-border)] p-10 text-center">
-                <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Sin pendientes</div>
-                <div className="mt-3 text-[13px] text-[var(--mx-text-2)]">No hay citas pendientes actualmente.</div>
+              ))
+            ) : (
+              <div className="col-span-full py-16 text-center bg-[#111827]/50 rounded-[2.5rem] border border-dashed border-white/5">
+                <p className="text-[#94A3B8] italic font-medium text-sm">No hay citas pendientes actualmente.</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </section>
 
-      <section data-reveal className="mx-reveal mx-reveal--in">
-        <div className="mx-card bg-white border-[var(--mx-border)] overflow-hidden">
-          <div className="px-8 py-7 border-b border-b-[var(--mx-border)] flex items-center gap-6">
-            <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Historial</div>
-            <div className="h-[2px] flex-1 bg-[var(--mx-blue)] opacity-20" />
-            <div className="mx-h1 text-[40px] leading-none text-[var(--mx-text)] opacity-[0.18]">03</div>
+        {/* Sección Historial de Servicios */}
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full" />
+            <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">Historial de Servicios</h2>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-white">
-                  {["ID", "SERVICIO", "VEHÍCULO", "FECHA", "HORA", "TRABAJADOR", "ESTADO"].map((head) => (
-                    <th key={head} className="px-8 py-4 text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)] font-semibold">
-                      {head}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {historialServicios.length > 0 ? (
-                  historialServicios.map((cita) => {
-                    const estado = (cita.estado || '').toUpperCase();
-                    const badge =
-                      estado === 'FINALIZADO'
-                        ? 'bg-[var(--mx-blue)] text-white'
-                        : estado === 'PENDIENTE'
-                          ? 'bg-[#C08A00] text-white'
-                          : estado === 'EN PROCESO'
-                            ? 'bg-[#0E9F6E] text-white'
-                            : 'bg-[#C1121F] text-white';
-
-                    return (
-                      <tr
-                        key={cita.id}
-                        className="group relative odd:bg-white even:bg-[var(--mx-bg-2)] transition-colors before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-0 before:bg-[var(--mx-blue)] before:transition-all before:duration-200 before:ease-out group-hover:before:w-[3px]"
-                      >
-                        <td className="px-8 py-5 text-[13px] text-[var(--mx-text-2)]">#{cita.id}</td>
-                        <td className="px-8 py-5 text-[13px] text-[var(--mx-text)]">{cita.servicio?.nombre || '—'}</td>
-                        <td className="px-8 py-5 text-[13px] text-[var(--mx-text-2)]">{cita.vehiculo?.placa || '—'}</td>
-                        <td className="px-8 py-5 text-[13px] text-[var(--mx-text-2)]">{new Date(cita.fecha).toLocaleDateString()}</td>
-                        <td className="px-8 py-5 text-[13px] text-[var(--mx-text-2)]">{formatTimeAMPM(cita.hora_inicio?.substring(0, 5))}</td>
-                        <td className="px-8 py-5 text-[13px] text-[var(--mx-text-2)]">{cita.empleado?.nombre || '—'}</td>
-                        <td className="px-8 py-5">
-                          <span className={`inline-flex items-center px-3 py-2 rounded-[8px] mx-subtitle text-[10px] tracking-[0.22em] uppercase ${badge}`}>
+          <div className="bg-[#111827] border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl bg-opacity-80">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/5 bg-[#020617]/50">
+                    {["ID", "SERVICIO", "VEHÍCULO", "FECHA", "HORA", "TRABAJADOR", "ESTADO"].map((head) => (
+                      <th key={head} className="px-6 py-5 text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em]">
+                        {head}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {historialServicios.length > 0 ? (
+                    historialServicios.map((cita) => (
+                      <tr key={cita.id} className="hover:bg-[#2563EB]/5 transition-all duration-300 group">
+                        <td className="px-6 py-5">
+                          <span className="text-sm font-black text-[#94A3B8] group-hover:text-[#2563EB] transition-colors">#{cita.id}</span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="text-sm font-black text-[#F8FAFC] uppercase italic tracking-tighter">{cita.servicio?.nombre}</span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-[10px] font-black text-[#2563EB] bg-[#2563EB]/10 px-2 py-0.5 rounded border border-[#2563EB]/20">{cita.vehiculo?.placa}</span>
+                            <span className="text-[10px] font-bold text-[#94A3B8] uppercase italic">{cita.vehiculo?.modelo}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center text-[#94A3B8] text-[11px] font-bold italic uppercase tracking-wider">
+                            <span className="mr-2 opacity-50">📅</span>
+                            {new Date(cita.fecha).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center text-[#F8FAFC] text-[11px] font-black italic">
+                            <span className="mr-2 opacity-50 text-[#2563EB]">⏰</span>
+                            {cita.hora_inicio.substring(0, 5)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 rounded-full bg-[#2563EB]/10 flex items-center justify-center text-[10px]">👤</div>
+                            <span className="text-sm font-bold text-[#F8FAFC]">{cita.empleado?.nombre || 'Por asignar'}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all duration-300 ${
+                            cita.estado === 'FINALIZADO' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white' :
+                            cita.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white' :
+                            'bg-red-500/10 text-red-500 border-red-500/20 group-hover:bg-red-500 group-hover:text-white'
+                          }`}>
                             {cita.estado}
                           </span>
                         </td>
                       </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="7" className="px-8 py-12 text-center text-[13px] text-[var(--mx-text-2)]">
-                      No hay servicios en el historial.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-      </div>
-    );
-  } catch (e) {
-    console.error('Citas render error:', e);
-    return (
-      <div className="mx-container py-10">
-        <div className="mx-card bg-white border-[var(--mx-border)] p-8">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">No tienes citas registradas aún</div>
-              <div className="mt-3 text-[13px] text-[var(--mx-text-2)]">Si ocurre un error, este panel igual debe mostrarse.</div>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="px-6 py-16 text-center text-[#94A3B8] italic font-medium text-sm">
+                        No hay servicios finalizados en el historial.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-            <button onClick={() => setShowForm(true)} className="mx-btn mx-btn-primary px-5 py-3 text-[11px]">
-              Agendar cita
-            </button>
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 };
 
 export default Citas;

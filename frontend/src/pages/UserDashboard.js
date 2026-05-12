@@ -1,16 +1,14 @@
 import React, { Component } from 'react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, Navigation, Pagination } from 'swiper/modules';
 import MapView from '../components/MapView';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// Swiper styles
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 class UserDashboard extends Component {
   constructor(props) {
@@ -21,56 +19,20 @@ class UserDashboard extends Component {
       misVehiculos: [],
       citas: [],
       previousCitas: [],
-      nowTs: Date.now(),
-      displayStats: {
-        vehiculos: 0,
-        citas: 0,
-        pendientes: 0,
-        completadas: 0,
-      },
     };
     this.pollingInterval = null;
-    this.nowInterval = null;
-    this.revealObserver = null;
-    this.countAnim = null;
   }
-
-  readJsonOrThrow = async (response, context) => {
-    if (!response.ok) {
-      throw new Error(`${context}: Network response was not ok`);
-    }
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error(`${context}: Response is not JSON`);
-    }
-    return response.json();
-  };
 
   componentDidMount() {
     this.fetchInitialFormData();
     this.fetchCitas();
     // Poll every 12 seconds
     this.pollingInterval = setInterval(this.fetchCitas, 12000);
-    this.nowInterval = setInterval(() => this.setState({ nowTs: Date.now() }), 1000);
-    this.setupReveal();
   }
 
   componentWillUnmount() {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
-    }
-    if (this.nowInterval) clearInterval(this.nowInterval);
-    if (this.revealObserver) this.revealObserver.disconnect();
-    if (this.countAnim) cancelAnimationFrame(this.countAnim);
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    const citasChanged = prevState.citas !== this.state.citas;
-    const vehiculosChanged = prevState.misVehiculos !== this.state.misVehiculos;
-
-    if ((citasChanged || vehiculosChanged) && !this.state.loading) {
-      this.setupReveal();
-      this.animateStats(this.getTargetStats());
     }
   }
 
@@ -89,23 +51,15 @@ class UserDashboard extends Component {
         fetch(`${API_BASE_URL}/servicios`, { headers }),
         fetch(`${API_BASE_URL}/vehiculos`, { headers })
       ]);
-
-      let serviciosData = [];
-      let vehiculosData = [];
-
-      try {
-        serviciosData = await this.readJsonOrThrow(serviciosRes, 'servicios');
-      } catch (error) {
-        console.error('Error fetching servicios:', error);
+      if (serviciosRes.ok && vehiculosRes.ok) {
+        const [serviciosData, vehiculosData] = await Promise.all([
+          serviciosRes.json(),
+          vehiculosRes.json()
+        ]);
+        this.setState({ servicios: serviciosData, misVehiculos: vehiculosData, loading: false });
+      } else {
+        this.setState({ loading: false });
       }
-
-      try {
-        vehiculosData = await this.readJsonOrThrow(vehiculosRes, 'vehiculos');
-      } catch (error) {
-        console.error('Error fetching vehiculos:', error);
-      }
-
-      this.setState({ servicios: serviciosData, misVehiculos: vehiculosData, loading: false });
     } catch (err) {
       console.error('Error fetching form data:', err);
       this.setState({ loading: false });
@@ -117,16 +71,16 @@ class UserDashboard extends Component {
     const headers = { 'Authorization': `Bearer ${token}` };
     try {
       const response = await fetch(`${API_BASE_URL}/citas`, { headers });
-      const data = await this.readJsonOrThrow(response, 'citas');
-      const citas = Array.isArray(data) ? data : [];
-      this.checkForStatusChanges(citas);
-      this.setState((prev) => ({
-        citas,
-        previousCitas: prev.citas,
-      }));
+      if (response.ok) {
+        const data = await response.json();
+        this.checkForStatusChanges(data);
+        this.setState(prev => ({ 
+          citas: data, 
+          previousCitas: prev.citas 
+        }));
+      }
     } catch (err) {
       console.error('Error fetching citas:', err);
-      this.setState({ loading: false });
     }
   };
 
@@ -148,128 +102,6 @@ class UserDashboard extends Component {
         }
       }
     });
-  };
-
-  setupReveal = () => {
-    const nodes = Array.from(document.querySelectorAll('[data-reveal]'));
-    if (nodes.length === 0) return;
-
-    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion) {
-      nodes.forEach((n) => n.classList.add('mx-reveal--in'));
-      return;
-    }
-
-    if (this.revealObserver) this.revealObserver.disconnect();
-    this.revealObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add('mx-reveal--in');
-          this.revealObserver?.unobserve(entry.target);
-        });
-      },
-      { threshold: 0.15 },
-    );
-
-    nodes.forEach((n) => this.revealObserver.observe(n));
-  };
-
-  getTargetStats = () => {
-    const vehiculos = (this.state.misVehiculos || []).length;
-    const citas = (this.state.citas || []).length;
-    const pendientes = (this.state.citas || []).filter((c) => (c.estado || '').toUpperCase() !== 'FINALIZADO').length;
-    const completadas = (this.state.citas || []).filter((c) => (c.estado || '').toUpperCase() === 'FINALIZADO').length;
-    return { vehiculos, citas, pendientes, completadas };
-  };
-
-  animateStats = (target) => {
-    const start = performance.now();
-    const from = { ...this.state.displayStats };
-    const to = { ...target };
-    const duration = 900;
-
-    const step = (now) => {
-      const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-
-      const next = {
-        vehiculos: Math.round(from.vehiculos + (to.vehiculos - from.vehiculos) * eased),
-        citas: Math.round(from.citas + (to.citas - from.citas) * eased),
-        pendientes: Math.round(from.pendientes + (to.pendientes - from.pendientes) * eased),
-        completadas: Math.round(from.completadas + (to.completadas - from.completadas) * eased),
-      };
-
-      this.setState({ displayStats: next });
-      if (t < 1) this.countAnim = requestAnimationFrame(step);
-    };
-
-    if (this.countAnim) cancelAnimationFrame(this.countAnim);
-    this.countAnim = requestAnimationFrame(step);
-  };
-
-  parseCitaDate = (cita) => {
-    const rawDate = cita?.fecha;
-    const rawTime = cita?.hora_inicio;
-    if (!rawDate) return null;
-
-    if (rawTime) {
-      const time = rawTime.length === 5 ? `${rawTime}:00` : rawTime;
-      const d = new Date(`${rawDate}T${time}`);
-      if (!Number.isNaN(d.getTime())) return d;
-    }
-
-    const d2 = new Date(rawDate);
-    if (!Number.isNaN(d2.getTime())) return d2;
-    return null;
-  };
-
-  getNextCita = () => {
-    const now = this.state.nowTs;
-    const upcoming = (this.state.citas || [])
-      .filter((c) => {
-        const estado = (c.estado || '').toUpperCase();
-        if (estado === 'FINALIZADO') return false;
-        const d = this.parseCitaDate(c);
-        return d && d.getTime() >= now;
-      })
-      .sort((a, b) => (this.parseCitaDate(a)?.getTime() || 0) - (this.parseCitaDate(b)?.getTime() || 0));
-
-    return upcoming[0] || null;
-  };
-
-  getCountdownParts = (targetDate) => {
-    const diff = Math.max(0, targetDate.getTime() - this.state.nowTs);
-    const totalSeconds = Math.floor(diff / 1000);
-    const days = Math.floor(totalSeconds / 86400);
-    const hours = Math.floor((totalSeconds % 86400) / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return { days, hours, minutes, seconds };
-  };
-
-  buildServicesByMonth = () => {
-    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const now = new Date(this.state.nowTs);
-    const buckets = [];
-
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      buckets.push({ key, name: monthNames[d.getMonth()], servicios: 0 });
-    }
-
-    const index = new Map(buckets.map((b, idx) => [b.key, idx]));
-    (this.state.citas || []).forEach((c) => {
-      const d = this.parseCitaDate(c);
-      if (!d) return;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const idx = index.get(key);
-      if (idx === undefined) return;
-      buckets[idx].servicios += 1;
-    });
-
-    return buckets.map(({ name, servicios }) => ({ name, servicios }));
   };
 
   handleSaberMas = (servicio) => {
@@ -298,295 +130,218 @@ class UserDashboard extends Component {
   };
 
   render() {
-    const { servicios, loading, displayStats } = this.state;
+    const { servicios, loading } = this.state;
     const { setView } = this.props;
 
-    if (loading) {
-      return (
-        <div className="mx-container py-14">
-          <div className="mx-card bg-white border-[var(--mx-border)] p-10 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[var(--mx-blue)]" />
-          </div>
-        </div>
-      );
-    }
-
-    const userName = localStorage.getItem('userName') || 'Usuario';
-    const nextCita = this.getNextCita();
-    const nextDate = nextCita ? this.parseCitaDate(nextCita) : null;
-    const countdown = nextDate ? this.getCountdownParts(nextDate) : null;
-    const chartData = this.buildServicesByMonth();
-
-    const recent = [...(this.state.citas || [])]
-      .sort((a, b) => (this.parseCitaDate(b)?.getTime() || 0) - (this.parseCitaDate(a)?.getTime() || 0))
-      .slice(0, 8);
-
-    const badge = (estadoRaw) => {
-      const estado = (estadoRaw || '').toUpperCase();
-      if (estado === 'FINALIZADO') return 'bg-[var(--mx-blue)] text-white';
-      if (estado === 'PENDIENTE') return 'bg-[#C08A00] text-white';
-      if (estado === 'EN PROCESO') return 'bg-[#0E9F6E] text-white';
-      return 'bg-[var(--mx-text)] text-white';
-    };
+    if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500"></div></div>;
 
     return (
-      <div className="mx-container py-10 space-y-12">
-        <section data-reveal className="mx-reveal mx-card bg-white border-[var(--mx-border)] p-8 mx-diagonal-cut overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
-            <div className="lg:col-span-8 relative">
-              <div className="absolute -top-10 -left-2 mx-h1 text-[160px] leading-none text-[var(--mx-text)] opacity-[0.06] select-none pointer-events-none" aria-hidden="true">
-                01
-              </div>
-              <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Cliente</div>
-              <h1 className="mx-h1 text-[72px] sm:text-[86px] text-[var(--mx-text)]">
-                BUENOS DÍAS,<br />
-                <span className="text-[var(--mx-blue)]">{String(userName).toUpperCase()}</span>
-              </h1>
-              <div className="mt-4 text-[14px] text-[var(--mx-text-2)] max-w-[70ch]">
-                Tu tablero: citas, historial y métricas con lectura editorial. Sin ruido. Solo control.
-              </div>
-            </div>
+      <div className="space-y-24 animate-in fade-in duration-700 pb-32 bg-[#020617]">
+        {/* ENCABEZADO DE BIENVENIDA PREMIUM */}
+        <header className="relative min-h-[60vh] flex items-center justify-center overflow-hidden rounded-[3rem] border border-white/5 mx-6 mt-6">
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="https://images.unsplash.com/photo-1599256621730-535171e28e50?auto=format&fit=crop&q=80&w=1920" 
+              className="w-full h-full object-cover opacity-30"
+              alt="Welcome background"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/20 via-[#020617]/80 to-[#020617]" />
+          </div>
 
-            <div className="lg:col-span-4">
-              <div className="mx-card bg-[var(--mx-bg-2)] border-[var(--mx-border)] p-6">
-                <div className="mx-subtitle text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)]">Acciones rápidas</div>
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <button onClick={() => setView('citas')} className="mx-btn mx-btn-primary py-3 text-[11px]">
-                    Agendar
-                  </button>
-                  <button onClick={() => setView('vehiculos')} className="mx-btn mx-btn-outline py-3 text-[11px]">
-                    Vehículos
-                  </button>
-                </div>
-                <div className="mt-4 h-[2px] w-full bg-[var(--mx-blue)] opacity-15" />
-              </div>
+          <div className="relative z-10 text-center space-y-8 px-6">
+            <div className="inline-block px-4 py-1 rounded-full bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] text-[10px] font-black uppercase tracking-[0.3em] animate-in slide-in-from-bottom duration-700">
+              Panel de Control Premium
+            </div>
+            <h1 className="text-5xl md:text-7xl font-black text-[#F8FAFC] sans tracking-tighter italic uppercase leading-none">
+              Bienvenido a <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2563EB] to-blue-400">MotoExpert</span>
+            </h1>
+            <p className="text-[#94A3B8] text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
+              Gestiona tu flota personal y agenda servicios de detailing con el estándar más alto de la industria.
+            </p>
+          </div>
+        </header>
+
+        {/* BENEFICIOS / TIPS REDISEÑADOS */}
+        <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { title: 'Agenda Inteligente', desc: 'Reserva servicios en segundos.', icon: '' },
+            { title: 'Gestión de Flota', desc: 'Control total de tus vehículos.', icon: '' },
+            { title: 'Soporte VIP', desc: 'Atención prioritaria 24/7.', icon: '' }
+          ].map((item, i) => (
+            <div key={i} className="p-8 rounded-3xl bg-[#111827] border border-white/5 hover:border-[#2563EB]/30 transition-all duration-500 shadow-2xl group">
+              <div className="text-3xl mb-4 group-hover:scale-110 transition-transform duration-500">{item.icon}</div>
+              <h3 className="text-lg font-black uppercase italic tracking-tighter text-[#F8FAFC] mb-2">{item.title}</h3>
+              <p className="text-[#94A3B8] text-sm font-medium">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* LAYOUT DE INSTRUCCIONES PREMIUM */}
+        <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* LADO IZQUIERDO: CITAS */}
+          <div className="bg-[#111827] p-10 rounded-[2.5rem] transition-all flex flex-col h-full group border border-white/5 hover:border-[#2563EB]/20 shadow-2xl">
+            <div className="flex items-center space-x-4 mb-8">
+              <div className="w-12 h-12 bg-[#2563EB]/10 rounded-xl flex items-center justify-center text-xl shadow-inner">📅</div>
+              <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">Gestión de Citas</h2>
+            </div>
+            <ul className="space-y-4 mb-10 flex-grow text-[#94A3B8] font-medium">
+              {[
+                "Selecciona tu vehículo registrado.",
+                "Elige el servicio premium deseado.",
+                "Define fecha y hora en tiempo real.",
+                "Confirma y recibe tu código VIP."
+              ].map((step, i) => (
+                <li key={i} className="flex items-start space-x-4">
+                  <span className="flex-shrink-0 w-6 h-6 bg-[#2563EB]/10 text-[#2563EB] rounded-full flex items-center justify-center text-[10px] font-black">{i+1}</span>
+                  <span className="text-sm">{step}</span>
+                </li>
+              ))}
+            </ul>
+            <button 
+              onClick={() => this.props.setView('citas')}
+              className="w-full py-5 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#2563EB]/20 transition-all active:scale-95"
+            >
+              Agendar Cita
+            </button>
+          </div>
+
+          {/* LADO DERECHO: VEHÍCULOS */}
+          <div className="bg-[#111827] p-10 rounded-[2.5rem] transition-all flex flex-col h-full group border border-white/5 hover:border-purple-500/20 shadow-2xl">
+            <div className="flex items-center space-x-4 mb-8">
+              <div className="w-12 h-12 bg-purple-600/10 rounded-xl flex items-center justify-center text-xl shadow-inner">🏍️</div>
+              <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">Mi Flota Personal</h2>
+            </div>
+            <ul className="space-y-4 mb-10 flex-grow text-[#94A3B8] font-medium">
+              {[
+                "Añade un nuevo vehículo a tu perfil.",
+                "Especifica placa, marca y modelo.",
+                "Sincroniza el historial de servicios.",
+                "Administra múltiples vehículos."
+              ].map((step, i) => (
+                <li key={i} className="flex items-start space-x-4">
+                  <span className="flex-shrink-0 w-6 h-6 bg-purple-600/10 text-purple-500 rounded-full flex items-center justify-center text-[10px] font-black">{i+1}</span>
+                  <span className="text-sm">{step}</span>
+                </li>
+              ))}
+            </ul>
+            <button 
+              onClick={() => this.props.setView('vehiculos')}
+              className="w-full py-5 bg-[#1e293b] hover:bg-slate-800 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl border border-white/5 shadow-2xl transition-all active:scale-95"
+            >
+              Mis Vehículos
+            </button>
+          </div>
+        </div>
+
+        {/* SERVICIOS PREMIUM CAROUSEL */}
+        <section className="py-20 relative overflow-hidden">
+          <div className="container mx-auto px-6 mb-16 flex flex-col md:flex-row justify-between items-end gap-6">
+            <div className="space-y-4">
+              <div className="text-[#2563EB] text-[10px] font-black uppercase tracking-[0.3em]">Catálogo Detailing</div>
+              <h2 className="text-4xl md:text-5xl font-black text-[#F8FAFC] italic uppercase tracking-tighter leading-none">
+                Servicios <span className="text-[#2563EB]">Exclusivos</span>
+              </h2>
+            </div>
+            <p className="text-[#94A3B8] max-w-sm text-sm font-medium">
+              Cada proceso está diseñado para elevar la estética y proteger la integridad de tu vehículo.
+            </p>
+          </div>
+
+          <div className="relative px-6">
+            <Swiper
+              modules={[Autoplay, Navigation, Pagination]}
+              spaceBetween={30}
+              slidesPerView={1}
+              autoplay={{ delay: 5000, disableOnInteraction: false }}
+              navigation={{
+                nextEl: '.swiper-button-next-custom',
+                prevEl: '.swiper-button-prev-custom',
+              }}
+              pagination={{ clickable: true, dynamicBullets: true }}
+              breakpoints={{
+                768: { slidesPerView: 2 },
+                1024: { slidesPerView: 3 },
+              }}
+              className="pb-20"
+            >
+              {servicios.map((s, idx) => {
+                const mockImages = [
+                  'https://images.unsplash.com/photo-1599256621730-535171e28e50?auto=format&fit=crop&q=80&w=800',
+                  'https://images.unsplash.com/photo-1558981403-c5f91cbba527?auto=format&fit=crop&q=80&w=800',
+                  'https://images.unsplash.com/photo-1605152276897-4f618f831968?auto=format&fit=crop&q=80&w=800',
+                  'https://images.unsplash.com/photo-1486006920555-c77dcf18193c?auto=format&fit=crop&q=80&w=800',
+                  'https://images.unsplash.com/photo-1517524008436-bbdbb83c668b?auto=format&fit=crop&q=80&w=800',
+                ];
+                const bgImage = mockImages[idx % mockImages.length];
+
+                return (
+                  <SwiperSlide key={s.id}>
+                    <div className="group relative h-[600px] w-full overflow-hidden rounded-[3rem] bg-[#111827] shadow-2xl transition-all duration-700 border border-white/5 hover:border-[#2563EB]/40">
+                      <div 
+                        className="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
+                        style={{ backgroundImage: `url(${bgImage})` }}
+                      />
+                      <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent" />
+                      <div className="absolute inset-0 z-20 p-10 flex flex-col justify-end">
+                        <div className="space-y-6 transform transition-all duration-700 translate-y-4 group-hover:translate-y-0">
+                          <h4 className="text-3xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">{s.nombre}</h4>
+                          <p className="text-[#94A3B8] text-sm line-clamp-2 leading-relaxed font-medium">{s.descripcion}</p>
+                          
+                          <div className="flex flex-col sm:flex-row gap-4">
+                            <button 
+                              onClick={() => this.handleAgendarServicio(s)}
+                              className="flex-1 py-5 bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-[#2563EB]/20 active:scale-95"
+                            >
+                              Agendar Ahora
+                            </button>
+                            <button 
+                              onClick={() => this.handleSaberMas(s)}
+                              className="flex-1 py-5 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl border border-white/10 backdrop-blur-xl transition-all active:scale-95"
+                            >
+                              Saber Más
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </SwiperSlide>
+                );
+              })}
+            </Swiper>
+            
+            <div className="swiper-button-prev-custom absolute left-10 top-1/2 z-30 -translate-y-1/2 cursor-pointer rounded-2xl bg-[#020617]/50 p-5 text-white backdrop-blur-xl border border-white/5 hover:bg-[#2563EB] transition-all hidden lg:flex">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+            </div>
+            <div className="swiper-button-next-custom absolute right-10 top-1/2 z-30 -translate-y-1/2 cursor-pointer rounded-2xl bg-[#020617]/50 p-5 text-white backdrop-blur-xl border border-white/5 hover:bg-[#2563EB] transition-all hidden lg:flex">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
             </div>
           </div>
         </section>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { idx: 0, label: 'Vehículos', value: displayStats.vehiculos, meta: 'Registrados' },
-            { idx: 1, label: 'Citas', value: displayStats.citas, meta: 'Total' },
-            { idx: 2, label: 'Pendientes', value: displayStats.pendientes, meta: 'En cola' },
-            { idx: 3, label: 'Completadas', value: displayStats.completadas, meta: 'Historial' },
-          ].map((s) => (
-            <div key={s.label} data-reveal className="mx-reveal">
-              <div className={`mx-card p-6 ${s.idx === 0 ? 'bg-[var(--mx-blue)] text-white border-[var(--mx-blue)]' : 'bg-white text-[var(--mx-text)] border-[var(--mx-border)] border-l-[3px] border-l-[var(--mx-blue)]'}`}>
-                <div className={`mx-subtitle text-[11px] tracking-[0.22em] uppercase ${s.idx === 0 ? 'text-[rgba(255,255,255,0.72)]' : 'text-[var(--mx-text-2)]'}`}>
-                  {s.label}
+        {/* MAPA PREMIUM */}
+        <div className="container mx-auto px-6 py-20">
+          <div className="rounded-[3rem] overflow-hidden border border-white/5 shadow-2xl relative group h-[500px]">
+            <MapView />
+            <div className="absolute bottom-10 left-10 right-10 p-8 bg-[#020617]/60 backdrop-blur-2xl border border-white/5 rounded-3xl z-10">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">Nuestra Sede Central</h3>
+                  <p className="text-[#94A3B8] font-medium">Ubicación estratégica para el cuidado de tu motor.</p>
                 </div>
-                <div className={`mt-2 mx-h1 text-[56px] leading-none ${s.idx === 0 ? 'text-white' : 'text-[var(--mx-text)]'}`}>
-                  {s.value}
-                </div>
-                <div className={`mt-3 text-[12px] tracking-[0.18em] uppercase ${s.idx === 0 ? 'text-[rgba(255,255,255,0.72)]' : 'text-[var(--mx-text-2)]'}`}>
-                  {s.meta}
-                </div>
-              </div>
-            </div>
-          ))}
-        </section>
-
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div data-reveal className="mx-reveal lg:col-span-7">
-            <div className="mx-card bg-white border-[var(--mx-border)] overflow-hidden">
-              <div className="px-8 py-7 border-b border-b-[var(--mx-border)] flex items-center gap-6">
-                <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Historial de servicios</div>
-                <div className="h-[2px] flex-1 bg-[var(--mx-blue)] opacity-20" />
-                <div className="mx-h1 text-[40px] leading-none text-[var(--mx-text)] opacity-[0.18]">02</div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-white">
-                      {['Servicio', 'Vehículo', 'Fecha', 'Estado'].map((h) => (
-                        <th key={h} className="px-8 py-4 text-[11px] tracking-[0.22em] uppercase text-[var(--mx-text-2)] font-semibold">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recent.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="px-8 py-10 text-[13px] text-[var(--mx-text-2)]">
-                          Sin servicios todavía.
-                        </td>
-                      </tr>
-                    ) : (
-                      recent.map((c) => {
-                        const d = this.parseCitaDate(c);
-                        return (
-                          <tr
-                            key={c.id}
-                            className="group relative odd:bg-white even:bg-[var(--mx-bg-2)] transition-colors before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-0 before:bg-[var(--mx-blue)] before:transition-all before:duration-200 before:ease-out group-hover:before:w-[3px]"
-                          >
-                            <td className="px-8 py-5 text-[13px] text-[var(--mx-text)]">
-                              {c.servicio?.nombre || 'Servicio'}
-                            </td>
-                            <td className="px-8 py-5 text-[13px] text-[var(--mx-text-2)]">
-                              {c.vehiculo?.placa || '—'}
-                            </td>
-                            <td className="px-8 py-5 text-[13px] text-[var(--mx-text-2)]">
-                              {d ? d.toLocaleDateString() : '—'}
-                            </td>
-                            <td className="px-8 py-5">
-                              <span className={`inline-flex items-center px-3 py-2 rounded-[8px] mx-subtitle text-[10px] tracking-[0.22em] uppercase ${badge(c.estado)}`}>
-                                {c.estado || '—'}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="px-8 py-6 border-t border-t-[var(--mx-border)] flex items-center justify-between">
-                <div className="text-[12px] tracking-[0.18em] uppercase text-[var(--mx-text-2)]">
-                  Actualiza cada 12s
-                </div>
-                <button onClick={() => setView('citas')} className="mx-btn mx-btn-outline px-5 py-3 text-[11px]">
-                  Ver citas
+                <button
+                  onClick={this.handleDirectionsClick}
+                  className="bg-white hover:bg-blue-700 hover:text-white text-[#020617] font-bold py-3 px-8 rounded-xl shadow-lg shadow-blue-600/20 transform transition-all active:scale-95 flex items-center justify-center mx-auto space-x-2"
+                  >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Cómo llegar</span>
                 </button>
               </div>
             </div>
           </div>
-
-          <div data-reveal className="mx-reveal lg:col-span-5">
-            <div className="mx-card bg-[var(--mx-blue)] border-[var(--mx-blue)] text-white p-8">
-              <div className="flex items-center justify-between gap-6">
-                <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[rgba(255,255,255,0.78)]">Próxima cita</div>
-                <div className="mx-h1 text-[40px] leading-none text-white opacity-[0.65]">03</div>
-              </div>
-
-              {nextCita && nextDate && countdown ? (
-                <>
-                  <div className="mt-6 mx-h1 text-[54px] leading-none">
-                    {String(nextDate.getDate()).padStart(2, '0')}/{String(nextDate.getMonth() + 1).padStart(2, '0')}
-                  </div>
-                  <div className="mt-2 text-[13px] text-[rgba(255,255,255,0.80)]">
-                    {nextCita.servicio?.nombre || 'Servicio'} · {nextCita.vehiculo?.placa || '—'} · {nextCita.hora_inicio?.substring(0, 5) || ''}
-                  </div>
-
-                  <div className="mt-8 grid grid-cols-4 gap-3">
-                    {[
-                      { k: 'Días', v: countdown.days },
-                      { k: 'Horas', v: countdown.hours },
-                      { k: 'Min', v: countdown.minutes },
-                      { k: 'Seg', v: countdown.seconds },
-                    ].map((p) => (
-                      <div key={p.k} className="mx-card bg-[rgba(0,26,219,0.65)] border-[rgba(255,255,255,0.16)] p-4">
-                        <div className="mx-h1 text-[34px] leading-none text-white">{String(p.v).padStart(2, '0')}</div>
-                        <div className="mt-2 mx-subtitle text-[10px] tracking-[0.22em] uppercase text-[rgba(255,255,255,0.72)]">{p.k}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-8 grid grid-cols-2 gap-3">
-                    <button onClick={() => setView('citas')} className="mx-btn mx-btn-outline border-white text-white hover:bg-white hover:text-[var(--mx-blue)] py-3 text-[11px]">
-                      Cancelar
-                    </button>
-                    <button onClick={() => setView('citas')} className="mx-btn bg-white text-[var(--mx-blue)] border border-white py-3 text-[11px] hover:bg-[rgba(255,255,255,0.90)]">
-                      Reagendar
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mt-6 mx-h1 text-[54px] leading-none">—</div>
-                  <div className="mt-2 text-[13px] text-[rgba(255,255,255,0.80)]">
-                    No tienes una cita programada.
-                  </div>
-                  <div className="mt-8">
-                    <button onClick={() => setView('citas')} className="mx-btn bg-white text-[var(--mx-blue)] border border-white px-6 py-3 text-[11px] hover:bg-[rgba(255,255,255,0.90)]">
-                      Agendar ahora
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div data-reveal className="mx-reveal lg:col-span-7">
-            <div className="mx-card bg-white border-[var(--mx-border)] p-8">
-              <div className="flex items-center justify-between gap-6">
-                <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Gráfica de servicios</div>
-                <div className="h-[2px] flex-1 bg-[var(--mx-blue)] opacity-20" />
-                <div className="mx-h1 text-[40px] leading-none text-[var(--mx-text)] opacity-[0.18]">04</div>
-              </div>
-
-              <div className="mt-8" style={{ width: '100%', height: 300 }}>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                    <XAxis dataKey="name" stroke="#4A5568" fontSize={12} axisLine={false} tickLine={false} />
-                    <YAxis allowDecimals={false} stroke="#4A5568" fontSize={12} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px' }} itemStyle={{ color: '#05010F' }} />
-                    <Bar dataKey="servicios" fill="#0047FF" radius={[8, 8, 0, 0]} barSize={34} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-          <div data-reveal className="mx-reveal lg:col-span-5">
-            <div className="mx-card bg-white border-[var(--mx-border)] overflow-hidden">
-              <div className="px-8 py-7 border-b border-b-[var(--mx-border)] flex items-center gap-6">
-                <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Servicios destacados</div>
-                <div className="h-[2px] flex-1 bg-[var(--mx-blue)] opacity-20" />
-              </div>
-
-              <div className="p-8 grid grid-cols-1 gap-4">
-                {(servicios || []).slice(0, 3).map((s, idx) => (
-                  <div key={s.id} className="mx-card mx-card-hover-up border-[var(--mx-border)] p-6">
-                    <div className="flex items-start justify-between gap-6">
-                      <div className="min-w-0">
-                        <div className="mx-subtitle text-[12px] tracking-[0.18em] uppercase text-[var(--mx-text)] truncate">{s.nombre}</div>
-                        <div className="mt-2 text-[13px] text-[var(--mx-text-2)] leading-relaxed">{s.descripcion}</div>
-                      </div>
-                      <div className="mx-h1 text-[44px] leading-none text-[var(--mx-blue)] opacity-[0.22]">{String(idx + 1).padStart(2, '0')}</div>
-                    </div>
-                    <div className="mt-5 flex gap-3">
-                      <button onClick={() => this.handleAgendarServicio(s)} className="mx-btn mx-btn-primary px-5 py-3 text-[11px]">
-                        Agendar
-                      </button>
-                      <button onClick={() => this.handleSaberMas(s)} className="mx-btn mx-btn-outline px-5 py-3 text-[11px]">
-                        Ver
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section data-reveal className="mx-reveal">
-          <div className="mx-card bg-white border-[var(--mx-border)] overflow-hidden">
-            <div className="px-8 py-7 border-b border-b-[var(--mx-border)] flex items-center gap-6">
-              <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">Sede</div>
-              <div className="h-[2px] flex-1 bg-[var(--mx-blue)] opacity-20" />
-            </div>
-
-            <div className="relative h-[420px]">
-              <MapView />
-              <div className="absolute left-6 bottom-6 right-6 md:right-auto md:w-[420px] mx-card bg-white border-[var(--mx-border)] p-6">
-                <div className="mx-subtitle text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text)]">MotoExpert</div>
-                <div className="mt-2 text-[13px] text-[var(--mx-text-2)]">Ubicación y acceso directo.</div>
-                <div className="mt-5">
-                  <button onClick={this.handleDirectionsClick} className="mx-btn mx-btn-primary px-6 py-3 text-[11px]">
-                    Cómo llegar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        </div>
       </div>
     );
   }
