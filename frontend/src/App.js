@@ -15,6 +15,7 @@ import MapView from "./components/MapView";
 import Toast from "./components/Toast";
 import UserDashboard from './pages/UserDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
@@ -75,78 +76,78 @@ function App() {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
-  if (!isLoggedIn && view === "landing") {
-    return <LandingPage onEnterLogin={() => setView("login")} onEnterRegister={() => setView("register")} />;
-  }
-
-  if (!isLoggedIn && view === "login") {
-    return (
-      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-4 text-[#F8FAFC]">
-        <button onClick={() => setView("landing")} className="mb-4 text-[#94A3B8] hover:text-[#F8FAFC] transition text-sm">
-          ← Volver al inicio
-        </button>
-        <Login initialMode="login" onLoginSuccess={handleLoginSuccess} />
-      </div>
-    );
-  }
-
-  if (!isLoggedIn && view === "register") {
-    return (
-      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-4 text-[#F8FAFC]">
-        <button onClick={() => setView("landing")} className="mb-4 text-[#94A3B8] hover:text-[#F8FAFC] transition text-sm">
-          ← Volver al inicio
-        </button>
-        <Login initialMode="register" onLoginSuccess={handleLoginSuccess} />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#020617] text-[#F8FAFC]">
-      <InactivityHandler onLogout={handleLogout} />
+    <ThemeProvider>
+      {!isLoggedIn && view === "landing" && (
+        <LandingPage onEnterLogin={() => setView("login")} onEnterRegister={() => setView("register")} />
+      )}
 
-      <Navbar 
-        setView={setView} 
-        handleLogout={handleLogout} 
-        userRole={userRole}
-        unreadNotifications={unreadNotifications}
-        resetUnreadNotifications={resetUnreadNotifications}
-        notifications={notifications}
-        showNotifPanel={showNotifPanel}
-      />
+      {!isLoggedIn && view === "login" && (
+        <div className="min-h-screen bg-white dark:bg-[#020617] flex flex-col items-center justify-center p-4 text-slate-900 dark:text-[#F8FAFC]">
+          <button onClick={() => setView("landing")} className="mb-4 text-slate-500 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] transition text-sm">
+            ← Volver al inicio
+          </button>
+          <Login initialMode="login" onLoginSuccess={handleLoginSuccess} />
+        </div>
+      )}
 
-      {toasts.map(toast => (
-        <Toast 
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
+      {!isLoggedIn && view === "register" && (
+        <div className="min-h-screen bg-white dark:bg-[#020617] flex flex-col items-center justify-center p-4 text-slate-900 dark:text-[#F8FAFC]">
+          <button onClick={() => setView("landing")} className="mb-4 text-slate-500 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] transition text-sm">
+            ← Volver al inicio
+          </button>
+          <Login initialMode="register" onLoginSuccess={handleLoginSuccess} />
+        </div>
+      )}
 
-      <main className="pt-16 p-8">
-        {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} />}
-        {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard />}
-        {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
-        {view === "servicios" && <Servicios setView={setView} />}
-        {view === "users" && <UsersList />}
-        {view === "vehiculos" && <Vehiculos setView={setView} />}
-        {view === "citas" && <Citas setView={setView} showToast={showToast} />}
-        {view === "cuenta" && <MiCuenta />}
-        {view === "panel_empleado" && <PanelEmpleado />}
+      {isLoggedIn && (
+        <div className="min-h-screen bg-white dark:bg-[#020617] text-slate-900 dark:text-[#F8FAFC]">
+          <InactivityHandler onLogout={handleLogout} />
 
-        {userRole === 'admin' && view !== 'users' && (
-          <div className="fixed bottom-8 right-8">
-            <button 
-              onClick={() => setView("users")}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 font-bold"
-            >
-              👥 Administrar Usuarios
-            </button>
-          </div>
-        )}
-      </main>
-    </div>
+          <Navbar 
+            setView={setView} 
+            handleLogout={handleLogout} 
+            userRole={userRole}
+            unreadNotifications={unreadNotifications}
+            resetUnreadNotifications={resetUnreadNotifications}
+            notifications={notifications}
+            showNotifPanel={showNotifPanel}
+          />
+
+          {toasts.map(toast => (
+            <Toast 
+              key={toast.id}
+              message={toast.message}
+              type={toast.type}
+              onClose={() => removeToast(toast.id)}
+            />
+          ))}
+
+          <main className="pt-16 p-8">
+            {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} />}
+            {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard />}
+            {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
+            {view === "servicios" && <Servicios setView={setView} />}
+            {view === "users" && <UsersList />}
+            {view === "vehiculos" && <Vehiculos setView={setView} />}
+            {view === "citas" && <Citas setView={setView} showToast={showToast} />}
+            {view === "cuenta" && <MiCuenta />}
+            {view === "panel_empleado" && <PanelEmpleado />}
+
+            {userRole === 'admin' && view !== 'users' && (
+              <div className="fixed bottom-8 right-8">
+                <button 
+                  onClick={() => setView("users")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 font-bold"
+                >
+                  👥 Administrar Usuarios
+                </button>
+              </div>
+            )}
+          </main>
+        </div>
+      )}
+    </ThemeProvider>
   );
 }
 

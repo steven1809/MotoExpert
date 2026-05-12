@@ -108,7 +108,7 @@ export class CitasService {
     return this.repo.save(cita);
   }
 
-  async getAvailableSlots(fecha: string, servicioId: number) {
+  async getAvailableSlots(fecha: string, servicioId: number, empleadoId?: number) {
     const servicio = await this.servicioRepo.findOne({ where: { id: servicioId } });
     if (!servicio) throw new NotFoundException('Servicio no encontrado');
 
@@ -121,10 +121,23 @@ export class CitasService {
     // Obtenemos todas las citas de ese día (asegurando formato YYYY-MM-DD)
     const formattedFecha = new Date(fecha).toISOString().split('T')[0];
     
-    const citasDelDia = await this.repo.find({
-      where: { fecha: formattedFecha },
-      relations: ['empleado']
-    });
+    let citasDelDia;
+    if (empleadoId) {
+      // Si hay empleadoId, filtramos citas solo para ese empleado
+      citasDelDia = await this.repo.find({
+        where: { 
+          fecha: formattedFecha,
+          empleado: { id: empleadoId }
+        },
+        relations: ['empleado']
+      });
+    } else {
+      // Sin empleadoId, obtenemos todas las citas del día
+      citasDelDia = await this.repo.find({
+        where: { fecha: formattedFecha },
+        relations: ['empleado']
+      });
+    }
 
     // Generamos los slots basados en el Horario Maestro y marcamos disponibilidad
     const slots = masterSchedule.map(horaStr => {
