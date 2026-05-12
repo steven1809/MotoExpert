@@ -1,29 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const makeHeroPlaceholder = (label) =>
-  `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
-      <rect width="1920" height="1080" fill="#0A0F1E"/>
-      <path d="M1320 0h600v780z" fill="#0047FF"/>
-      <path d="M0 860h1920" stroke="#0047FF" stroke-width="2" opacity="0.8"/>
-      <text x="90" y="250" font-family="Bebas Neue, sans-serif" font-size="180" fill="#F9FAFB" opacity="0.9">${label}</text>
-      <text x="92" y="345" font-family="Outfit, sans-serif" font-size="44" fill="#9CA3AF" letter-spacing="7">MOTO</text>
-      <text x="250" y="345" font-family="Outfit, sans-serif" font-size="44" fill="#0047FF" letter-spacing="7">EXPERT</text>
-      <g opacity="0.25">
-        <path d="M90 430h680" stroke="#4D8AFF" stroke-width="2"/>
-        <path d="M90 470h520" stroke="#4D8AFF" stroke-width="2"/>
-        <path d="M90 510h610" stroke="#4D8AFF" stroke-width="2"/>
-      </g>
-    </svg>`
-  )}`;
-
 const IMAGES = [
-  makeHeroPlaceholder('01'),
-  makeHeroPlaceholder('02'),
-  makeHeroPlaceholder('03'),
-  makeHeroPlaceholder('04'),
-  makeHeroPlaceholder('05'),
+  'https://images.unsplash.com/photo-1599256621730-535171e28e50?auto=format&fit=crop&q=80&w=1920', // Detailing premium
+  'https://images.unsplash.com/photo-1558981403-c5f91cbba527?auto=format&fit=crop&q=80&w=1920', // Porsche en taller
+  'https://images.unsplash.com/photo-1605152276897-4f618f831968?auto=format&fit=crop&q=80&w=1920', // Lavado profesional
+  'https://images.unsplash.com/photo-1486006920555-c77dcf18193c?auto=format&fit=crop&q=80&w=1920', // Taller minimalista
+  'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&q=80&w=1920'  // Auto de lujo
 ];
 
 const HeroBackgroundSlider = () => {

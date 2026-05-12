@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Login from "./components/Login/Login"; 
+import Register from "./components/Register/Register";
 import Servicios from "./pages/Servicios";
 import UsersList from "./pages/UsersList";
 import Vehiculos from "./pages/Vehiculos";
@@ -10,6 +11,7 @@ import Navbar from "./components/Navbar";
 import LandingPage from './pages/LandingPage';
 import DashboardAdmin from './pages/DashboardAdmin';
 import InactivityHandler from "./components/InactivityHandler";
+import MapView from "./components/MapView";
 import Toast from "./components/Toast";
 import UserDashboard from './pages/UserDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
@@ -19,30 +21,9 @@ function App() {
   const [userRole, setUserRole] = useState("admin");
   const [view, setView] = useState("landing");
   const [toasts, setToasts] = useState([]);
-  const [theme, setTheme] = useState("light");
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    let nextTheme = saved === "light" || saved === "dark" ? saved : null;
-    if (!nextTheme) {
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      nextTheme = prefersDark ? "dark" : "light";
-    }
-    setTheme(nextTheme);
-    document.documentElement.setAttribute("data-theme", nextTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    setTheme((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      localStorage.setItem("theme", next);
-      document.documentElement.setAttribute("data-theme", next);
-      return next;
-    });
-  };
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -95,13 +76,13 @@ function App() {
   };
 
   if (!isLoggedIn && view === "landing") {
-    return <LandingPage theme={theme} onToggleTheme={toggleTheme} onEnterLogin={() => setView("login")} onEnterRegister={() => setView("register")} />;
+    return <LandingPage onEnterLogin={() => setView("login")} onEnterRegister={() => setView("register")} />;
   }
 
   if (!isLoggedIn && view === "login") {
     return (
-      <div className="min-h-screen bg-[var(--mx-bg-2)] flex flex-col items-center justify-center p-6 text-[var(--mx-text)]">
-        <button onClick={() => setView("landing")} className="mb-4 text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text-2)] hover:text-[var(--mx-text)] transition">
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-4 text-[#F8FAFC]">
+        <button onClick={() => setView("landing")} className="mb-4 text-[#94A3B8] hover:text-[#F8FAFC] transition text-sm">
           ← Volver al inicio
         </button>
         <Login initialMode="login" onLoginSuccess={handleLoginSuccess} />
@@ -111,8 +92,8 @@ function App() {
 
   if (!isLoggedIn && view === "register") {
     return (
-      <div className="min-h-screen bg-[var(--mx-bg-2)] flex flex-col items-center justify-center p-6 text-[var(--mx-text)]">
-        <button onClick={() => setView("landing")} className="mb-4 text-[12px] tracking-[0.22em] uppercase text-[var(--mx-text-2)] hover:text-[var(--mx-text)] transition">
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-4 text-[#F8FAFC]">
+        <button onClick={() => setView("landing")} className="mb-4 text-[#94A3B8] hover:text-[#F8FAFC] transition text-sm">
           ← Volver al inicio
         </button>
         <Login initialMode="register" onLoginSuccess={handleLoginSuccess} />
@@ -121,16 +102,13 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--mx-bg-2)] text-[var(--mx-text)]">
+    <div className="min-h-screen bg-[#020617] text-[#F8FAFC]">
       <InactivityHandler onLogout={handleLogout} />
 
       <Navbar 
         setView={setView} 
         handleLogout={handleLogout} 
         userRole={userRole}
-        view={view}
-        theme={theme}
-        onToggleTheme={toggleTheme}
         unreadNotifications={unreadNotifications}
         resetUnreadNotifications={resetUnreadNotifications}
         notifications={notifications}
@@ -146,7 +124,7 @@ function App() {
         />
       ))}
 
-      <main className="pt-[76px] md:pl-[280px] px-5 md:px-10 pb-14">
+      <main className="pt-16 p-8">
         {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} />}
         {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard />}
         {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
@@ -158,12 +136,12 @@ function App() {
         {view === "panel_empleado" && <PanelEmpleado />}
 
         {userRole === 'admin' && view !== 'users' && (
-          <div className="fixed bottom-6 right-6 md:bottom-10 md:right-10">
+          <div className="fixed bottom-8 right-8">
             <button 
               onClick={() => setView("users")}
-              className="mx-btn mx-btn-primary px-6 py-4 text-[11px] shadow-[0_18px_40px_rgba(0,71,255,0.18)]"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 font-bold"
             >
-              Administrar usuarios
+              👥 Administrar Usuarios
             </button>
           </div>
         )}

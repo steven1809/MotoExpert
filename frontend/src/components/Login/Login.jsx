@@ -1,7 +1,5 @@
 import React, { Component } from "react";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
-
 class Login extends Component {
   constructor(props) {
     super(props);
@@ -48,7 +46,7 @@ class Login extends Component {
     e.preventDefault();
     this.setState({ loading: true });
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      const res = await fetch("http://localhost:3000/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier: this.state.identifier }),
@@ -76,7 +74,7 @@ class Login extends Component {
     }
     this.setState({ loading: true });
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      const res = await fetch("http://localhost:3000/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier, otp, password, confirmPassword }),
@@ -120,7 +118,7 @@ class Login extends Component {
       : { nombre, apellidos, documento, email, telefono, password, aceptaTerminos };
 
     try {
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const res = await fetch(`http://localhost:3000${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -148,7 +146,7 @@ class Login extends Component {
       }
     } catch (error) {
       
-      alert("No se pudo conectar con el servidor. Verifica que NestJS esté corriendo en el puerto 3001.");
+      alert("No se pudo conectar con el servidor. Verifica que NestJS esté corriendo en el puerto 3000.");
     } finally {
       this.setState({ loading: false });
     }

@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import CardServicio from "../components/CardServicio";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
-
 export default function Servicios({ setView }) {
   const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,14 +26,14 @@ export default function Servicios({ setView }) {
   const fetchServicios = () => {
     setLoading(true);
     setError("");
-    fetch(`${API_BASE_URL}/servicios`)
+    fetch("http://localhost:3000/servicios")
       .then((res) => res.json())
       .then((data) => {
         setServicios(Array.isArray(data) ? data : []);
       })
       .catch(() => {
         setServicios([]);
-        setError("No se pudieron cargar los servicios. Verifica que el backend esté corriendo en http://localhost:3001");
+        setError("No se pudieron cargar los servicios. Verifica que el backend esté corriendo en http://localhost:3000");
       })
       .finally(() => setLoading(false));
   };
@@ -68,8 +66,8 @@ export default function Servicios({ setView }) {
     const token = localStorage.getItem("token");
     const method = editServicio ? "PATCH" : "POST";
     const url = editServicio 
-      ? `${API_BASE_URL}/servicios/${editServicio.id}` 
-      : `${API_BASE_URL}/servicios`;
+      ? `http://localhost:3000/servicios/${editServicio.id}` 
+      : "http://localhost:3000/servicios";
 
     try {
       const response = await fetch(url, {
@@ -100,7 +98,7 @@ export default function Servicios({ setView }) {
     if (!window.confirm("¿Estás seguro de que deseas eliminar este servicio?")) return;
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch(`${API_BASE_URL}/servicios/${id}`, {
+      const response = await fetch(`http://localhost:3000/servicios/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -137,7 +135,7 @@ export default function Servicios({ setView }) {
   );
 
   return (
-    <section id="servicios-page" className="py-24 bg-slate-950 text-white relative rounded-3xl border border-slate-800">
+    <section id="servicios-page" className="py-24 bg-slate-950 relative rounded-3xl border border-slate-800">
       <div className="container mx-auto px-4">
         {/* Modal Admin */}
         {showModal && (
@@ -201,7 +199,7 @@ export default function Servicios({ setView }) {
         {/* Buscador de Servicios */}
         <div className="max-w-md mx-auto mb-12 relative group">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <svg className="w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
@@ -248,10 +246,10 @@ export default function Servicios({ setView }) {
         )}
 
         {!loading && !error && servicios.length > 0 && serviciosFiltrados.length === 0 && (
-          <div className="text-center py-16 bg-slate-900/40 rounded-3xl border border-dashed border-slate-800 mt-10">
+          <div className="text-center py-16 bg-slate-900/50 rounded-3xl border border-dashed border-slate-800 mt-10">
             <div className="text-4xl mb-4">🔍</div>
             <h3 className="text-xl font-bold text-white mb-2">No se encontraron servicios</h3>
-            <p className="text-slate-400">No se encontraron servicios que coincidan con tu búsqueda: <span className="text-blue-400 font-bold">"{filtroBusqueda}"</span></p>
+            <p className="text-slate-400">No se encontraron servicios que coincidan con tu búsqueda: <span className="text-blue-500 font-bold">"{filtroBusqueda}"</span></p>
             <button 
               onClick={() => setFiltroBusqueda("")}
               className="mt-6 text-sm text-blue-400 hover:text-blue-300 font-medium underline"
