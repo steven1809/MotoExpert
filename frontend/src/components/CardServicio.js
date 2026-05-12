@@ -1,5 +1,16 @@
 import { useMemo, useState, useEffect } from "react";
 
+const MOTOEXPERT_SERVICE_PLACEHOLDER_IMG = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+    <rect width="1200" height="800" fill="#0A0F1E"/>
+    <path d="M820 0h380v520z" fill="#0047FF"/>
+    <path d="M0 640h1200" stroke="#0047FF" stroke-width="2" opacity="0.75"/>
+    <text x="70" y="430" font-family="Bebas Neue, sans-serif" font-size="120" fill="#F9FAFB">MOTO</text>
+    <text x="250" y="430" font-family="Bebas Neue, sans-serif" font-size="120" fill="#0047FF">EXPERT</text>
+    <text x="72" y="500" font-family="Outfit, sans-serif" font-size="24" fill="#9CA3AF" letter-spacing="6">SERVICIO</text>
+  </svg>`
+)}`;
+
 const SERVICIO_INFO = {
   basico: {
     nombre: "Lavado Básico",
@@ -9,7 +20,7 @@ const SERVICIO_INFO = {
     productos: "Meguiar's Gold Class, Microfibras de 400 GSM",
     nivel: "Estándar Premium",
     recomendaciones: "Realizar cada 15 días para mantener el brillo.",
-    imagen: "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&q=80&w=800"
+    imagen: MOTOEXPERT_SERVICE_PLACEHOLDER_IMG
   },
   express: {
     nombre: "Lavado Express",
@@ -19,7 +30,7 @@ const SERVICIO_INFO = {
     productos: "Sonax Gloss Shampoo",
     nivel: "Esencial",
     recomendaciones: "Ideal para suciedad ligera después de un viaje corto.",
-    imagen: "https://images.unsplash.com/photo-1605152276897-4f618f831968?auto=format&fit=crop&q=80&w=800"
+    imagen: MOTOEXPERT_SERVICE_PLACEHOLDER_IMG
   },
   premium: {
     nombre: "Lavado Premium",
@@ -29,7 +40,7 @@ const SERVICIO_INFO = {
     productos: "Chemical Guys VRP, CarPro IronX, Collinite 845",
     nivel: "VIP High-End",
     recomendaciones: "Recomendado cada 2-3 meses para protección total.",
-    imagen: "https://images.unsplash.com/photo-1558981403-c5f91cbba527?auto=format&fit=crop&q=80&w=800"
+    imagen: MOTOEXPERT_SERVICE_PLACEHOLDER_IMG
   },
   motor: {
     nombre: "Limpieza de Motor",
@@ -39,7 +50,7 @@ const SERVICIO_INFO = {
     productos: "Koch Chemie Green Star, Gtechniq C4",
     nivel: "Técnico Especializado",
     recomendaciones: "Realizar una vez al año o después de temporadas de lluvia.",
-    imagen: "https://images.unsplash.com/photo-1486006920555-c77dcf18193c?auto=format&fit=crop&q=80&w=800"
+    imagen: MOTOEXPERT_SERVICE_PLACEHOLDER_IMG
   },
   profunda: {
     nombre: "Limpieza Profunda",
@@ -49,7 +60,7 @@ const SERVICIO_INFO = {
     productos: "P&S Terminator, Vapor Polti",
     nivel: "Restauración",
     recomendaciones: "Ideal para vehículos recién comprados o después de viajes largos.",
-    imagen: "https://images.unsplash.com/photo-1599256621730-535171e28e50?auto=format&fit=crop&q=80&w=800"
+    imagen: MOTOEXPERT_SERVICE_PLACEHOLDER_IMG
   }
 };
 
@@ -127,7 +138,7 @@ export default function CardServicio({ servicio, isAdmin, onEdit, onDelete, auto
       productos: localMeta.productos || "Línea Premium MotoExpert",
       nivel: localMeta.nivel || "Detailing Profesional",
       recomendaciones: localMeta.recomendaciones || "Seguir el plan de mantenimiento sugerido.",
-      imagen: localMeta.imagen || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?auto=format&fit=crop&q=80&w=800"
+      imagen: localMeta.imagen || MOTOEXPERT_SERVICE_PLACEHOLDER_IMG
     };
   }, [servicio]);
 
