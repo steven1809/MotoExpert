@@ -135,6 +135,7 @@ function App() {
 
           <Navbar 
             setView={setView} 
+            view={view}
             handleLogout={handleLogout} 
             userRole={userRole}
             unreadNotifications={unreadNotifications}
@@ -152,8 +153,8 @@ function App() {
             />
           ))}
 
-          <main className="pt-16 p-8">
-            {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} />}
+          <main className="pt-20 md:pt-8 md:pl-72 p-6 md:p-8">
+            {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} unreadNotifications={unreadNotifications} />}
             {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard />}
             {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
             {view === "servicios" && <Servicios setView={setView} />}

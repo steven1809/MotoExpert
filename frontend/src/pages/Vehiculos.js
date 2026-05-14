@@ -21,6 +21,25 @@ class Vehiculos extends Component {
     };
   }
 
+  getStatusForVehiculo = (vehiculo) => {
+    const raw = String(vehiculo?.estado || '').toUpperCase();
+    if (raw.includes('RESERV') || raw.includes('INACT')) return 'RESERVED';
+    if (raw.includes('CRIT') || raw.includes('MANT')) return 'CRITICAL';
+    return 'STABLE';
+  };
+
+  getStatusUI = (status) => {
+    if (status === 'CRITICAL') return { label: 'CRITICAL', color: '#ff4d4d', bar: '#ff4d4d' };
+    if (status === 'RESERVED') return { label: 'RESERVED', color: '#94a3b8', bar: '#94a3b8' };
+    return { label: 'STABLE', color: '#3ddc84', bar: '#3ddc84' };
+  };
+
+  getProgressForStatus = (status) => {
+    if (status === 'CRITICAL') return 38;
+    if (status === 'RESERVED') return 56;
+    return 82;
+  };
+
   componentDidMount() {
     this.fetchVehiculos();
     this.checkPendingAction();
@@ -225,31 +244,66 @@ class Vehiculos extends Component {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {vehiculos.length > 0 ? (
               vehiculos.map(v => (
-                <div key={v.id} className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-8 rounded-[2.5rem] hover:border-purple-500/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <span className="text-8xl font-black italic tracking-tighter text-white">{v.tipo === 'Moto' ? '🏍️' : '🏎️'}</span>
-                  </div>
-                  <div className="flex justify-between items-start relative z-10">
-                    <span className="px-4 py-1.5 rounded-full bg-purple-600/10 text-purple-500 border border-purple-600/20 text-[10px] font-black uppercase tracking-widest">{v.tipo}</span>
-                    <button onClick={() => this.handleDelete(v.id)} className="p-2 bg-red-950/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 shadow-lg">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    </button>
-                  </div>
-                  <div className="space-y-1 relative z-10">
-                    <h3 className="text-3xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter leading-none">{v.marca}</h3>
-                    <p className="text-xl font-bold text-slate-500 dark:text-[#94A3B8] uppercase italic tracking-tighter opacity-50">{v.modelo}</p>
-                  </div>
-                  <div className="pt-6 border-t border-slate-200 dark:border-white/5 grid grid-cols-2 gap-4 relative z-10">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest opacity-50">Placa</p>
-                      <p className="text-slate-900 dark:text-[#F8FAFC] font-black italic">{v.placa}</p>
+                (() => {
+                  const status = this.getStatusForVehiculo(v);
+                  const ui = this.getStatusUI(status);
+                  const progress = this.getProgressForStatus(status);
+                  return (
+                    <div key={v.id} className="bg-[#131318] border border-white/[0.08] p-7 rounded-xl shadow-sm space-y-5 relative overflow-hidden">
+                      <div className="absolute top-5 right-5 flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.12em] border border-white/[0.08]" style={{ color: ui.color }}>
+                          {ui.label}
+                        </span>
+                        <button
+                          onClick={() => this.handleDelete(v.id)}
+                          className="w-9 h-9 rounded-xl bg-[#0a0a0d] border border-white/[0.08] text-[#ff4d4d] hover:bg-[#ff4d4d]/10 transition-colors flex items-center justify-center"
+                          aria-label="Eliminar"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      <div className="flex items-start gap-4 pr-20">
+                        <div className="w-12 h-12 rounded-lg bg-[#0a0a0d] border border-white/[0.08] flex items-center justify-center text-white font-mono text-[11px] uppercase tracking-[0.12em]">
+                          {String(v.tipo || 'Unidad').slice(0, 4)}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-white font-extrabold uppercase tracking-tight text-xl truncate">
+                            {v.marca || 'Vehículo'}
+                          </h3>
+                          <p className="text-slate-400 text-sm truncate">
+                            {v.modelo || 'Sin modelo'}{v.anio ? ` · ${v.anio}` : ''}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${progress}%`, backgroundColor: ui.bar }} />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="px-3 py-2 rounded-xl bg-[#1e1e28] border border-white/[0.08]">
+                          <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">PLATE</div>
+                          <div className="text-white font-semibold mt-0.5 truncate">{v.placa || '-'}</div>
+                        </div>
+                        <div className="px-3 py-2 rounded-xl bg-[#1e1e28] border border-white/[0.08]">
+                          <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">TYPE</div>
+                          <div className="text-white font-semibold mt-0.5 truncate">{v.tipo || '-'}</div>
+                        </div>
+                        <div className="px-3 py-2 rounded-xl bg-[#1e1e28] border border-white/[0.08]">
+                          <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">COLOR</div>
+                          <div className="text-white font-semibold mt-0.5 truncate">{v.color || '-'}</div>
+                        </div>
+                        <div className="px-3 py-2 rounded-xl bg-[#1e1e28] border border-white/[0.08]">
+                          <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">YEAR</div>
+                          <div className="text-white font-semibold mt-0.5 truncate">{v.anio || '-'}</div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-1 text-right">
-                      <p className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest opacity-50">Serie</p>
-                      <p className="text-slate-900 dark:text-[#F8FAFC] font-black italic">{v.anio}</p>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()
               ))
             ) : (
               <div className="col-span-full py-32 text-center bg-slate-100 dark:bg-[#111827] rounded-[3rem] border border-dashed border-slate-200 dark:border-white/5">

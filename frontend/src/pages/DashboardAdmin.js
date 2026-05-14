@@ -5,12 +5,12 @@ import EmployeeDashboard from './EmployeeDashboard';
 
 class DashboardAdmin extends Component {
   render() {
-    const { setView, showToast } = this.props;
+    const { setView, showToast, unreadNotifications } = this.props;
     const userRole = localStorage.getItem('role')?.toLowerCase();
 
     // Router de Roles
     if (userRole === 'admin') {
-      return <AdminDashboard setView={setView} />;
+      return <AdminDashboard setView={setView} unreadNotifications={unreadNotifications} />;
     } else if (userRole === 'trabajador' || userRole === 'empleado') {
       return <EmployeeDashboard setView={setView} />;
     } else if (['user', 'cliente', 'usuario'].includes(userRole)) {
