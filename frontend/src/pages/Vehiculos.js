@@ -157,7 +157,7 @@ class Vehiculos extends Component {
           <div className="relative z-10 text-center space-y-4">
             <div className="inline-block px-4 py-1 rounded-full bg-purple-600/10 border border-purple-600/20 text-purple-500 text-[10px] font-black uppercase tracking-[0.3em]">Fleet Management</div>
             <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
-              Mi Flota <span className="text-purple-500">Personal</span>
+              Mi <span className="text-purple-500">Vehiculos</span>
             </h1>
             <p className="text-slate-500 dark:text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Administra tus unidades para agilizar tus servicios premium.</p>
           </div>
