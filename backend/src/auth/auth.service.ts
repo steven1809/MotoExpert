@@ -3,9 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { Usuario } from '../usuarios/usuario.entity';
+import { Usuario } from '../modules/usuarios/entities/usuario.entity';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UsuariosService } from '../usuarios/usuarios.service';
+import { UsuariosService } from '../modules/usuarios/usuarios.service';
+import { OtpService } from '../modules/otp/otp.service';
+import { MailService } from '../modules/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +16,8 @@ export class AuthService {
     private readonly userRepository: Repository<Usuario>,
     private usuariosService: UsuariosService,
     private jwtService: JwtService,
+    private otpService: OtpService,
+    private mailService: MailService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -45,6 +49,7 @@ export class AuthService {
     const { password, email, ...userData } = createUserDto;
 
     try {
+      if (!password) throw new BadRequestException('La contraseña es requerida'); 
       const hashedPassword = bcrypt.hashSync(password, 10);
 
       const user = this.userRepository.create({
@@ -56,8 +61,8 @@ export class AuthService {
 
       await this.userRepository.save(user);
 
-      delete user.password;
-      return user;
+      const { password: _pw, ...userWithoutPassword } = user;
+      return userWithoutPassword;
 
     } catch (error) {
       if (error.code === '23505') {
@@ -82,50 +87,123 @@ export class AuthService {
     return this.userRepository.remove(user);
   }
 
-  async forgotPassword(identifier: string) {
+  async forgotPassword(email: string) {
+    if (!email) { 
+      throw new BadRequestException('El correo es requerido'); 
+    } 
+    const normalizedEmail = email.toLowerCase().trim();
     const user = await this.userRepository.findOne({
-      where: [
-        { email: identifier.toLowerCase().trim() },
-        { telefono: identifier },
-        { documento: identifier }
-      ]
+      where: { email: normalizedEmail },
     });
 
-    if (!user) throw new BadRequestException('Usuario no encontrado');
+    if (user) {
+      const code = await this.otpService.generateOtp(user.id, 'password-reset');
+      try {
+        if (!user.email || !user.nombre) throw new BadRequestException('Usuario inválido'); 
+        await this.mailService.sendPasswordRecoveryEmail(user.email, user.nombre, code);
+      } catch (mailError) {
+        console.error('Error sending recovery email:', mailError);
+      }
+      return { message: 'Si el correo existe, recibirás un código', userId: user.id };
+    }
 
-    // En un sistema real, aquí se generaría y enviaría un código OTP por email/SMS
-    // Por ahora simularemos que se envió con éxito
-    return { 
-      message: 'Código de recuperación enviado con éxito',
-      identifier // Devolvemos el identificador para usarlo en el siguiente paso
-    };
+    return { message: 'Si el correo existe, recibirás un código', userId: null };
   }
 
-  async resetPassword(data: any) {
-    const { identifier, otp, password, confirmPassword } = data;
-
-    if (password !== confirmPassword) {
-      throw new BadRequestException('Las contraseñas no coinciden');
+  async verifyRecoveryOtp(userId: number, code: string) {
+    const isValid = await this.otpService.validateOtp(userId, code, 'password-reset');
+    if (!isValid) {
+      throw new UnauthorizedException('Código inválido o expirado');
     }
 
-    // Simulamos validación de OTP (en producción se validaría contra una tabla de tokens/OTPs)
-    if (otp !== '123456') { // Código de prueba
-      throw new BadRequestException('Código OTP inválido');
+    const resetToken = this.jwtService.sign(
+      { sub: userId, purpose: 'password-reset' },
+      { expiresIn: '15m' }
+    );
+
+    return { resetToken };
+  }
+
+  async resetPassword(resetToken: string, newPassword: string) {
+    try {
+      const payload = this.jwtService.verify(resetToken);
+      if (payload.purpose !== 'password-reset') {
+        throw new UnauthorizedException('Token inválido');
+      }
+
+      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      if (!user) throw new BadRequestException('Usuario no encontrado');
+
+      user.password = bcrypt.hashSync(newPassword, 10);
+      await this.userRepository.save(user);
+
+      return { message: 'Contraseña actualizada correctamente' };
+    } catch (error) {
+      throw new UnauthorizedException('Token inválido o expirado');
     }
+  }
 
-    const user = await this.userRepository.findOne({
-      where: [
-        { email: identifier.toLowerCase().trim() },
-        { telefono: identifier },
-        { documento: identifier }
-      ]
-    });
+  async googleLogin(googleToken: string) {
+    try {
+      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          Authorization: `Bearer ${googleToken}`,
+        },
+      });
 
-    if (!user) throw new BadRequestException('Usuario no encontrado');
+      if (!response.ok) {
+        throw new UnauthorizedException('Token de Google inválido');
+      }
 
-    user.password = bcrypt.hashSync(password, 10);
-    await this.userRepository.save(user);
+      const googleUser = await response.json();
+      const { sub: googleId, email, given_name: nombre, family_name: apellidos, picture } = googleUser;
 
-    return { message: 'Contraseña restablecida con éxito' };
+      let usuario = await this.userRepository.findOne({
+        where: [{ googleId }, { email }],
+      });
+
+      if (usuario) {
+        if (!usuario.googleId) {
+          usuario.googleId = googleId;
+          usuario.picture = picture;
+          usuario.provider = 'google';
+          await this.userRepository.save(usuario);
+        }
+      } else {
+        usuario = this.userRepository.create({
+          googleId,
+          email,
+          nombre,
+          apellidos,
+          picture,
+          provider: 'google',
+          role: 'cliente',
+        });
+        await this.userRepository.save(usuario);
+      }
+
+      const payload = { 
+        email: usuario.email, 
+        sub: usuario.id, 
+        role: usuario.role
+      };
+
+      const access_token = this.jwtService.sign(payload);
+
+      return {
+        access_token,
+        user: {
+          id: usuario.id,
+          nombre: usuario.nombre,
+          apellidos: usuario.apellidos,
+          email: usuario.email,
+          picture: usuario.picture,
+          role: usuario.role,
+        },
+      };
+    } catch (error) {
+      console.error('Google login error:', error);
+      throw new UnauthorizedException('Error al autenticar con Google');
+    }
   }
 }

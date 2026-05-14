@@ -237,75 +237,80 @@ class LandingPage extends Component {
         {/* SERVICES */}
         <section id="servicios" className="py-28 relative z-10">
           <div className="container mx-auto px-6">
-
             <div className="text-center mb-20">
-
-              <span className="text-blue-400 text-sm">
-                Nuestros servicios
-              </span>
+              <span className="text-blue-400 text-sm">Nuestros servicios</span>
 
               <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6 tracking-tight">
                 Cuidado completo para tu vehículo
               </h2>
 
               <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-                Servicios profesionales diseñados para mantener tu vehículo
-                limpio, protegido y en excelentes condiciones.
+                Servicios profesionales diseñados para mantener tu vehículo limpio, protegido y en excelentes condiciones.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-
               {[
-                'Lavado Premium',
-                'Lavado Express',
-                'Lavado de Motor',
-                'Limpieza Profunda',
-                'Protección Cerámica',
-                'Pulido Profesional',
+                {
+                  title: 'Lavado Premium',
+                  description:
+                    'Lavado completo con productos de alta calidad, brillo profundo y acabado impecable para todo tipo de vehículos.',
+                  bg: premiumImg,
+                },
+                {
+                  title: 'Lavado Express',
+                  description:
+                    'Servicio rápido y eficiente ideal para mantener tu vehículo limpio en poco tiempo y con excelentes resultados.',
+                  bg: expressImg,
+                },
+                {
+                  title: 'Lavado de Motor',
+                  description:
+                    'Limpieza especializada del motor eliminando grasa y suciedad sin afectar los componentes eléctricos.',
+                  bg: motorImg,
+                },
+                {
+                  title: 'Limpieza Profunda',
+                  description:
+                    'Desinfección y limpieza interior detallada de tapicería, alfombras, techo y paneles del vehículo.',
+                  bg: limpiezaImg,
+                },
+                {
+                  title: 'Protección Cerámica',
+                  description:
+                    'Aplicación de recubrimiento cerámico que protege la pintura contra rayos UV, agua y contaminantes.',
+                  bg: proteccionImg,
+                },
+                {
+                  title: 'Pulido Profesional',
+                  description:
+                    'Corrección de imperfecciones y recuperación del brillo original de la pintura con técnicas profesionales.',
+                  bg: pulidoImg,
+                },
               ].map((service, i) => (
-                (() => {
-                  const backgroundByService = {
-                    'Lavado Premium': premiumImg,
-                    'Lavado Express': expressImg,
-                    'Lavado de Motor': motorImg,
-                    'Limpieza Profunda': limpiezaImg,
-                    'Protección Cerámica': proteccionImg,
-                    'Pulido Profesional': pulidoImg,
-                  };
-                  const bg = backgroundByService[service];
-
-                  return (
                 <div
                   key={i}
                   className="group relative overflow-hidden rounded-3xl border border-white/5 bg-white/[0.03] p-8 hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2 bg-cover bg-center"
-                  style={bg ? { backgroundImage: `url(${bg})` } : undefined}
+                  style={service.bg ? { backgroundImage: `url(${service.bg})` } : undefined}
                 >
-                  {bg && (
-                    <>
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#030712]/80 via-[#030712]/45 to-[#030712]/30" />
-                    </>
+                  {service.bg && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#030712]/80 via-[#030712]/45 to-[#030712]/30" />
                   )}
+
                   <div className="relative z-10">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
-                    <div className="w-6 h-6 rounded-full bg-blue-400"></div>
-                  </div>
+                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
+                      <div className="w-6 h-6 rounded-full bg-blue-400"></div>
+                    </div>
 
-                  <h3 className="text-2xl font-semibold mb-4">
-                    {service}
-                  </h3>
+                    <h3 className="text-2xl font-semibold mb-4">{service.title}</h3>
 
-                  <p className="text-slate-400 leading-relaxed mb-8">
-                    Servicio profesional con acabados de alta calidad y atención especializada.
-                  </p>
+                    <p className="text-slate-400 leading-relaxed mb-8">{service.description}</p>
 
-                  <button className="text-blue-400 hover:text-blue-300 transition-colors">
-                    Saber más →
-                  </button>
+                    <button className="text-blue-400 hover:text-blue-300 transition-colors">
+                      Saber más →
+                    </button>
                   </div>
                 </div>
-                  );
-                })()
               ))}
             </div>
           </div>
