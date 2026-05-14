@@ -1,4 +1,6 @@
 import React, { Component } from "react";
+import { AuthContext } from '../../context/AuthContext';
+import GoogleLoginButton from '../GoogleLoginButton';
 
 class Login extends Component {
   constructor(props) {
@@ -18,6 +20,8 @@ class Login extends Component {
       view: "auth", 
       identifier: "", 
       otp: "",
+      recoveryUserId: null,
+      resetToken: "",
     };
   }
 
@@ -49,12 +53,12 @@ class Login extends Component {
       const res = await fetch("http://localhost:3000/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: this.state.identifier }),
+        body: JSON.stringify({ email: this.state.identifier }),
       });
       const data = await res.json();
       if (res.ok) {
         alert(data.message);
-        this.setState({ view: "reset" });
+        this.setState({ view: "reset", recoveryUserId: data.userId });
       } else {
         alert(data.message || "Error al solicitar recuperación");
       }
@@ -67,24 +71,47 @@ class Login extends Component {
 
   handleResetPassword = async (e) => {
     e.preventDefault();
-    const { identifier, otp, password, confirmPassword } = this.state;
+    const { recoveryUserId, otp, password, confirmPassword } = this.state;
     if (password !== confirmPassword) {
       alert("Las contraseñas no coinciden");
       return;
     }
     this.setState({ loading: true });
     try {
-      const res = await fetch("http://localhost:3000/auth/reset-password", {
+      // First verify OTP to get reset token
+      const verifyRes = await fetch("http://localhost:3000/auth/verify-recovery-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, otp, password, confirmPassword }),
+        body: JSON.stringify({ userId: recoveryUserId, code: otp }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        alert(data.message);
-        this.setState({ view: "auth", isLogin: true, identifier: "", otp: "", password: "", confirmPassword: "" });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        alert(verifyData.message || "Código inválido o expirado");
+        this.setState({ loading: false });
+        return;
+      }
+
+      // Then reset password with the token
+      const resetRes = await fetch("http://localhost:3000/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resetToken: verifyData.resetToken, newPassword: password }),
+      });
+      const resetData = await resetRes.json();
+      if (resetRes.ok) {
+        alert(resetData.message);
+        this.setState({ 
+          view: "auth", 
+          isLogin: true, 
+          identifier: "", 
+          otp: "", 
+          password: "", 
+          confirmPassword: "",
+          recoveryUserId: null,
+          resetToken: ""
+        });
       } else {
-        alert(data.message || "Error al restablecer contraseña");
+        alert(resetData.message || "Error al restablecer contraseña");
       }
     } catch (error) {
       alert("Error de conexión");
@@ -197,14 +224,14 @@ class Login extends Component {
         {view === "forgot" && (
           <form onSubmit={this.handleForgotPassword} className="p-8 space-y-6">
             <div className="space-y-2 text-center mb-4">
-              <p className="text-sm text-gray-600">Ingresa tu correo, teléfono o documento para recibir un código de recuperación.</p>
+              <p className="text-sm text-gray-600">Ingresa tu correo electrónico para recibir un código de recuperación.</p>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase ml-1">Identificador</label>
+              <label className="block text-xs font-bold text-gray-700 uppercase ml-1">Correo Electrónico</label>
               <input 
                 name="identifier" 
-                type="text" 
-                placeholder="Email, Teléfono o Documento" 
+                type="email" 
+                placeholder="tu@email.com" 
                 value={identifier} 
                 onChange={this.handleChange} 
                 className="w-full p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" 
@@ -235,14 +262,13 @@ class Login extends Component {
           <form onSubmit={this.handleResetPassword} className="p-8 space-y-4">
             <div className="space-y-2 text-center mb-4">
               <p className="text-sm text-gray-600">Ingresa el código enviado y tu nueva contraseña.</p>
-              <p className="text-xs text-blue-600 font-bold italic">Código de prueba: 123456</p>
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase ml-1">Código OTP</label>
               <input 
                 name="otp" 
                 type="text" 
-                placeholder="123456" 
+                placeholder="Ingresa el código" 
                 value={otp} 
                 onChange={this.handleChange} 
                 className="w-full p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" 
@@ -362,6 +388,27 @@ class Login extends Component {
             >
               {loading ? "Procesando..." : isLogin ? "Entrar" : "Registrarse"}
             </button>
+
+            <div className="flex items-center my-6">
+              <div className="flex-1 h-px bg-gray-200"></div>
+              <span className="px-4 text-gray-500 text-sm">o</span>
+              <div className="flex-1 h-px bg-gray-200"></div>
+            </div>
+
+            <AuthContext.Consumer>
+              {({ googleLogin }) => (
+                <GoogleLoginButton 
+                  onSuccess={async (credential) => {
+                    try {
+                      await googleLogin(credential);
+                      this.props.onLoginSuccess('user');
+                    } catch (err) {
+                      console.error('Google login error:', err);
+                    }
+                  }} 
+                />
+              )}
+            </AuthContext.Consumer>
 
             <div className="flex flex-col items-center space-y-2 pt-2">
               <button type="button" onClick={this.toggleMode} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors">

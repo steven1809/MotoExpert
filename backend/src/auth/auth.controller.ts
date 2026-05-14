@@ -1,7 +1,7 @@
-import { Controller, Post, Body, Get, Delete, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Delete, Param, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Usuario } from '../usuarios/usuario.entity';
+import { Usuario } from '../modules/usuarios/entities/usuario.entity';
 
 @Controller('auth') // La URL será: localhost:3000/auth
 export class AuthController {
@@ -23,18 +23,28 @@ export class AuthController {
     return this.authService.login(user);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+  @Post('google')
+  async googleLogin(@Body() body: { token: string }) {
+    return this.authService.googleLogin(body.token);
   }
 
   @Post('forgot-password')
-  forgotPassword(@Body() body: { identifier: string }) {
-    return this.authService.forgotPassword(body.identifier);
+  forgotPassword(@Body() body: { email: string }) {
+    return this.authService.forgotPassword(body.email);
+  }
+
+  @Post('verify-recovery-otp')
+  verifyRecoveryOtp(@Body() body: { userId: number; code: string }) {
+    return this.authService.verifyRecoveryOtp(body.userId, body.code);
   }
 
   @Post('reset-password')
-  resetPassword(@Body() body: any) {
-    return this.authService.resetPassword(body);
+  resetPassword(@Body() body: { resetToken: string; newPassword: string }) {
+    return this.authService.resetPassword(body.resetToken, body.newPassword);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.authService.remove(+id);
   }
 }

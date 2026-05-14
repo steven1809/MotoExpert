@@ -5,12 +5,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
-import { Usuario } from '../usuarios/usuario.entity';
-import { UsuariosModule } from '../usuarios/usuarios.module';
+import { Usuario } from '../modules/usuarios/entities/usuario.entity';
+import { UsuariosModule } from '../modules/usuarios/usuarios.module';
+import { OtpModule } from '../modules/otp/otp.module';
+import { MailModule } from '../modules/mail/mail.module';
 
 @Module({
   imports: [
     UsuariosModule,
+    OtpModule,
+    MailModule,
     PassportModule,
     TypeOrmModule.forFeature([Usuario]),
     JwtModule.register({
