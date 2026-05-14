@@ -16,7 +16,9 @@ import Toast from "./components/Toast";
 import UserDashboard from './pages/UserDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import OnboardingModal from './components/OnboardingModal';
+import GoogleSignInModal from './components/GoogleSignInModal';
 import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
@@ -27,6 +29,7 @@ function App() {
   const [notifications, setNotifications] = useState([]);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -92,15 +95,21 @@ function App() {
   };
 
   return (
-    <ThemeProvider>
-      <OnboardingModal 
-        isOpen={showOnboarding} 
-        onClose={() => setShowOnboarding(false)} 
-        userId={localStorage.getItem('userId')}
-      />
-      {!isLoggedIn && view === "landing" && (
-        <LandingPage onEnterLogin={() => setView("login")} onEnterRegister={() => setView("register")} />
-      )}
+    <AuthProvider>
+      <ThemeProvider>
+        <OnboardingModal 
+          isOpen={showOnboarding} 
+          onClose={() => setShowOnboarding(false)} 
+          userId={localStorage.getItem('userId')}
+        />
+        <GoogleSignInModal 
+          isOpen={showGoogleModal} 
+          onClose={() => setShowGoogleModal(false)} 
+          onLoginSuccess={handleLoginSuccess}
+        />
+        {!isLoggedIn && view === "landing" && (
+          <LandingPage onEnterLogin={() => setView("login")} onEnterRegister={() => setView("register")} />
+        )}
 
       {!isLoggedIn && view === "login" && (
         <div className="min-h-screen bg-white dark:bg-[#020617] flex flex-col items-center justify-center p-4 text-slate-900 dark:text-[#F8FAFC]">
@@ -167,7 +176,8 @@ function App() {
           </main>
         </div>
       )}
-    </ThemeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

@@ -8,25 +8,37 @@ export class Usuario {
   id: number;
 
   @Column({ nullable: true })
-  nombre: string;
+  nombre?: string;
+
+  @Column({ nullable: true })
+  apellidos?: string;
 
   @Column({ unique: true, nullable: true })
-  email: string;
+  email?: string;
 
   @Column({
     unique: true,
     nullable: true,
   })
-  documento: string;
+  documento?: string;
 
   @Column({ nullable: true })
-  password: string;
+  password?: string;
 
   @Column({ nullable: true })
-  telefono: string;
+  telefono?: string;
 
   @Column({ default: 'cliente' })
   role: string;
+
+  @Column({ nullable: true, unique: true })
+  googleId?: string;
+
+  @Column({ nullable: true })
+  picture?: string;
+
+  @Column({ default: 'local' })
+  provider: string;
 
   @OneToMany(() => Vehiculo, (vehiculo) => vehiculo.usuario)
   vehiculos: Vehiculo[];
