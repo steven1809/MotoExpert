@@ -1,5 +1,11 @@
 import React, { Component } from 'react';
 import HeroBackgroundSlider from '../components/HeroBackgroundSlider';
+import premiumImg from '../assets/services/premium.jpg';
+import expressImg from '../assets/services/express.jpeg';
+import motorImg from '../assets/services/motor.jpeg';
+import limpiezaImg from '../assets/services/limpiezap.jpeg';
+import proteccionImg from '../assets/services/proteccionc.jpeg';
+import pulidoImg from '../assets/services/pulidop.jpeg';
 
 class LandingPage extends Component {
   state = {
@@ -258,10 +264,29 @@ class LandingPage extends Component {
                 'Protección Cerámica',
                 'Pulido Profesional',
               ].map((service, i) => (
+                (() => {
+                  const backgroundByService = {
+                    'Lavado Premium': premiumImg,
+                    'Lavado Express': expressImg,
+                    'Lavado de Motor': motorImg,
+                    'Limpieza Profunda': limpiezaImg,
+                    'Protección Cerámica': proteccionImg,
+                    'Pulido Profesional': pulidoImg,
+                  };
+                  const bg = backgroundByService[service];
+
+                  return (
                 <div
                   key={i}
-                  className="group rounded-3xl border border-white/5 bg-white/[0.03] p-8 hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2"
+                  className="group relative overflow-hidden rounded-3xl border border-white/5 bg-white/[0.03] p-8 hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2 bg-cover bg-center"
+                  style={bg ? { backgroundImage: `url(${bg})` } : undefined}
                 >
+                  {bg && (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#030712]/80 via-[#030712]/45 to-[#030712]/30" />
+                    </>
+                  )}
+                  <div className="relative z-10">
                   <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
                     <div className="w-6 h-6 rounded-full bg-blue-400"></div>
                   </div>
@@ -277,7 +302,10 @@ class LandingPage extends Component {
                   <button className="text-blue-400 hover:text-blue-300 transition-colors">
                     Saber más →
                   </button>
+                  </div>
                 </div>
+                  );
+                })()
               ))}
             </div>
           </div>
