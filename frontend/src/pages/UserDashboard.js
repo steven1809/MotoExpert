@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, Pagination } from 'swiper/modules';
 import MapView from '../components/MapView';
+import premiumImg from "../assets/services/premium.jpg";
 
 // Swiper styles
 import 'swiper/css';
@@ -265,22 +266,18 @@ class UserDashboard extends Component {
             >
               {servicios.map((s, idx) => {
                 const mockImages = [
-                  'https://images.unsplash.com/photo-1599256621730-535171e28e50?auto=format&fit=crop&q=80&w=800',
-                  'https://images.unsplash.com/photo-1558981403-c5f91cbba527?auto=format&fit=crop&q=80&w=800',
-                  'https://images.unsplash.com/photo-1605152276897-4f618f831968?auto=format&fit=crop&q=80&w=800',
-                  'https://images.unsplash.com/photo-1486006920555-c77dcf18193c?auto=format&fit=crop&q=80&w=800',
-                  'https://images.unsplash.com/photo-1517524008436-bbdbb83c668b?auto=format&fit=crop&q=80&w=800',
+                  premiumImg,
                 ];
                 const bgImage = mockImages[idx % mockImages.length];
 
                 return (
                   <SwiperSlide key={s.id}>
-                    <div className="group relative h-[600px] w-full overflow-hidden rounded-[3rem] bg-slate-100 dark:bg-[#111827] shadow-2xl transition-all duration-700 border border-slate-200 dark:border-white/5 hover:border-[#2563EB]/40">
-                      <div 
-                        className="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
-                        style={{ backgroundImage: `url(${bgImage})` }}
-                      />
-                      <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent" />
+                    <div
+                      className="group relative h-[360px] w-full overflow-hidden rounded-[3rem] bg-slate-100 dark:bg-[#111827] shadow-2xl transition-all duration-700 border border-slate-200 dark:border-white/5 hover:border-[#2563EB]/40 bg-cover bg-center"
+                      style={{ backgroundImage: `url(${bgImage})` }}
+                    >
+                      <div className="absolute inset-0 z-10 bg-[#020617]/30" />
+                      <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#020617]/85 via-[#020617]/30 to-transparent" />
                       <div className="absolute inset-0 z-20 p-10 flex flex-col justify-end">
                         <div className="space-y-6 transform transition-all duration-700 translate-y-4 group-hover:translate-y-0">
                           <h4 className="text-3xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">{s.nombre}</h4>
