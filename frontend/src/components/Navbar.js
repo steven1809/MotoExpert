@@ -17,7 +17,7 @@ class Navbar extends Component {
 
     if (role === "admin") {
       return [
-        { key: "dashboard", label: "Dashboard", view: "dashboard", icon: "grid" },
+        { key: "dashboard", label: "Inicio", view: "dashboard", icon: "grid" },
         { key: "servicios", label: "Servicios", view: "servicios", icon: "spark" },
         { key: "users", label: "Usuarios", view: "users", icon: "users" },
         { key: "cuenta", label: "Cuenta", view: "cuenta", icon: "user" },
@@ -137,8 +137,8 @@ class Navbar extends Component {
         <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 bg-[#0a0a0d] border-r border-white/[0.08] flex-col">
           <div className="px-6 pt-6 pb-5 border-b border-white/[0.08]">
             <button onClick={() => setView("dashboard")} className="text-left w-full">
-              <div className="text-white font-extrabold text-xl tracking-tight">MOTOEXPERT</div>
-              <div className="text-slate-500 text-[11px] font-mono tracking-[0.12em] uppercase">v-0.98.4</div>
+              <div className="text-white font-sans text-xl">MOTOEXPERT</div>
+              <div className="text-slate-500 text-[11px] font-mono tracking-[0.12em] uppercase">v-1.0</div>
             </button>
           </div>
 
@@ -176,82 +176,11 @@ class Navbar extends Component {
                 onClick={handleLogout}
                 className="px-3 py-2 rounded-xl border border-[#ff4d4d]/40 text-[#ff4d4d] hover:bg-[#ff4d4d]/10 transition-colors font-mono text-[11px] uppercase tracking-[0.12em]"
               >
-                Salir
+                Cerrar Sesion
               </button>
             </div>
           </div>
         </aside>
-
-        <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0a0d] border-b border-white/[0.08]">
-          <div className="h-16 px-4 flex items-center justify-between">
-            <button onClick={() => setView("dashboard")} className="text-left">
-              <div className="text-white font-extrabold tracking-tight">MOTOEXPERT</div>
-              <div className="text-slate-500 text-[10px] font-mono uppercase tracking-[0.12em]">v-0.98.4</div>
-            </button>
-            <button
-              onClick={this.toggleMenu}
-              className="w-11 h-11 rounded-xl border border-white/[0.08] bg-[#0a0a0d] text-white flex items-center justify-center"
-              aria-label="Menu"
-            >
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d={open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-              </svg>
-            </button>
-          </div>
-        </header>
-
-        {open && (
-          <div className="fixed inset-0 z-[9999] md:hidden">
-            <div className="absolute inset-0 bg-black/60" onClick={this.toggleMenu} />
-            <div className="absolute top-0 left-0 w-[84%] max-w-xs h-full bg-[#0a0a0d] border-r border-white/[0.08] flex flex-col">
-              <div className="px-6 pt-6 pb-5 border-b border-white/[0.08]">
-                <div className="text-white font-extrabold text-xl tracking-tight">MOTOEXPERT</div>
-                <div className="text-slate-500 text-[11px] font-mono tracking-[0.12em] uppercase">v-0.98.4</div>
-              </div>
-              <nav className="px-3 py-4 flex-1 space-y-1">
-                {items.map(this.renderNavItem)}
-              </nav>
-              <div className="px-4 pb-6 space-y-4 border-t border-white/[0.08]">
-                <div className="pt-5">
-                  <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#3ddc84]/30 bg-[#0a0a0d]">
-                    <span className="w-2 h-2 rounded-full bg-[#3ddc84]" />
-                    <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#3ddc84]">
-                      System Secure / Encryption Active
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <button
-                    onClick={() => {
-                      setView("cuenta");
-                      this.toggleMenu();
-                    }}
-                    className="flex items-center gap-3 text-left flex-1 min-w-0"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-[#0a0a0d] border border-white/[0.08] flex items-center justify-center text-white font-mono text-sm">
-                      {initial}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-white font-semibold truncate">{userName}</div>
-                      <div className="text-slate-500 text-[11px] font-mono uppercase tracking-[0.12em] truncate">
-                        {userRank}
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      this.toggleMenu();
-                    }}
-                    className="px-3 py-2 rounded-xl border border-[#ff4d4d]/40 text-[#ff4d4d] hover:bg-[#ff4d4d]/10 transition-colors font-mono text-[11px] uppercase tracking-[0.12em]"
-                  >
-                    Salir
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </>
     );
   }
