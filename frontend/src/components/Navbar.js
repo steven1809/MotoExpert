@@ -1,13 +1,35 @@
 import React, { Component } from "react";
 import NotificationBell from "./NotificationBell";
+import { ThemeContext } from '../context/ThemeContext';
+
 
 class Navbar extends Component {
   constructor(props) {
     super(props);
     this.state = {
       open: false,
+      dropdownOpen: false,
     };
+    this.dropdownRef = React.createRef();
   }
+
+  componentDidMount() {
+    document.addEventListener("mousedown", this.handleClickOutside);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener("mousedown", this.handleClickOutside);
+  }
+
+  handleClickOutside = (event) => {
+    if (this.dropdownRef.current && !this.dropdownRef.current.contains(event.target)) {
+      this.setState({ dropdownOpen: false });
+    }
+  };
+
+  toggleDropdown = () => {
+    this.setState((prevState) => ({ dropdownOpen: !prevState.dropdownOpen }));
+  };
 
   toggleMenu = () => {
     this.setState((prevState) => ({ open: !prevState.open }));
@@ -208,10 +230,7 @@ class Navbar extends Component {
                       initial
                     )}
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-white font-bold text-sm truncate group-hover:text-[#7b9cff] transition-colors">{userName}</div>
-                    <div className="text-slate-500 text-[9px] font-mono uppercase tracking-[0.15em]">{userRank}</div>
-                  </div>
+                  
                 </button>
 
                 <button
@@ -232,44 +251,107 @@ class Navbar extends Component {
         {isStandardUser && (
           <header className="hidden md:flex fixed top-0 left-0 right-0 h-20 bg-[#050507]/80 backdrop-blur-xl border-b border-white/[0.05] z-[60] items-center justify-between px-10">
             <button onClick={() => setView("dashboard")} className="group text-left">
-              <div className="text-white font-black text-2xl tracking-tighter transition-colors group-hover:text-[#7b9cff]">
-                MOTO<span className="text-[#7b9cff]">EXPERT</span>
-              </div>
-              <div className="text-slate-500 text-[9px] font-mono uppercase tracking-[0.2em] mt-0.5">Automotive Core</div>
+                <img 
+                     src="/logoMotoExpert.png" 
+                    alt="Logo" 
+                    className="h-20 w-auto transition-opacity group-hover:opacity-70"
+                />
             </button>
 
-            <nav className="flex h-full items-center">
+            <nav className="flex h-full items-center -ml-32">
               {items.map(item => this.renderNavItem(item, true))}
             </nav>
 
             <div className="flex items-center gap-6">
               <NotificationBell />
-              <button
-                onClick={() => setView("cuenta")}
-                className="flex items-center gap-3 group pl-4 border-l border-white/[0.05]"
-              >
-                <div className="text-right hidden lg:block">
-                  <div className="text-white font-bold text-sm group-hover:text-[#7b9cff] transition-colors">{userName}</div>
-                  <div className="text-slate-500 text-[9px] font-mono uppercase tracking-[0.15em]">{userRank}</div>
-                </div>
-                <div className="w-10 h-10 rounded-xl bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center text-[#7b9cff] font-mono text-sm transition-all group-hover:bg-[#7b9cff]/20 group-hover:scale-105 overflow-hidden">
-                  {userPicture ? (
-                    <img src={userPicture} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    initial
-                  )}
-                </div>
-              </button>
-              
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05] text-slate-400 hover:text-white hover:bg-[#ff4d4d]/10 hover:border-[#ff4d4d]/20 transition-all font-mono text-[9px] uppercase tracking-[0.15em]"
-              >
-                <span>Logout</span>
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-                </svg>
-              </button>
+              <div className="relative" ref={this.dropdownRef}>
+                <button
+                  onClick={this.toggleDropdown}
+                  className="flex items-center gap-3 group pl-4 border-l border-white/[0.05] transition-all"
+                >
+                  
+                  <div className="w-10 h-10 rounded-xl bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center text-[#7b9cff] font-mono text-sm transition-all group-hover:bg-[#7b9cff]/20 group-hover:scale-105 overflow-hidden shadow-[0_0_15px_rgba(123,156,255,0.1)]">
+                    {userPicture ? (
+                      <img src={userPicture} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      initial
+                    )}
+                  </div>
+                </button>
+
+                {/* Dropdown Menu */}
+                {this.state.dropdownOpen && (
+                  <div className="absolute right-0 mt-3 w-56 bg-[#050507] border border-white/[0.05] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden z-[70] animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="p-2 space-y-1">
+                      <div className="min-w-0">
+                    <div className="text-white font-bold text-sm truncate group-hover:text-[#7b9cff] transition-colors">{userName}</div>
+                    <div className="text-slate-500 text-[9px] font-mono uppercase tracking-[0.15em]">{userRank}</div>
+                  </div>
+                      <ThemeContext.Consumer>
+                        {({ isDark, toggleTheme }) => (
+                          <button
+                            onClick={() => {
+                              toggleTheme();
+                              // No cerramos el dropdown al cambiar tema para mejor UX
+                            }}
+                            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl hover:bg-white/[0.03] transition-colors group"
+                          >
+                            
+                            <div className="flex items-center gap-3">
+                              <span className="text-slate-400 group-hover:text-[#7b9cff] transition-colors">
+                                {isDark ? (
+                                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                                  </svg>
+                                )}
+                              </span>
+                              <span className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-300 group-hover:text-white">
+                                {isDark ? 'Light Mode' : 'Dark Mode'}
+                              </span>
+                            </div>
+                            <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${isDark ? 'bg-[#7b9cff]/20' : 'bg-slate-700'}`}>
+                              <div className={`absolute top-1 w-2 h-2 rounded-full transition-all duration-300 ${isDark ? 'right-1 bg-[#7b9cff]' : 'left-1 bg-slate-400'}`} />
+                            </div>
+                          </button>
+                        )}
+                      </ThemeContext.Consumer>
+
+                      <button
+                        onClick={() => {
+                          setView("cuenta");
+                          this.setState({ dropdownOpen: false });
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/[0.03] transition-colors group"
+                      >
+                        <span className="text-slate-400 group-hover:text-[#7b9cff] transition-colors">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                          </svg>
+                        </span>
+                        <span className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-300 group-hover:text-white">Cuenta</span>
+                      </button>
+
+                      <div className="h-[1px] bg-white/[0.05] mx-2 my-1" />
+
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#ff4d4d]/5 transition-colors group"
+                      >
+                        <span className="text-slate-400 group-hover:text-[#ff4d4d] transition-colors">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                          </svg>
+                        </span>
+                        <span className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-300 group-hover:text-[#ff4d4d]">Salir</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
         )}
@@ -277,12 +359,16 @@ class Navbar extends Component {
         {/* Mobile Header */}
         <header className="md:hidden fixed top-0 left-0 right-0 z-[60] bg-[#050507]/90 backdrop-blur-lg border-b border-white/[0.05]">
           <div className="h-18 px-5 flex items-center justify-between py-4">
-            <button onClick={() => setView("dashboard")} className="text-left">
-              <div className="text-white font-black text-xl tracking-tighter">
-                MOTO<span className="text-[#7b9cff]">EXPERT</span>
-              </div>
-              <div className="text-slate-500 text-[9px] font-mono uppercase tracking-[0.2em]">v-0.98.4</div>
-            </button>
+            <button onClick={() => setView("dashboard")} className="text-left flex items-center gap-3">
+  <img 
+    src="/logoMotoExpert.png" 
+    alt="Logo" 
+    className="h-10 w-auto transition-opacity group-hover:opacity-70"
+  />
+  <div className="text-white font-black text-xl tracking-tighter">
+    MOTO<span className="text-[#7b9cff]">EXPERT</span>
+  </div>
+</button>
             <button
               onClick={this.toggleMenu}
               className={`w-12 h-12 rounded-2xl border transition-all duration-300 flex items-center justify-center ${
