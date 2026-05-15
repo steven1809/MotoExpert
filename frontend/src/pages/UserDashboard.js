@@ -3,6 +3,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, Pagination } from 'swiper/modules';
 import MapView from '../components/MapView';
 import premiumImg from "../assets/services/premium.jpg";
+import ServiceReportCard from '../components/ServiceReportCard';
 
 // Swiper styles
 import 'swiper/css';
@@ -14,12 +15,17 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 class UserDashboard extends Component {
   constructor(props) {
     super(props);
+    const userId = localStorage.getItem('userId');
+    const onboardingSeen = localStorage.getItem(`onboarding_seen_${userId}`) === 'true';
+    
     this.state = {
       loading: true,
       servicios: [],
       misVehiculos: [],
       citas: [],
       previousCitas: [],
+      onboardingSeen,
+      ratings: [],
     };
     this.pollingInterval = null;
   }
@@ -44,6 +50,19 @@ class UserDashboard extends Component {
     );
   };
 
+  checkAndUpdateOnboarding = (vehiculos, citas) => {
+    const userId = localStorage.getItem('userId');
+    const hasVehicles = vehiculos && vehiculos.length > 0;
+    const hasCompletedCitas = citas && citas.some(c => c.estado === 'FINALIZADO');
+    
+    if (hasVehicles && hasCompletedCitas) {
+      localStorage.setItem(`onboarding_seen_${userId}`, 'true');
+      if (!this.state.onboardingSeen) {
+        this.setState({ onboardingSeen: true });
+      }
+    }
+  };
+
   fetchInitialFormData = async () => {
     const token = localStorage.getItem('token');
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -58,6 +77,8 @@ class UserDashboard extends Component {
           vehiculosRes.json()
         ]);
         this.setState({ servicios: serviciosData, misVehiculos: vehiculosData, loading: false });
+        // Check onboarding after we have data
+        this.checkAndUpdateOnboarding(vehiculosData, this.state.citas);
       } else {
         this.setState({ loading: false });
       }
@@ -79,9 +100,59 @@ class UserDashboard extends Component {
           citas: data, 
           previousCitas: prev.citas 
         }));
+        // Check onboarding after we have citas
+        this.checkAndUpdateOnboarding(this.state.misVehiculos, data);
+        // Fetch ratings for citas
+        this.fetchRatingsForCitas(data, headers);
       }
     } catch (err) {
       console.error('Error fetching citas:', err);
+    }
+  };
+
+  fetchRatingsForCitas = async (citas, headers) => {
+    const ratings = [];
+    for (const cita of citas.filter(c => c.estado === 'FINALIZADO')) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/ratings/cita/${cita.id}`, { headers });
+        if (response.ok) {
+          const rating = await response.json();
+          if (rating) ratings.push(rating);
+        }
+      } catch (err) {
+        console.error(`Error fetching rating for cita ${cita.id}:`, err);
+      }
+    }
+    this.setState({ ratings });
+  };
+
+  submitRating = async ({ citaId, specialistRating, serviceRating, comment }) => {
+    const token = localStorage.getItem('token');
+    const headers = { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    try {
+      const response = await fetch(`${API_BASE_URL}/ratings`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ citaId, specialistRating, serviceRating, comment }),
+      });
+
+      if (response.ok) {
+        const newRating = await response.json();
+        this.setState(prev => ({ 
+          ratings: [...prev.ratings, newRating],
+          citas: prev.citas.map(c => 
+            c.id === citaId ? { ...c, rated: true } : c
+          )
+        }));
+        if (this.props.showToast) {
+          this.props.showToast('Thank you for your feedback!', 'success');
+        }
+      }
+    } catch (err) {
+      console.error('Error submitting rating:', err);
     }
   };
 
@@ -131,8 +202,14 @@ class UserDashboard extends Component {
   };
 
   render() {
-    const { servicios, loading } = this.state;
+    const { servicios, loading, citas, onboardingSeen } = this.state;
     const { setView } = this.props;
+    
+    // Get latest completed citas with reports
+    const completedCitasWithReports = citas
+      .filter(c => c.estado === 'FINALIZADO' && c.report && c.report.workPerformed)
+      .sort((a, b) => new Date(b.completedAt || b.fecha) - new Date(a.completedAt || a.fecha))
+      .slice(0, 5);
 
     if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500"></div></div>;
 
@@ -177,60 +254,94 @@ class UserDashboard extends Component {
           ))}
         </div>
 
-        {/* LAYOUT DE INSTRUCCIONES PREMIUM */}
-        <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* LADO IZQUIERDO: VEHÍCULOS */}
-          <div className="bg-slate-100 dark:bg-[#111827] p-10 rounded-[2.5rem] transition-all flex flex-col h-full group border border-slate-200 dark:border-white/5 hover:border-purple-500/20 shadow-2xl">
-            <div className="flex items-center space-x-4 mb-8">
-              <div className="w-12 h-12 bg-purple-600/10 rounded-xl flex items-center justify-center text-xl shadow-inner">1</div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">Mi Flota Personal</h2>
+        {/* LAYOUT DE INSTRUCCIONES PREMIUM OR LATEST SERVICE REPORTS */}
+        <div className="container mx-auto px-6">
+          {!onboardingSeen ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* LADO IZQUIERDO: VEHÍCULOS */}
+              <div className="bg-slate-100 dark:bg-[#111827] p-10 rounded-[2.5rem] transition-all flex flex-col h-full group border border-slate-200 dark:border-white/5 hover:border-purple-500/20 shadow-2xl">
+                <div className="flex items-center space-x-4 mb-8">
+                  <div className="w-12 h-12 bg-purple-600/10 rounded-xl flex items-center justify-center text-xl shadow-inner">1</div>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">Mi Flota Personal</h2>
+                </div>
+                <ul className="space-y-4 mb-10 flex-grow text-slate-500 dark:text-[#94A3B8] font-medium">
+                  {[
+                    "Añade un nuevo vehículo a tu perfil.",
+                    "Especifica placa, marca y modelo.",
+                    "Sincroniza el historial de servicios.",
+                    "Administra múltiples vehículos."
+                  ].map((step, i) => (
+                    <li key={i} className="flex items-start space-x-4">
+                      <span className="flex-shrink-0 w-6 h-6 bg-purple-600/10 text-purple-500 rounded-full flex items-center justify-center text-[10px] font-black">{i+1}</span>
+                      <span className="text-sm">{step}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button 
+                  onClick={() => this.props.setView('vehiculos')}
+                  className="w-full py-5 bg-slate-200 dark:bg-[#1e293b] hover:bg-slate-800 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl border border-slate-200 dark:border-white/5 shadow-2xl transition-all active:scale-95"
+                >
+                  Mis Vehículos
+                </button>
+              </div>
+              {/* LADO DERECHO: CITAS */}
+              <div className="bg-slate-100 dark:bg-[#111827] p-10 rounded-[2.5rem] transition-all flex flex-col h-full group border border-slate-200 dark:border-white/5 hover:border-[#2563EB]/20 shadow-2xl">
+                <div className="flex items-center space-x-4 mb-8">
+                  <div className="w-12 h-12 bg-[#2563EB]/10 rounded-xl flex items-center justify-center text-xl shadow-inner">2</div>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">Gestión de Citas</h2>
+                </div>
+                <ul className="space-y-4 mb-10 flex-grow text-slate-500 dark:text-[#94A3B8] font-medium">
+                  {[
+                    "Selecciona tu vehículo registrado.",
+                    "Elige el servicio premium deseado.",
+                    "Define fecha y hora en tiempo real.",
+                    "Confirma y recibe tu código VIP."
+                  ].map((step, i) => (
+                    <li key={i} className="flex items-start space-x-4">
+                      <span className="flex-shrink-0 w-6 h-6 bg-[#2563EB]/10 text-[#2563EB] rounded-full flex items-center justify-center text-[10px] font-black">{i+1}</span>
+                      <span className="text-sm">{step}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button 
+                  onClick={() => this.props.setView('citas')}
+                  className="w-full py-5 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#2563EB]/20 transition-all active:scale-95"
+                >
+                  Agendar Cita
+                </button>
+              </div>
             </div>
-            <ul className="space-y-4 mb-10 flex-grow text-slate-500 dark:text-[#94A3B8] font-medium">
-              {[
-                "Añade un nuevo vehículo a tu perfil.",
-                "Especifica placa, marca y modelo.",
-                "Sincroniza el historial de servicios.",
-                "Administra múltiples vehículos."
-              ].map((step, i) => (
-                <li key={i} className="flex items-start space-x-4">
-                  <span className="flex-shrink-0 w-6 h-6 bg-purple-600/10 text-purple-500 rounded-full flex items-center justify-center text-[10px] font-black">{i+1}</span>
-                  <span className="text-sm">{step}</span>
-                </li>
-              ))}
-            </ul>
-            <button 
-              onClick={() => this.props.setView('vehiculos')}
-              className="w-full py-5 bg-slate-200 dark:bg-[#1e293b] hover:bg-slate-800 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl border border-slate-200 dark:border-white/5 shadow-2xl transition-all active:scale-95"
-            >
-              Mis Vehículos
-            </button>
-          </div>
-          {/* LADO DERECHO: CITAS */}
-          <div className="bg-slate-100 dark:bg-[#111827] p-10 rounded-[2.5rem] transition-all flex flex-col h-full group border border-slate-200 dark:border-white/5 hover:border-[#2563EB]/20 shadow-2xl">
-            <div className="flex items-center space-x-4 mb-8">
-              <div className="w-12 h-12 bg-[#2563EB]/10 rounded-xl flex items-center justify-center text-xl shadow-inner">2</div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">Gestión de Citas</h2>
+          ) : (
+            /* LATEST SERVICE REPORTS SECTION */
+            <div className="space-y-8">
+              <div className="flex items-center space-x-4">
+                <div className="w-2 h-2 bg-[#2563EB] rounded-full animate-pulse" />
+                <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">
+                  Latest Service Reports
+                </h2>
+              </div>
+
+              {completedCitasWithReports.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {completedCitasWithReports.map(cita => (
+                    <ServiceReportCard 
+                      key={cita.id} 
+                      cita={cita} 
+                      rating={this.state.ratings.find(r => r.cita.id === cita.id)} 
+                      onSubmitRating={this.submitRating}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-slate-100 dark:bg-[#111827] p-12 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-white/5 text-center">
+                  <div className="text-4xl mb-4 opacity-30">📋</div>
+                  <p className="text-slate-500 dark:text-[#94A3B8] italic font-medium">
+                    No service reports yet. Your completed services will appear here.
+                  </p>
+                </div>
+              )}
             </div>
-            <ul className="space-y-4 mb-10 flex-grow text-slate-500 dark:text-[#94A3B8] font-medium">
-              {[
-                "Selecciona tu vehículo registrado.",
-                "Elige el servicio premium deseado.",
-                "Define fecha y hora en tiempo real.",
-                "Confirma y recibe tu código VIP."
-              ].map((step, i) => (
-                <li key={i} className="flex items-start space-x-4">
-                  <span className="flex-shrink-0 w-6 h-6 bg-[#2563EB]/10 text-[#2563EB] rounded-full flex items-center justify-center text-[10px] font-black">{i+1}</span>
-                  <span className="text-sm">{step}</span>
-                </li>
-              ))}
-            </ul>
-            <button 
-              onClick={() => this.props.setView('citas')}
-              className="w-full py-5 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#2563EB]/20 transition-all active:scale-95"
-            >
-              Agendar Cita
-            </button>
-          </div>
+          )}
         </div>
 
         {/* SERVICIOS PREMIUM CAROUSEL */}
