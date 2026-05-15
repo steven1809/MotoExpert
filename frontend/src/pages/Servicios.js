@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import CardServicio from "../components/CardServicio";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 export default function Servicios({ setView }) {
   const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,14 +28,14 @@ export default function Servicios({ setView }) {
   const fetchServicios = () => {
     setLoading(true);
     setError("");
-    fetch("http://localhost:3000/servicios")
+    fetch(`${API_BASE_URL}/servicios`)
       .then((res) => res.json())
       .then((data) => {
         setServicios(Array.isArray(data) ? data : []);
       })
       .catch(() => {
         setServicios([]);
-        setError("No se pudieron cargar los servicios. Verifica que el backend esté corriendo en http://localhost:3000");
+        setError(`No se pudieron cargar los servicios. Verifica que el backend esté corriendo en ${API_BASE_URL}`);
       })
       .finally(() => setLoading(false));
   };
@@ -66,8 +68,8 @@ export default function Servicios({ setView }) {
     const token = localStorage.getItem("token");
     const method = editServicio ? "PATCH" : "POST";
     const url = editServicio 
-      ? `http://localhost:3000/servicios/${editServicio.id}` 
-      : "http://localhost:3000/servicios";
+      ? `${API_BASE_URL}/servicios/${editServicio.id}` 
+      : `${API_BASE_URL}/servicios`;
 
     try {
       const response = await fetch(url, {
@@ -98,7 +100,7 @@ export default function Servicios({ setView }) {
     if (!window.confirm("¿Estás seguro de que deseas eliminar este servicio?")) return;
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch(`http://localhost:3000/servicios/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/servicios/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });

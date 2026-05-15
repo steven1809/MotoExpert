@@ -10,7 +10,7 @@ import {
   Dot
 } from 'recharts';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 const REVIEWS_DATA = [
   { id: 1, user: 'Carlos M.', date: '2026-05-10', rating: 5, text: 'Excellent service! The detailing was perfect and my bike looks brand new. The specialist was very professional.', verified: true, helpful: 24, specialistId: 'sp1' },
