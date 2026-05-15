@@ -13,11 +13,11 @@ export class EmpleadosService {
   ) {}
 
   findAll() {
-    return this.repo.find();
+    return this.repo.find({ relations: ['usuario', 'citas'] });
   }
 
   findOne(id: number) {
-    return this.repo.findOneBy({ id });
+    return this.repo.findOne({ where: { id }, relations: ['usuario', 'citas'] });
   }
 
   create(data: CreateEmpleadoDto) {

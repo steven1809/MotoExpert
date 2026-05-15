@@ -20,6 +20,7 @@ import GoogleSignInModal from './components/GoogleSignInModal';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import NotificationBell from './components/NotificationBell';
+import ResenasPage from './pages/ResenasPage';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
@@ -167,8 +168,9 @@ function App() {
             {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
             {view === "servicios" && <Servicios setView={setView} />}
             {view === "users" && <UsersList />}
-            {view === "vehiculos" && <Vehiculos setView={setView} />}
+            {view === "vehiculos" && <Vehiculos setView={setView} showToast={showToast} />}
             {view === "citas" && <Citas setView={setView} showToast={showToast} />}
+            {view === "resenas" && <ResenasPage />}
             {view === "cuenta" && <MiCuenta />}
             {view === "panel_empleado" && <PanelEmpleado showToast={showToast} />}
 
