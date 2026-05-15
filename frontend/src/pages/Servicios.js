@@ -135,8 +135,7 @@ export default function Servicios({ setView }) {
   );
 
   return (
-    <section id="servicios-page" className="py-24 bg-white dark:bg-slate-950 relative rounded-3xl border border-slate-200 dark:border-slate-800">
-      <div className="container mx-auto px-4">
+    <div className="container mx-auto px-4">
         {/* Modal Admin */}
         {showModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -265,6 +264,5 @@ export default function Servicios({ setView }) {
           </div>
         )}
       </div>
-    </section>
   );
 }
