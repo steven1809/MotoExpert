@@ -340,25 +340,32 @@ const FacebookIcon = () => (
 );
 
 // ─── Right panel illustration ─────────────────────────────────────────────────
-const RightPanel = () => (
-  <div className="mxp-right">
-    <div className="mxp-blob mxp-blob-1" />
-    <div className="mxp-blob mxp-blob-2" />
-    <div className="mxp-blob mxp-blob-3" />
-    <div className="mxp-right-content">
-      <div className="mxp-brand">MotoExpert</div>
-      <div className="mxp-img-frame">
-        <div className="mxp-img-placeholder">
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/>
-          </svg>
-          <span>Tu foto aquí</span>
+const RightPanel = () => {
+  const userPicture = localStorage.getItem("userPicture");
+  return (
+    <div className="mxp-right">
+      <div className="mxp-blob mxp-blob-1" />
+      <div className="mxp-blob mxp-blob-2" />
+      <div className="mxp-blob mxp-blob-3" />
+      <div className="mxp-right-content">
+        <div className="mxp-brand">MotoExpert</div>
+        <div className="mxp-img-frame">
+          {userPicture ? (
+            <img src={userPicture} alt="User Profile" />
+          ) : (
+            <div className="mxp-img-placeholder">
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/>
+              </svg>
+              <span>Tu foto aquí</span>
+            </div>
+          )}
         </div>
       </div>
+      <div className="mxp-badge">⚡</div>
     </div>
-    <div className="mxp-badge">⚡</div>
-  </div>
-);
+  );
+};
 
 // ─── Main component ───────────────────────────────────────────────────────────
 class Login extends Component {
@@ -444,6 +451,7 @@ class Login extends Component {
           localStorage.setItem("userId",    data.userId    || "");
           localStorage.setItem("userName",  data.nombre    || "");
           localStorage.setItem("userEmail", email          || "");
+          localStorage.setItem("userPicture", data.picture || "");
           this.props.onLoginSuccess(data.role);
         } else { alert("¡Registro exitoso! Ya puedes iniciar sesión."); this.toggleMode(); }
       } else alert(data.message || "Error en los datos proporcionados.");

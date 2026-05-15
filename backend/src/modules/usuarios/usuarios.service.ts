@@ -18,4 +18,18 @@ export class UsuariosService {
       where: { email }
     });
   }
+
+  async update(id: number, updateData: any) {
+    const user = await this.usuariosRepository.findOne({ where: { id } });
+    if (!user) throw new Error('Usuario no encontrado');
+
+    // No permitir cambiar el password por aquí por seguridad
+    const { password, ...rest } = updateData;
+    
+    Object.assign(user, rest);
+    const updatedUser = await this.usuariosRepository.save(user);
+    
+    const { password: _p, ...result } = updatedUser;
+    return result;
+  }
 }

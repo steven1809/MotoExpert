@@ -75,6 +75,7 @@ function App() {
     localStorage.removeItem("userName");
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userId");
+    localStorage.removeItem("userPicture");
   };
 
   const showToast = (message, type = 'info') => {
@@ -93,6 +94,8 @@ function App() {
     setShowNotifPanel(prev => !prev);
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
+
+  const isStandardUser = userRole === "user" || userRole === "cliente" || userRole === "usuario";
 
   return (
     <AuthProvider>
@@ -153,7 +156,7 @@ function App() {
             />
           ))}
 
-          <main className="pt-20 md:pt-8 md:pl-72 p-6 md:p-8">
+          <main className={`pt-20 ${isStandardUser ? "md:pt-24" : "md:pt-8 md:pl-72"} p-6 md:p-8`}>
             {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} unreadNotifications={unreadNotifications} />}
             {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard />}
             {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
