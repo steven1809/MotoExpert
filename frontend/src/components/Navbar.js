@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import NotificationBell from "./NotificationBell";
 
 class Navbar extends Component {
   constructor(props) {
@@ -235,6 +236,7 @@ class Navbar extends Component {
             </nav>
 
             <div className="flex items-center gap-6">
+              <NotificationBell />
               <button
                 onClick={() => setView("cuenta")}
                 className="flex items-center gap-3 group pl-4 border-l border-white/[0.05]"

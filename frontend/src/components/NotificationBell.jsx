@@ -87,17 +87,61 @@ const NotificationBell = () => {
 
   const unreadCount = notifications.filter(n => !n.leida).length;
 
+  const getIconAndStyle = (tipo) => {
+    switch (tipo) {
+      case 'service_started':
+        return {
+          icon: (
+            <svg className="w-5 h-5 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          ),
+          bg: 'bg-[#2563EB]/10'
+        };
+      case 'service_completed':
+        return {
+          icon: (
+            <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ),
+          bg: 'bg-emerald-500/10'
+        };
+      case 'new_rating':
+        return {
+          icon: (
+            <svg className="w-5 h-5 text-[#EF9F27]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2l1.5 6.5L20 10l-6.5 1.5L12 18l-1.5-6.5L4 10l6.5-1.5L12 2z" />
+            </svg>
+          ),
+          bg: 'bg-[#EF9F27]/10'
+        };
+      default:
+        return {
+          icon: (
+            <svg className="w-5 h-5 text-[#94A3B8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          ),
+          bg: 'bg-[#2a2d3a]'
+        };
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-xl bg-[#1a1d27] border border-[#2a2d3a] hover:border-[#2563EB]/50 transition-all"
+        className="relative w-9 h-9 flex items-center justify-center rounded-full bg-transparent border border-[#2a2d3a] hover:bg-[#1a1d27] transition-all"
       >
-        <svg className="w-6 h-6 text-[#94A3B8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 text-[#94A3B8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center bg-red-500 text-white text-xs font-black rounded-full">
+          <span className={`absolute -top-1 -right-1 flex items-center justify-center bg-[#E24B4A] text-white text-[10px] font-black ${
+            unreadCount > 9 ? 'px-1.5 py-0.5 rounded-full min-w-[20px]' : 'w-5 h-5 rounded-full'
+          }`}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -106,7 +150,7 @@ const NotificationBell = () => {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-[#0f1117] border border-[#2a2d3a] rounded-2xl shadow-2xl z-50 overflow-hidden">
           <div className="p-4 border-b border-[#2a2d3a] flex justify-between items-center">
-            <h3 className="text-[#F8FAFC] font-black text-sm uppercase tracking-wider">Notifications</h3>
+            <h3 className="text-[#F8FAFC] font-bold text-sm">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
@@ -119,45 +163,40 @@ const NotificationBell = () => {
 
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-8 text-center">
+              <div className="p-8 text-center flex flex-col items-center gap-3">
+                <svg className="w-8 h-8 text-[#94A3B8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 <p className="text-[#94A3B8] italic text-sm">No notifications yet</p>
               </div>
             ) : (
-              notifications.map(notification => (
-                <div
-                  key={notification.id}
-                  onClick={() => !notification.leida && markAsRead(notification.id)}
-                  className={`p-4 border-b border-[#2a2d3a] cursor-pointer transition-all ${!notification.leida ? 'bg-[#2563EB]/5' : ''}`}
-                >
-                  <div className="flex gap-3">
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                      notification.tipo === 'service_started' ? 'bg-[#2563EB]/10' : 'bg-emerald-500/10'
-                    }`}>
-                      {notification.tipo === 'service_started' ? (
-                        <svg className="w-5 h-5 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className={`text-sm font-bold ${!notification.leida ? 'text-[#F8FAFC]' : 'text-[#94A3B8]'}`}>
-                        {notification.titulo}
-                      </h4>
-                      <p className="text-xs text-[#94A3B8] mt-1 line-clamp-2">
-                        {notification.mensaje}
-                      </p>
-                      <p className="text-xs text-[#94A3B8]/70 mt-2">
-                        {formatRelativeTime(notification.createdAt)}
-                      </p>
+              notifications.map(notification => {
+                const { icon, bg } = getIconAndStyle(notification.tipo);
+                return (
+                  <div
+                    key={notification.id}
+                    onClick={() => !notification.leida && markAsRead(notification.id)}
+                    className={`p-4 border-b border-[#2a2d3a] cursor-pointer transition-all ${!notification.leida ? 'bg-[#1a2035] border-l-2 border-l-[#2563EB]' : ''}`}
+                  >
+                    <div className="flex gap-3">
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${bg}`}>
+                        {icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className={`text-sm font-bold ${!notification.leida ? 'text-[#F8FAFC]' : 'text-[#94A3B8]'}`}>
+                          {notification.titulo}
+                        </h4>
+                        <p className="text-xs text-[#94A3B8] mt-1 line-clamp-2">
+                          {notification.mensaje}
+                        </p>
+                        <p className="text-[11px] text-[#94A3B8]/70 mt-2">
+                          {formatRelativeTime(notification.createdAt)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
