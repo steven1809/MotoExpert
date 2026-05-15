@@ -7,6 +7,7 @@ import { Usuario } from '../usuarios/entities/usuario.entity';
 import { Vehiculo } from '../vehiculos/entities/vehiculo.entity';
 import { Servicio } from '../servicios/entities/servicio.entity';
 import { Empleado } from '../empleados/entities/empleado.entity';
+import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { Empleado } from '../empleados/entities/empleado.entity';
       Servicio,
       Empleado,
     ]),
+    NotificacionesModule,
   ],
   controllers: [CitasController],
   providers: [CitasService],

@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import ServiceCompletionModal from '../components/ServiceCompletionModal';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
@@ -8,6 +9,8 @@ class PanelEmpleado extends Component {
     this.state = {
       citas: [],
       loading: true,
+      showCompletionModal: false,
+      selectedCita: null,
     };
   }
 
@@ -88,7 +91,19 @@ class PanelEmpleado extends Component {
     );
 
     return (
-      <div className="max-w-6xl mx-auto p-6 animate-in fade-in duration-500">
+      <>
+        {this.state.showCompletionModal && this.state.selectedCita && (
+          <ServiceCompletionModal
+            cita={this.state.selectedCita}
+            onClose={() => this.setState({ showCompletionModal: false, selectedCita: null })}
+            onSuccess={() => {
+              this.setState({ showCompletionModal: false, selectedCita: null });
+              this.fetchCitasEmpleado();
+            }}
+            showToast={this.props.showToast}
+          />
+        )}
+        <div className="max-w-6xl mx-auto p-6 animate-in fade-in duration-500">
         <h1 className="text-4xl font-bold text-white mb-10 italic bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
           Panel de Servicios - Empleado
         </h1>
@@ -192,7 +207,7 @@ class PanelEmpleado extends Component {
                   </button>
                 ) : (
                   <button 
-                    onClick={() => this.updateEstadoCita(cita.id, 'FINALIZADO')}
+                    onClick={() => this.setState({ showCompletionModal: true, selectedCita: cita })}
                     className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg shadow-green-600/20"
                   >
                     Finalizar Servicio
@@ -210,6 +225,7 @@ class PanelEmpleado extends Component {
           )}
         </div>
       </div>
+      </>
     );
   }
 }

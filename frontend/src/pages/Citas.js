@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useVehicleGuard } from '../hooks/useVehicleGuard';
+import NoVehicleWarning from '../components/NoVehicleWarning';
+import DuplicateBookingWarning from '../components/DuplicateBookingWarning';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 const Citas = ({ setView }) => {
+  const { hasVehicles, loading: loadingVehicles } = useVehicleGuard();
   const [citas, setCitas] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
   const [servicios, setServicios] = useState([]);
@@ -12,6 +16,8 @@ const Citas = ({ setView }) => {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [existingDuplicateBooking, setExistingDuplicateBooking] = useState(null);
   
   const [formData, setFormData] = useState({
     fecha: '',
@@ -128,8 +134,55 @@ const Citas = ({ setView }) => {
     return `${h12}:${minutes} ${ampm}`;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const getFilteredSlots = () => {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const selectedDate = formData.fecha;
+    const isToday = selectedDate === today;
+
+    let availableSlots = disponibilidad.filter(slot => slot.disponible);
+
+    if (isToday) {
+      availableSlots = availableSlots.filter(slot => {
+        const [hours, minutes] = slot.hora.split(':').map(Number);
+        const slotDate = new Date();
+        slotDate.setHours(hours, minutes, 0, 0);
+        const minTime = new Date(now.getTime() + 30 * 60 * 1000);
+        return slotDate >= minTime;
+      });
+    }
+
+    return availableSlots;
+  };
+
+  const checkForDuplicateBooking = () => {
+    // Find selected vehicle and service from state
+    const selectedVehicle = vehiculos.find(v => v.id.toString() === formData.vehiculoId);
+    const selectedService = servicios.find(s => s.id.toString() === formData.servicioId);
+
+    if (!selectedVehicle || !selectedService) return null;
+
+    // Look for duplicate in existing citas
+    const duplicate = citas.find(cita => 
+      cita.vehiculo?.id === selectedVehicle.id &&
+      cita.servicio?.id === selectedService.id &&
+      cita.fecha === formData.fecha &&
+      cita.hora_inicio !== formData.hora_inicio
+    );
+
+    return duplicate;
+  };
+
+  const confirmSubmit = async () => {
+    // Close the modal
+    setShowDuplicateWarning(false);
+    setExistingDuplicateBooking(null);
+
+    // Proceed with original submit logic
+    await doSubmit();
+  };
+
+  const doSubmit = async () => {
     if (!formData.hora_inicio) {
       alert('Por favor selecciona un horario disponible');
       return;
@@ -180,6 +233,21 @@ const Citas = ({ setView }) => {
     }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Check for duplicate first
+    const duplicate = checkForDuplicateBooking();
+    if (duplicate) {
+      setExistingDuplicateBooking(duplicate);
+      setShowDuplicateWarning(true);
+      return;
+    }
+
+    // No duplicate, proceed normally
+    await doSubmit();
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('¿Estás seguro de que deseas eliminar esta cita?')) return;
 
@@ -205,7 +273,7 @@ const Citas = ({ setView }) => {
   const citasPendientes = citas.filter(cita => cita.estado === "PENDIENTE" || cita.estado === "EN PROCESO");
   const historialServicios = citas.filter(cita => cita.estado === "FINALIZADO" || cita.estado === "CANCELADO");
 
-  if (loading) {
+  if (loading || loadingVehicles) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white dark:bg-slate-950">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
@@ -213,7 +281,22 @@ const Citas = ({ setView }) => {
     );
   }
 
+  if (!hasVehicles) {
+    return <NoVehicleWarning setView={setView} />;
+  }
+
   return (
+    <>
+      {showDuplicateWarning && existingDuplicateBooking && (
+        <DuplicateBookingWarning 
+          existingBooking={existingDuplicateBooking} 
+          onConfirm={confirmSubmit}
+          onCancel={() => {
+            setShowDuplicateWarning(false);
+            setExistingDuplicateBooking(null);
+          }}
+        />
+      )}
     <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-white dark:bg-[#020617]">
       <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-slate-200 dark:border-white/5 mx-6 mt-6 bg-slate-100 dark:bg-[#111827]">
         <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-[#2563EB]/10 rounded-full blur-[100px]" />
@@ -321,28 +404,47 @@ const Citas = ({ setView }) => {
                   <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-4 bg-white dark:bg-[#020617] rounded-2xl border border-slate-200 dark:border-white/5">
                     {loadingSlots ? (
                       <div className="w-full text-center py-2 text-slate-500 dark:text-[#94A3B8] text-xs italic">Consultando disponibilidad...</div>
-                    ) : disponibilidad.length > 0 ? (
-                      disponibilidad.filter(slot => slot.disponible).map(slot => (
-                        <button
-                          key={slot.hora}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, hora_inicio: slot.hora })}
-                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                            formData.hora_inicio === slot.hora 
-                              ? 'bg-[#2563EB] border-[#2563EB] text-slate-900 dark:text-white' 
-                              : 'bg-slate-100 dark:bg-[#111827] border-slate-200 dark:border-white/5 text-slate-500 dark:text-[#94A3B8] hover:border-white/20'
-                          }`}
-                        >
-                          {slot.hora.substring(0, 5)}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="w-full text-center py-2 text-slate-500 dark:text-[#94A3B8] text-xs italic">
-                        {!formData.empleadoId 
-                          ? 'Selecciona un especialista para ver horarios' 
-                          : 'No hay horarios disponibles para este especialista'}
-                      </div>
-                    )}
+                    ) : (() => {
+                      const filteredSlots = getFilteredSlots();
+                      const now = new Date();
+                      const today = now.toISOString().split('T')[0];
+                      const isToday = formData.fecha === today;
+
+                      if (filteredSlots.length === 0 && isToday && formData.empleadoId) {
+                        return (
+                          <div className="w-full p-4 text-center bg-[rgba(234,75,74,0.08)] border border-[#E24B4A] rounded-xl">
+                            <p className="text-[#E24B4A] text-sm font-bold italic">
+                              No available time slots for today. Please select another date.
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      if (filteredSlots.length > 0) {
+                        return filteredSlots.map(slot => (
+                          <button
+                            key={slot.hora}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, hora_inicio: slot.hora })}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                              formData.hora_inicio === slot.hora 
+                                ? 'bg-[#2563EB] border-[#2563EB] text-slate-900 dark:text-white' 
+                                : 'bg-slate-100 dark:bg-[#111827] border-slate-200 dark:border-white/5 text-slate-500 dark:text-[#94A3B8] hover:border-white/20'
+                            }`}
+                          >
+                            {slot.hora.substring(0, 5)}
+                          </button>
+                        ));
+                      }
+
+                      return (
+                        <div className="w-full text-center py-2 text-slate-500 dark:text-[#94A3B8] text-xs italic">
+                          {!formData.empleadoId 
+                            ? 'Selecciona un especialista para ver horarios' 
+                            : 'No hay horarios disponibles para este especialista'}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -553,6 +655,7 @@ const Citas = ({ setView }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
