@@ -7,6 +7,7 @@ import { Vehiculo } from '../vehiculos/entities/vehiculo.entity';
 import { Servicio } from '../servicios/entities/servicio.entity';
 import { Empleado } from '../empleados/entities/empleado.entity';
 import { CreateCitaDto } from './dto/create-cita.dto';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 
 @Injectable()
 export class CitasService {
@@ -25,6 +26,8 @@ export class CitasService {
 
     @InjectRepository(Empleado)
     private readonly empleadoRepo: Repository<Empleado>,
+
+    private readonly notificacionesService: NotificacionesService,
   ) {}
 
   async create(dto: CreateCitaDto) {
@@ -100,12 +103,48 @@ export class CitasService {
     return this.repo.save(cita);
   }
 
-  async updateEstado(id: number, nuevoEstado: string) {
+  async updateEstado(
+    id: number, 
+    nuevoEstado: string, 
+    report?: {
+      workPerformed: string;
+      partsUsed?: string;
+      observations?: string;
+      condition: 'optimal' | 'attention' | 'urgent';
+    }
+  ) {
     const cita = await this.repo.findOne({ where: { id } });
     if (!cita) throw new NotFoundException('Cita no encontrada');
     
     cita.estado = nuevoEstado;
-    return this.repo.save(cita);
+    
+    if (nuevoEstado === 'FINALIZADO') {
+      cita.completedAt = new Date();
+      if (report) {
+        cita.report = report;
+      }
+    }
+    
+    const savedCita = await this.repo.save(cita);
+
+    // Create notification based on estado
+    if (nuevoEstado === 'EN PROCESO') {
+      await this.notificacionesService.create(
+        cita.usuario,
+        'service_started',
+        'Your service has started',
+        `Your ${cita.servicio.nombre} for vehicle ${cita.vehiculo.placa} has begun. Our specialist is now working on your unit.`
+      );
+    } else if (nuevoEstado === 'FINALIZADO') {
+      await this.notificacionesService.create(
+        cita.usuario,
+        'service_completed',
+        'Your service has been completed',
+        `Your ${cita.servicio.nombre} for vehicle ${cita.vehiculo.placa} is done. Tap to view the full service report.`
+      );
+    }
+
+    return savedCita;
   }
 
   async getAvailableSlots(fecha: string, servicioId: number, empleadoId?: number) {
