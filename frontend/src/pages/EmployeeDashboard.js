@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import ServiceCompletionModal from '../components/ServiceCompletionModal';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
@@ -8,6 +9,9 @@ class EmployeeDashboard extends Component {
     this.state = {
       loading: true,
       pendingServices: [],
+      showCompletionModal: false,
+      selectedCita: null,
+      ratingsStats: { totalReviews: 0, averageRating: '0' },
     };
   }
 
@@ -46,12 +50,31 @@ class EmployeeDashboard extends Component {
         // Filter for services assigned to the employee or pending in general
         const pending = data.filter(c => c.estado === 'PENDIENTE' || c.estado === 'EN PROCESO');
         this.setState({ pendingServices: pending, loading: false });
+        // Fetch ratings stats if we have any services with empleado
+        if (data.length > 0) {
+          this.fetchRatingsStats(data[0].empleado?.id, token);
+        }
       } else {
         this.setState({ loading: false });
       }
     } catch (err) {
       console.error('Error fetching pending services:', err);
       this.setState({ loading: false });
+    }
+  };
+
+  fetchRatingsStats = async (empleadoId, token) => {
+    if (!empleadoId) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/ratings/empleado/${empleadoId}/stats`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const stats = await response.json();
+        this.setState({ ratingsStats: stats });
+      }
+    } catch (err) {
+      console.error('Error fetching ratings stats:', err);
     }
   };
 
@@ -68,14 +91,13 @@ class EmployeeDashboard extends Component {
       });
 
       if (response.ok) {
-        alert('Estado actualizado exitosamente');
+        if (this.props.showToast) {
+          this.props.showToast('Service started. Customer has been notified.', 'success');
+        }
         this.fetchPendingServices();
-      } else {
-        alert('Error al actualizar estado');
       }
     } catch (err) {
       console.error('Error updating state:', err);
-      alert('Error de conexión');
     }
   };
 
@@ -85,7 +107,19 @@ class EmployeeDashboard extends Component {
     if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500"></div></div>;
 
     return (
-      <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-white dark:bg-[#020617]">
+      <>
+        {this.state.showCompletionModal && this.state.selectedCita && (
+          <ServiceCompletionModal
+            cita={this.state.selectedCita}
+            onClose={() => this.setState({ showCompletionModal: false, selectedCita: null })}
+            onSuccess={() => {
+              this.setState({ showCompletionModal: false, selectedCita: null });
+              this.fetchPendingServices();
+            }}
+            showToast={this.props.showToast}
+          />
+        )}
+        <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-white dark:bg-[#020617]">
         <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-slate-200 dark:border-white/5 mx-6 mt-6 bg-slate-100 dark:bg-[#111827]">
           <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px]" />
           <div className="relative z-10 text-center space-y-4">
@@ -94,6 +128,19 @@ class EmployeeDashboard extends Component {
               Panel de <span className="text-emerald-500">Trabajo</span>
             </h1>
             <p className="text-slate-500 dark:text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Gestión de servicios activos y optimización de flujo técnico.</p>
+            {/* Ratings Stats */}
+            {(this.state.ratingsStats.totalReviews > 0 || parseFloat(this.state.ratingsStats.averageRating) > 0) && (
+              <div className="flex items-center justify-center gap-6 mt-6 text-slate-500 dark:text-[#94A3B8]">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#EF9F27] text-lg">★</span>
+                  <span className="text-sm font-bold">{this.state.ratingsStats.averageRating}</span>
+                </div>
+                <div className="w-1 h-1 bg-slate-400 rounded-full" />
+                <span className="text-sm font-medium">
+                  {this.state.ratingsStats.totalReviews} {this.state.ratingsStats.totalReviews === 1 ? 'review' : 'reviews'}
+                </span>
+              </div>
+            )}
           </div>
         </header>
 
@@ -174,7 +221,7 @@ class EmployeeDashboard extends Component {
                         )}
                         {service.estado === 'EN PROCESO' && (
                           <button
-                            onClick={() => this.updateEstado(service.id, 'FINALIZADO')}
+                            onClick={() => this.setState({ showCompletionModal: true, selectedCita: service })}
                             className="w-full py-4 bg-[#7b9cff] hover:bg-[#6a8cff] text-white text-[10px] font-mono uppercase tracking-[0.12em] rounded-xl transition-colors active:scale-[0.99]"
                           >
                             Finalizar Servicio
@@ -193,6 +240,7 @@ class EmployeeDashboard extends Component {
           </div>
         </section>
       </div>
+      </>
     );
   }
 }

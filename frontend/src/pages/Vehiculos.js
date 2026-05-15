@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import SearchAndFilter from '../components/SearchAndFilter';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
@@ -17,9 +18,49 @@ class Vehiculos extends Component {
         placa: '',
         color: '',
         tipo: 'Moto' // Valor por defecto
+      },
+      filters: {
+        searchTerm: '',
+        placaFilter: '',
+        tipoFilter: '',
+        anioFilter: '',
+        marcaFilter: ''
       }
     };
   }
+
+  // Filtering logic
+  getFilteredVehiculos = () => {
+    const { vehiculos, filters } = this.state;
+    const { searchTerm, placaFilter, tipoFilter, anioFilter, marcaFilter } = filters;
+
+    return vehiculos.filter(vehiculo => {
+      // Search term filter (marca, placa, modelo)
+      const matchesSearch = !searchTerm || 
+        vehiculo.marca?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        vehiculo.placa?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        vehiculo.modelo?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Placa filter
+      const matchesPlaca = !placaFilter || 
+        vehiculo.placa?.toLowerCase().includes(placaFilter.toLowerCase());
+
+      // Tipo filter
+      const matchesTipo = !tipoFilter || vehiculo.tipo === tipoFilter;
+
+      // Año filter
+      const matchesAnio = !anioFilter || vehiculo.anio === parseInt(anioFilter, 10);
+
+      // Marca filter
+      const matchesMarca = !marcaFilter || vehiculo.marca === marcaFilter;
+
+      return matchesSearch && matchesPlaca && matchesTipo && matchesAnio && matchesMarca;
+    });
+  };
+
+  handleFilterChange = (filters) => {
+    this.setState({ filters });
+  };
 
   getStatusForVehiculo = (vehiculo) => {
     const raw = String(vehiculo?.estado || '').toUpperCase();
@@ -146,14 +187,17 @@ class Vehiculos extends Component {
         this.fetchVehiculos();
         alert('Vehículo registrado con éxito');
 
-        // Verificar si hay una acción pendiente de agendamiento
+        // Check for redirect flag
+        const redirectAfterVehicle = localStorage.getItem('redirectAfterVehicle');
+        if (redirectAfterVehicle === 'citas' && this.props.setView) {
+          localStorage.removeItem('redirectAfterVehicle');
+          this.props.setView('citas');
+        }
+        // Also keep the existing pendingAction check for backward compatibility
         const pendingAction = localStorage.getItem('pendingAction');
-        if (pendingAction === 'agendar_cita') {
-          // No limpiamos pendingAction aquí, lo haremos en Citas.js
-          // Pero sí redirigimos
-          if (this.props.setView) {
-            this.props.setView('citas');
-          }
+        if (pendingAction === 'agendar_cita' && this.props.setView) {
+          localStorage.removeItem('pendingAction');
+          this.props.setView('citas');
         }
       } else {
         const errorData = await response.json();
@@ -166,6 +210,7 @@ class Vehiculos extends Component {
 
   render() {
     const { vehiculos, loading, showForm, formData, error } = this.state;
+    const filteredVehiculos = this.getFilteredVehiculos();
 
     if (loading) return <div className="flex items-center justify-center min-h-screen bg-white dark:bg-[#020617]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#2563EB]"></div></div>;
 
@@ -183,17 +228,25 @@ class Vehiculos extends Component {
         </header>
 
         <div className="container mx-auto px-6 space-y-12">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter flex items-center">
-              <span className="w-2 h-2 bg-purple-600 rounded-full mr-4 animate-pulse" />
-              Unidades Registradas
-            </h2>
-            <button
-              onClick={() => this.setState({ showForm: !showForm })}
-              className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-purple-600/20 transition-all active:scale-95"
-            >
-              {showForm ? 'Cerrar Registro' : 'Añadir Unidad VIP'}
-            </button>
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter flex items-center">
+                <span className="w-2 h-2 bg-purple-600 rounded-full mr-4 animate-pulse" />
+                Unidades Registradas
+              </h2>
+              <button
+                onClick={() => this.setState({ showForm: !showForm })}
+                className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-purple-600/20 transition-all active:scale-95"
+              >
+                {showForm ? 'Cerrar Registro' : 'Añadir Unidad VIP'}
+              </button>
+            </div>
+            
+            {/* Search and Filters */}
+            <SearchAndFilter 
+              vehiculos={vehiculos} 
+              onFilterChange={this.handleFilterChange} 
+            />
           </div>
 
           {error && (
@@ -242,8 +295,8 @@ class Vehiculos extends Component {
 
           {/* Listado de Vehículos */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {vehiculos.length > 0 ? (
-              vehiculos.map(v => (
+            {filteredVehiculos.length > 0 ? (
+              filteredVehiculos.map(v => (
                 (() => {
                   const status = this.getStatusForVehiculo(v);
                   const ui = this.getStatusUI(status);
@@ -307,7 +360,9 @@ class Vehiculos extends Component {
               ))
             ) : (
               <div className="col-span-full py-32 text-center bg-slate-100 dark:bg-[#111827] rounded-[3rem] border border-dashed border-slate-200 dark:border-white/5">
-                <p className="text-slate-500 dark:text-[#94A3B8] italic font-medium">No se detectan unidades registradas en su perfil.</p>
+                <p className="text-slate-500 dark:text-[#94A3B8] italic font-medium">
+                  {vehiculos.length > 0 ? 'No se encontraron vehículos con esos filtros' : 'No se detectan unidades registradas en su perfil.'}
+                </p>
               </div>
             )}
           </div>

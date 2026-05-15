@@ -67,8 +67,8 @@ export class CitasController {
   }
 
   @Patch(':id/estado')
-  updateEstado(@Param('id') id: string, @Body('estado') estado: string) {
-    return this.service.updateEstado(+id, estado);
+  updateEstado(@Param('id') id: string, @Body() body: { estado: string, report?: any }) {
+    return this.service.updateEstado(+id, body.estado, body.report);
   }
 
   @Delete(':id')

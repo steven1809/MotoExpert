@@ -1,0 +1,43 @@
+import { Controller, Post, Body, Get, Param, UseGuards, Request } from '@nestjs/common';
+import { RatingsService } from './ratings.service';
+import { AuthGuard } from '@nestjs/passport';
+
+@Controller('ratings')
+@UseGuards(AuthGuard('jwt'))
+export class RatingsController {
+  constructor(private readonly service: RatingsService) {}
+
+  @Post()
+  create(
+    @Body() body: { 
+      citaId: number; 
+      specialistRating: number; 
+      serviceRating: number; 
+      comment?: string; 
+    },
+    @Request() req
+  ) {
+    return this.service.create(
+      req.user, 
+      body.citaId, 
+      body.specialistRating, 
+      body.serviceRating, 
+      body.comment
+    );
+  }
+
+  @Get('cita/:citaId')
+  findByCita(@Param('citaId') citaId: string) {
+    return this.service.findByCita(+citaId);
+  }
+
+  @Get('empleado/:empleadoId')
+  findByEmpleado(@Param('empleadoId') empleadoId: string) {
+    return this.service.findByEmpleado(+empleadoId);
+  }
+
+  @Get('empleado/:empleadoId/stats')
+  getEmpleadoStats(@Param('empleadoId') empleadoId: string) {
+    return this.service.getEmpleadoStats(+empleadoId);
+  }
+}

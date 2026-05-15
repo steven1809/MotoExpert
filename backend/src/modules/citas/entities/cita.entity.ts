@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  CreateDateColumn,
 } from 'typeorm';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { Vehiculo } from '../../vehiculos/entities/vehiculo.entity';
@@ -27,6 +28,20 @@ export class Cita {
 
   @Column({ default: 'PENDIENTE' })
   estado: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  completedAt: Date;
+
+  @Column('json', { nullable: true })
+  report: {
+    workPerformed: string;
+    partsUsed?: string;
+    observations?: string;
+    condition: 'optimal' | 'attention' | 'urgent';
+  };
+
+  @Column({ default: false })
+  rated: boolean;
 
   @ManyToOne(() => Usuario, { eager: true })
   usuario: Usuario;

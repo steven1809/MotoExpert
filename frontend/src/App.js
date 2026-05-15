@@ -19,6 +19,7 @@ import OnboardingModal from './components/OnboardingModal';
 import GoogleSignInModal from './components/GoogleSignInModal';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
+import NotificationBell from './components/NotificationBell';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
@@ -136,6 +137,10 @@ function App() {
         <div className="min-h-screen bg-white dark:bg-[#020617] text-slate-900 dark:text-[#F8FAFC]">
           <InactivityHandler onLogout={handleLogout} />
 
+          <div className="fixed top-4 right-4 md:right-80 z-40">
+            <NotificationBell />
+          </div>
+
           <Navbar 
             setView={setView} 
             view={view}
@@ -158,14 +163,14 @@ function App() {
 
           <main className={`pt-20 ${isStandardUser ? "md:pt-24" : "md:pt-8 md:pl-72"} p-6 md:p-8`}>
             {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} unreadNotifications={unreadNotifications} />}
-            {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard />}
+            {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard showToast={showToast} />}
             {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
             {view === "servicios" && <Servicios setView={setView} />}
             {view === "users" && <UsersList />}
             {view === "vehiculos" && <Vehiculos setView={setView} />}
             {view === "citas" && <Citas setView={setView} showToast={showToast} />}
             {view === "cuenta" && <MiCuenta />}
-            {view === "panel_empleado" && <PanelEmpleado />}
+            {view === "panel_empleado" && <PanelEmpleado showToast={showToast} />}
 
             {userRole === 'admin' && view !== 'users' && (
               <div className="fixed bottom-8 right-8">
