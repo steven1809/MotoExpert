@@ -14,6 +14,12 @@ export class Vehiculo {
   id: number;
 
   @Column({ nullable: true })
+  documentType: string;
+
+  @Column({ nullable: true })
+  documentNumber: string;
+
+  @Column({ nullable: true })
   placa: string;
 
   @Column({ nullable: true })

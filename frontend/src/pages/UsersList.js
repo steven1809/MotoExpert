@@ -511,24 +511,48 @@ const UsersList = () => {
 
       {activeTab === 'empleados' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {empleados.map(emp => (
-            <div key={emp.id} className="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl">
-              <div className="flex justify-between items-start mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-2xl">👷</div>
-                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                  emp.estado === 'activo' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'
-                }`}>
-                  {emp.estado}
-                </span>
+          {empleados.map(emp => {
+            const completedServices = emp.citas?.filter(c => c.estado === 'FINALIZADO').length || 0;
+            const fechaRegistro = emp.usuario?.createdAt ? new Date(emp.usuario.createdAt) : null;
+            const formattedFechaRegistro = fechaRegistro 
+              ? `Desde ${fechaRegistro.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}`
+              : 'N/A';
+            
+            return (
+              <div key={emp.id} className="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#7b9cff]/10 flex items-center justify-center text-[#7b9cff] font-bold text-xl uppercase">
+                    {emp.usuario?.nombre?.charAt(0) || 'E'}
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                    emp.estado === 'activo' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                  }`}>
+                    {emp.estado === 'activo' ? 'ACTIVO' : 'INACTIVO'}
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-1">
+                  {emp.usuario?.nombre} {emp.usuario?.apellidos}
+                </h3>
+                <p className="text-slate-500 text-xs uppercase font-bold tracking-widest mb-2">{emp.cargo || 'Técnico Especialista'}</p>
+                <p className="text-slate-400 text-xs mb-1">{emp.usuario?.email}</p>
+                {emp.usuario?.telefono && <p className="text-slate-500 text-xs mb-4">{emp.usuario?.telefono}</p>}
+                <div className="space-y-3 pt-4 border-t border-slate-800">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-slate-600 font-bold uppercase">Especialidad</span>
+                    <span className="text-xs text-[#7b9cff] font-bold">{emp.especialidad || 'Mecánica General'}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-slate-600 font-bold uppercase">Registro</span>
+                    <span className="text-xs text-slate-400">{formattedFechaRegistro}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-slate-600 font-bold uppercase">Servicios completados</span>
+                    <span className="text-xs text-slate-400">{completedServices}</span>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-bold text-white mb-1">{emp.nombre || 'Empleado'}</h3>
-              <p className="text-slate-500 text-xs uppercase font-bold tracking-widest mb-4">{emp.cargo || 'Técnico Especialista'}</p>
-              <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
-                <span className="text-[10px] text-slate-600 font-bold uppercase">Especialidad</span>
-                <span className="text-xs text-blue-400 font-bold">{emp.especialidad || 'Mecánica General'}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

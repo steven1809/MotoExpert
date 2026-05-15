@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useVehicleGuard } from '../hooks/useVehicleGuard';
 import NoVehicleWarning from '../components/NoVehicleWarning';
 import DuplicateBookingWarning from '../components/DuplicateBookingWarning';
+import AppointmentsSearchAndFilter from '../components/AppointmentsSearchAndFilter';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
@@ -18,6 +19,17 @@ const Citas = ({ setView }) => {
   const [showForm, setShowForm] = useState(false);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [existingDuplicateBooking, setExistingDuplicateBooking] = useState(null);
+  const [filters, setFilters] = useState({
+    searchTerm: '',
+    fromDate: '',
+    toDate: '',
+    serviceFilter: '',
+    vehicleTypeFilter: '',
+    statusFilters: []
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(7);
+  const [alertToCancel, setAlertToCancel] = useState(null);
   
   const [formData, setFormData] = useState({
     fecha: '',
@@ -270,8 +282,320 @@ const Citas = ({ setView }) => {
     }
   };
 
-  const citasPendientes = citas.filter(cita => cita.estado === "PENDIENTE" || cita.estado === "EN PROCESO");
-  const historialServicios = citas.filter(cita => cita.estado === "FINALIZADO" || cita.estado === "CANCELADO");
+  const handleFilterChange = useCallback((newFilters) => {
+        setFilters(newFilters);
+        setCurrentPage(1);
+      }, []);
+
+      const handleRowsPerPageChange = (e) => {
+        setRowsPerPage(parseInt(e.target.value, 10));
+        setCurrentPage(1);
+      };
+
+      const getFilteredCitas = useCallback((citasArray) => {
+      let filtered = [...citasArray];
+
+      // Search term filter (for history: service, vehicle, worker)
+      if (filters.searchTerm) {
+        const term = filters.searchTerm.toLowerCase();
+
+        filtered = filtered.filter(cita => {
+          const serviceName = cita.servicio?.nombre?.toLowerCase() || '';
+          const vehiclePlate = cita.vehiculo?.placa?.toLowerCase() || '';
+          const vehicleModel = cita.vehiculo?.modelo?.toLowerCase() || '';
+          const workerName = cita.empleado?.nombre?.toLowerCase() || '';
+
+          return (
+            serviceName.includes(term) ||
+            vehiclePlate.includes(term) ||
+            vehicleModel.includes(term) ||
+            workerName.includes(term)
+          );
+        });
+      }
+
+      // Date range filter
+      if (filters.fromDate) {
+        filtered = filtered.filter(
+          cita => cita.fecha >= filters.fromDate
+        );
+      }
+
+      if (filters.toDate) {
+        filtered = filtered.filter(
+          cita => cita.fecha <= filters.toDate
+        );
+      }
+
+      // Service filter
+      if (filters.serviceFilter) {
+        filtered = filtered.filter(
+          cita => cita.servicio?.nombre === filters.serviceFilter
+        );
+      }
+
+      // Vehicle type filter
+      if (filters.vehicleTypeFilter) {
+        filtered = filtered.filter(
+          cita => cita.vehiculo?.tipo === filters.vehicleTypeFilter
+        );
+      }
+
+      // Status filter
+      if (filters.statusFilters.length > 0) {
+        filtered = filtered.filter(cita =>
+          filters.statusFilters.includes(cita.estado)
+        );
+      }
+
+      return filtered;
+    }, [filters]);
+
+    const citasPendientes = citas.filter(
+      cita => cita.estado === "PENDIENTE" || cita.estado === "EN PROCESO"
+    );
+
+    const allHistorialServicios = citas.filter(
+      cita => cita.estado === "FINALIZADO" || cita.estado === "CANCELADO"
+    );
+
+    const historialServicios = getFilteredCitas(allHistorialServicios);
+
+    const getPaginatedHistory = useCallback(() => {
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+
+      return historialServicios.slice(start, end);
+    }, [currentPage, rowsPerPage, historialServicios]);
+
+    const getPageNumbers = useCallback(() => {
+      const totalPages = Math.ceil(
+        historialServicios.length / rowsPerPage
+      );
+
+      const pageNumbers = [];
+      const maxVisible = 5;
+
+      let start = Math.max(
+        1,
+        currentPage - Math.floor(maxVisible / 2)
+      );
+
+      let end = Math.min(
+        totalPages,
+        start + maxVisible - 1
+      );
+
+      if (end - start + 1 < maxVisible) {
+        start = Math.max(1, end - maxVisible + 1);
+      }
+
+      for (let i = start; i <= end; i++) {
+        pageNumbers.push(i);
+      }
+
+      return pageNumbers;
+    }, [currentPage, rowsPerPage, historialServicios]);
+
+    const getAlerts = useCallback(() => {
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      const tomorrow = new Date(now.getTime() + 86400000).toISOString().split('T')[0];
+      const alerts = [];
+
+      citas.forEach(cita => {
+        const citaDate = cita.fecha;
+        const isToday = citaDate === today;
+        const isTomorrow = citaDate === tomorrow;
+        const isExpired = citaDate < today && (cita.estado === 'PENDIENTE' || cita.estado === 'RESERVADO');
+
+        if (cita.estado === 'EN PROCESO') {
+          alerts.push({
+            id: `in-progress-${cita.id}`,
+            type: 'in-progress',
+            cita,
+            priority: 1
+          });
+        } else if (isToday && (cita.estado === 'PENDIENTE' || cita.estado === 'RESERVADO')) {
+          alerts.push({
+            id: `today-${cita.id}`,
+            type: 'today',
+            cita,
+            priority: 2
+          });
+        } else if (isTomorrow && (cita.estado === 'PENDIENTE' || cita.estado === 'RESERVADO')) {
+          alerts.push({
+            id: `upcoming-${cita.id}`,
+            type: 'upcoming',
+            cita,
+            priority: 3
+          });
+        } else if (isExpired) {
+          alerts.push({
+            id: `expired-${cita.id}`,
+            type: 'expired',
+            cita,
+            priority: 4
+          });
+        }
+      });
+
+      return alerts.sort((a, b) => a.priority - b.priority);
+    }, [citas]);
+
+    const handleViewAppointment = (cita) => {
+      // Scroll to Citas Pendientes section
+      const section = document.querySelector('.citas-pendientes-section');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    const handleReschedule = (cita) => {
+      setShowForm(true);
+      setFormData({
+        fecha: '',
+        hora_inicio: '',
+        vehiculoId: cita.vehiculo?.id.toString() || '',
+        servicioId: cita.servicio?.id.toString() || '',
+        empleadoId: ''
+      });
+    };
+
+    const handleCancelAppointment = async (cita) => {
+      if (!window.confirm('Are you sure you want to cancel this appointment?')) return;
+      
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/citas/${cita.id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          fetchInitialData();
+          setAlertToCancel(null);
+        }
+      } catch (err) {
+        console.error('Error canceling appointment:', err);
+      }
+    };
+
+    const getAlertStyle = (type) => {
+      switch (type) {
+        case 'in-progress':
+          return {
+            bg: 'bg-[#1D9E75]/8',
+            border: 'border-[#1D9E75]/25',
+            color: '#1D9E75',
+            iconBg: 'bg-[#1D9E75]/15'
+          };
+        case 'today':
+          return {
+            bg: 'bg-[#378ADD]/8',
+            border: 'border-[#378ADD]/25',
+            color: '#378ADD',
+            iconBg: 'bg-[#378ADD]/15'
+          };
+        case 'upcoming':
+          return {
+            bg: 'bg-[#EF9F27]/8',
+            border: 'border-[#EF9F27]/25',
+            color: '#EF9F27',
+            iconBg: 'bg-[#EF9F27]/15'
+          };
+        case 'expired':
+          return {
+            bg: 'bg-[#E24B4A]/8',
+            border: 'border-[#E24B4A]/25',
+            color: '#E24B4A',
+            iconBg: 'bg-[#E24B4A]/15'
+          };
+        default:
+          return {
+            bg: 'bg-[#2a2d3a]/8',
+            border: 'border-[#2a2d3a]/25',
+            color: '#94A3B8',
+            iconBg: 'bg-[#2a2d3a]/15'
+          };
+      }
+    };
+
+    const getAlertIcon = (type) => {
+      switch (type) {
+        case 'in-progress':
+          return (
+            <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.572c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          );
+        case 'today':
+          return (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          );
+        case 'upcoming':
+          return (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          );
+        case 'expired':
+          return (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          );
+        default:
+          return null;
+      }
+    };
+
+    const getAlertTitle = (type, cita) => {
+      const isToday = cita.fecha === new Date().toISOString().split('T')[0];
+      switch (type) {
+        case 'in-progress':
+          return 'Service in progress';
+        case 'today':
+          return 'You have a service today';
+        case 'upcoming':
+          return isToday ? 'Upcoming service today' : 'Upcoming service tomorrow';
+        case 'expired':
+          return 'Expired appointment';
+        default:
+          return '';
+      }
+    };
+
+    const getAlertMessage = (type, cita) => {
+      const serviceName = cita.servicio?.nombre || 'Service';
+      const plate = cita.vehiculo?.placa || 'vehicle';
+      const date = new Date(cita.fecha).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const time = cita.hora_inicio?.substring(0, 5) || '';
+
+      switch (type) {
+        case 'in-progress':
+          return `Your ${serviceName} for ${plate} is currently being performed by your specialist.`;
+        case 'today':
+          return `${serviceName} for ${plate} at ${time}. Your specialist will be ready for you.`;
+        case 'upcoming':
+          return `${serviceName} for vehicle ${plate} is scheduled for ${date} at ${time}.`;
+        case 'expired':
+          return `Your ${serviceName} appointment for ${plate} on ${date} was not completed. Would you like to reschedule?`;
+        default:
+          return '';
+      }
+    };
+
+    const hasActiveFilters =
+      filters.searchTerm ||
+      filters.fromDate ||
+      filters.toDate ||
+      filters.serviceFilter ||
+      filters.vehicleTypeFilter ||
+      filters.statusFilters.length > 0;
 
   if (loading || loadingVehicles) {
     return (
@@ -318,6 +642,66 @@ const Citas = ({ setView }) => {
             {showForm ? 'Cerrar Formulario' : 'Nueva Cita Premium'}
           </button>
         </div>
+
+        {/* Alerts Section */}
+        {getAlerts().length > 0 && (
+          <div className="space-y-2 mb-6">
+            {getAlerts().map(alert => {
+              const style = getAlertStyle(alert.type);
+              return (
+                <div
+                  key={alert.id}
+                  className={`flex items-center gap-4 p-4 rounded-2xl border ${style.bg} ${style.border}`}
+                >
+                  {/* Icon */}
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${style.iconBg}`} style={{ color: style.color }}>
+                    {getAlertIcon(alert.type)}
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1">
+                    <div className="text-sm font-medium" style={{ color: style.color }}>
+                      {getAlertTitle(alert.type, alert.cita)}
+                    </div>
+                    <div className="text-xs text-[#9ca3af] mt-1">
+                      {getAlertMessage(alert.type, alert.cita)}
+                    </div>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {alert.type === 'in-progress' ? null : alert.type === 'expired' ? (
+                      <>
+                        <button
+                          onClick={() => handleReschedule(alert.cita)}
+                          className="px-3 py-1.5 text-xs font-bold border rounded-xl transition-all hover:bg-[#2563EB]/10"
+                          style={{ borderColor: style.color, color: style.color }}
+                        >
+                          Reschedule →
+                        </button>
+                        <button
+                          onClick={() => handleCancelAppointment(alert.cita)}
+                          className="px-3 py-1.5 text-xs font-bold border rounded-xl transition-all hover:bg-[#E24B4A]/10"
+                          style={{ borderColor: '#E24B4A', color: '#E24B4A' }}
+                        >
+                          Cancel appointment
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleViewAppointment(alert.cita)}
+                        className="px-3 py-1.5 text-xs font-bold border rounded-xl transition-all hover:bg-[#2563EB]/10"
+                        style={{ borderColor: style.color, color: style.color }}
+                      >
+                        {alert.type === 'today' ? 'View details →' : 'View appointment →'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Formulario Estilo Tesla */}
         {showForm && (
@@ -520,10 +904,12 @@ const Citas = ({ setView }) => {
         )}
 
         {/* Sección Citas Pendientes */}
-        <div className="space-y-6">
+        <div className="space-y-6 citas-pendientes-section">
           <div className="flex items-center space-x-4">
             <span className="w-2 h-2 bg-[#2563EB] rounded-full animate-pulse" />
-            <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">Citas Pendientes</h2>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">
+              Citas Pendientes
+            </h2>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -581,8 +967,22 @@ const Citas = ({ setView }) => {
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
             <span className="w-2 h-2 bg-emerald-500 rounded-full" />
-            <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">Historial de Servicios</h2>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">
+              Historial de Servicios
+              {hasActiveFilters && (
+                <span className="ml-3 text-sm font-bold text-[#94A3B8]">
+                  ({historialServicios.length} of {allHistorialServicios.length})
+                </span>
+              )}
+            </h2>
           </div>
+
+          {/* Search and Filter Bar for History */}
+          <AppointmentsSearchAndFilter 
+            citas={citas} 
+            onFilterChange={handleFilterChange}
+            searchPlaceholder="Search history by service, vehicle or worker..."
+          />
 
           <div className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl bg-opacity-80">
             <div className="overflow-x-auto">
@@ -597,8 +997,8 @@ const Citas = ({ setView }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {historialServicios.length > 0 ? (
-                    historialServicios.map((cita) => (
+                  {getPaginatedHistory().length > 0 ? (
+                    getPaginatedHistory().map((cita) => (
                       <tr key={cita.id} className="hover:bg-[#2563EB]/5 transition-all duration-300 group">
                         <td className="px-6 py-5">
                           <span className="text-sm font-black text-slate-500 dark:text-[#94A3B8] group-hover:text-[#2563EB] transition-colors">#{cita.id}</span>
@@ -643,14 +1043,152 @@ const Citas = ({ setView }) => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="7" className="px-6 py-16 text-center text-slate-500 dark:text-[#94A3B8] italic font-medium text-sm">
-                        No hay servicios finalizados en el historial.
+                      <td colSpan="7" className="px-6 py-16 text-center text-slate-500 dark:text-[#94A3B8] italic font-medium text-sm space-y-3">
+                        <p>
+                          {hasActiveFilters ? "No history items match the selected filters." : "No hay servicios finalizados en el historial."}
+                        </p>
+                        {hasActiveFilters && (
+                          <button
+                            onClick={() => setFilters({
+                              searchTerm: '',
+                              fromDate: '',
+                              toDate: '',
+                              serviceFilter: '',
+                              vehicleTypeFilter: '',
+                              statusFilters: []
+                            })}
+                            className="text-[#2563EB] text-sm font-bold hover:text-[#1d4ed8] transition-colors"
+                          >
+                            Clear filters
+                          </button>
+                        )}
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination Controls */}
+            {historialServicios.length > 0 && (
+              <div className="px-6 py-3 border-t border-[#2a2d3a] flex items-center justify-between">
+                {/* Left: Showing x-y of z results */}
+                <div className="text-[#94A3B8] text-sm">
+                  Showing {((currentPage - 1) * rowsPerPage) + 1}–
+                  {Math.min(currentPage * rowsPerPage, historialServicios.length)} of {historialServicios.length} results
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  {/* Rows per page selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#94A3B8] text-sm">Rows per page:</span>
+                    <select
+                      value={rowsPerPage}
+                      onChange={handleRowsPerPageChange}
+                      className="h-8 px-2 bg-[#1a1d27] border border-[#2a2d3a] rounded-xl text-[#F8FAFC] text-sm focus:outline-none focus:border-[#2563EB]/50"
+                    >
+                      <option value={5}>5</option>
+                      <option value={7}>7</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                    </select>
+                  </div>
+                  
+                  {/* Page buttons */}
+                  <div className="flex items-center gap-1">
+                    {/* Previous button */}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${
+                        currentPage === 1
+                          ? 'opacity-35 cursor-not-allowed'
+                          : 'text-[#94A3B8] hover:bg-[#1a1d27] hover:border border-[#2a2d3a]'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    
+                    {/* Page numbers */}
+                    {(() => {
+                      const totalPages = Math.ceil(historialServicios.length / rowsPerPage);
+                      const pageNumbers = getPageNumbers();
+                      const firstPage = 1;
+                      const lastPage = totalPages;
+                      
+                      return (
+                        <>
+                          {/* Show first page and ellipsis if needed */}
+                          {pageNumbers[0] > firstPage && (
+                            <>
+                              <button
+                                onClick={() => setCurrentPage(firstPage)}
+                                className="w-8 h-8 flex items-center justify-center rounded-xl text-[#94A3B8] hover:bg-[#1a1d27] hover:border border-[#2a2d3a] transition-all"
+                              >
+                                {firstPage}
+                              </button>
+                              {pageNumbers[0] > firstPage + 1 && (
+                                <span className="text-[#94A3B8] px-1">...</span>
+                              )}
+                            </>
+                          )}
+                          
+                          {/* Show visible page numbers */}
+                          {pageNumbers.map(page => (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${
+                                page === currentPage
+                                  ? 'bg-[#2563EB] text-white'
+                                  : 'text-[#94A3B8] hover:bg-[#1a1d27] hover:border border-[#2a2d3a]'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
+                          
+                          {/* Show last page and ellipsis if needed */}
+                          {pageNumbers[pageNumbers.length - 1] < lastPage && (
+                            <>
+                              {pageNumbers[pageNumbers.length - 1] < lastPage - 1 && (
+                                <span className="text-[#94A3B8] px-1">...</span>
+                              )}
+                              <button
+                                onClick={() => setCurrentPage(lastPage)}
+                                className="w-8 h-8 flex items-center justify-center rounded-xl text-[#94A3B8] hover:bg-[#1a1d27] hover:border border-[#2a2d3a] transition-all"
+                              >
+                                {lastPage}
+                              </button>
+                            </>
+                          )}
+                        </>
+                      );
+                    })()}
+                    
+                    {/* Next button */}
+                    <button
+                      onClick={() => setCurrentPage(prev => {
+                        const totalPages = Math.ceil(historialServicios.length / rowsPerPage);
+                        return Math.min(totalPages, prev + 1);
+                      })}
+                      disabled={currentPage === Math.ceil(historialServicios.length / rowsPerPage)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${
+                        currentPage === Math.ceil(historialServicios.length / rowsPerPage)
+                          ? 'opacity-35 cursor-not-allowed'
+                          : 'text-[#94A3B8] hover:bg-[#1a1d27] hover:border border-[#2a2d3a]'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

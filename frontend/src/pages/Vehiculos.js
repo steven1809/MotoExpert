@@ -12,13 +12,17 @@ class Vehiculos extends Component {
       error: null,
       showForm: false,
       formData: {
-        marca: '',
-        modelo: '',
-        anio: '',
+        documentType: '',
+        documentNumber: '',
         placa: '',
+        tipo: 'motorcycle', // Valor por defecto
+        brand: '',
+        year: '',
         color: '',
-        tipo: 'Moto' // Valor por defecto
+        model: ''
       },
+      formErrors: {},
+      isSubmitting: false,
       filters: {
         searchTerm: '',
         placaFilter: '',
@@ -142,18 +146,71 @@ class Vehiculos extends Component {
   };
 
   handleInputChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    
+    // Process input values
+    if (name === 'documentNumber') {
+      value = value.replace(/\D/g, ''); // Only numbers
+    } else if (name === 'placa') {
+      value = value.toUpperCase(); // Force uppercase
+    } else if (name === 'year') {
+      value = value.replace(/\D/g, ''); // Only numbers
+    }
+
     this.setState(prevState => ({
       formData: {
         ...prevState.formData,
         [name]: value
+      },
+      formErrors: {
+        ...prevState.formErrors,
+        [name]: null // Clear error when typing
       }
     }));
   };
 
+  validateForm = () => {
+    const { formData } = this.state;
+    const errors = {};
+    const currentYear = new Date().getFullYear();
+
+    // Required fields
+    if (!formData.documentType.trim()) errors.documentType = 'This field is required';
+    if (!formData.documentNumber.trim()) {
+      errors.documentNumber = 'This field is required';
+    } else if (formData.documentNumber.length < 5) {
+      errors.documentNumber = 'Document number must be at least 5 digits';
+    }
+
+    if (!formData.placa.trim()) {
+      errors.placa = 'This field is required';
+    } else if (formData.placa.length < 4) {
+      errors.placa = 'Plate must be at least 4 characters';
+    }
+
+    if (!formData.tipo) errors.tipo = 'This field is required';
+    if (!formData.brand.trim()) errors.brand = 'This field is required';
+    
+    if (!formData.year.trim()) {
+      errors.year = 'This field is required';
+    } else {
+      const year = parseInt(formData.year, 10);
+      if (year < 1990 || year > currentYear + 1) {
+        errors.year = `Year must be between 1990 and ${currentYear + 1}`;
+      }
+    }
+
+    this.setState({ formErrors: errors });
+    return Object.keys(errors).length === 0;
+  };
+
   handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!this.validateForm()) return;
+
     const { formData } = this.state;
+    this.setState({ isSubmitting: true });
 
     try {
       const token = localStorage.getItem('token');
@@ -165,9 +222,15 @@ class Vehiculos extends Component {
       }
 
       const dataToSend = {
-        ...formData,
-        usuarioId: parseInt(userId, 10),
-        anio: formData.anio ? parseInt(formData.anio, 10) : undefined
+        documentType: formData.documentType,
+        documentNumber: formData.documentNumber,
+        placa: formData.placa,
+        tipo: formData.tipo === 'motorcycle' ? 'Moto' : 'Auto',
+        marca: formData.brand,
+        anio: parseInt(formData.year, 10),
+        color: formData.color.trim() || null,
+        modelo: formData.model.trim() || null,
+        usuarioId: parseInt(userId, 10)
       };
 
       const response = await fetch(`${API_BASE_URL}/vehiculos`, {
@@ -182,10 +245,23 @@ class Vehiculos extends Component {
       if (response.ok) {
         this.setState({
           showForm: false,
-          formData: { marca: '', modelo: '', anio: '', placa: '', color: '', tipo: 'Moto' }
+          formData: {
+            documentType: '',
+            documentNumber: '',
+            placa: '',
+            tipo: 'motorcycle',
+            brand: '',
+            year: '',
+            color: '',
+            model: ''
+          },
+          formErrors: {},
+          isSubmitting: false
         });
         this.fetchVehiculos();
-        alert('Vehículo registrado con éxito');
+        if (this.props.showToast) {
+          this.props.showToast('Unit registered successfully', 'success');
+        }
 
         // Check for redirect flag
         const redirectAfterVehicle = localStorage.getItem('redirectAfterVehicle');
@@ -202,9 +278,11 @@ class Vehiculos extends Component {
       } else {
         const errorData = await response.json();
         alert(`Error: ${errorData.message || 'No se pudo crear el vehículo'}`);
+        this.setState({ isSubmitting: false });
       }
     } catch (err) {
       alert('Error de conexión');
+      this.setState({ isSubmitting: false });
     }
   };
 
@@ -255,41 +333,221 @@ class Vehiculos extends Component {
             </div>
           )}
 
-          {/* Formulario Estilo Porsche */}
+          {/* Modal Form */}
           {showForm && (
-            <div className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-10 rounded-[2.5rem] shadow-2xl animate-in slide-in-from-top duration-500">
-              <form onSubmit={this.handleSubmit} className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Placa Identificadora</label>
-                    <input name="placa" value={formData.placa} onChange={this.handleInputChange} placeholder="ABC-123" className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all uppercase" required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Tipo de Vehículo</label>
-                    <select name="tipo" value={formData.tipo} onChange={this.handleInputChange} className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all">
-                      <option value="Moto">Motosport</option>
-                      <option value="Auto">Premium Car</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Marca / Fabricante</label>
-                    <input name="marca" value={formData.marca} onChange={this.handleInputChange} placeholder="Ej: Ducati" className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Modelo / Serie</label>
-                    <input name="modelo" value={formData.modelo} onChange={this.handleInputChange} placeholder="Ej: Panigale V4" className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Año de Fabricación</label>
-                    <input name="anio" type="number" value={formData.anio} onChange={this.handleInputChange} placeholder="2024" className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Color / Acabado</label>
-                    <input name="color" value={formData.color} onChange={this.handleInputChange} placeholder="Ej: Rosso Corsa" className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-purple-500/50 transition-all" required />
-                  </div>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+              <div className="bg-[#0f1117] border border-[#2a2d3a] p-8 rounded-[2.5rem] shadow-2xl max-w-[560px] w-full mx-4 animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto">
+                <div className="text-center space-y-2 mb-8">
+                  <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">
+                    Register New Unit
+                  </h2>
+                  <p className="text-[#94A3B8] text-sm">
+                    Complete all fields to add your vehicle to the fleet
+                  </p>
                 </div>
-                <button type="submit" className="w-full py-5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-purple-600/20 transition-all active:scale-95">Sincronizar Unidad con el Perfil</button>
-              </form>
+
+                <form onSubmit={this.handleSubmit} className="space-y-6">
+                  {/* Section 1: Owner Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-[#6b7080] text-[11px] font-bold uppercase tracking-[0.08em]">
+                      Owner Information
+                    </h3>
+                    
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
+                        Document type
+                      </label>
+                      <select
+                        name="documentType"
+                        value={this.state.formData.documentType}
+                        onChange={this.handleInputChange}
+                        className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
+                          this.state.formErrors.documentType ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
+                        }`}
+                      >
+                        <option value="">Select...</option>
+                        <option value="CC">CC - Cédula de Ciudadanía</option>
+                        <option value="CE">CE - Cédula de Extranjería</option>
+                        <option value="NIT">NIT</option>
+                        <option value="Pasaporte">Pasaporte</option>
+                      </select>
+                      {this.state.formErrors.documentType && (
+                        <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.documentType}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
+                        Document number
+                      </label>
+                      <input
+                        type="text"
+                        name="documentNumber"
+                        value={this.state.formData.documentNumber}
+                        onChange={this.handleInputChange}
+                        placeholder="Enter document number"
+                        className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
+                          this.state.formErrors.documentNumber ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
+                        }`}
+                      />
+                      {this.state.formErrors.documentNumber && (
+                        <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.documentNumber}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Section 2: Vehicle Details */}
+                  <div className="space-y-4">
+                    <h3 className="text-[#6b7080] text-[11px] font-bold uppercase tracking-[0.08em]">
+                      Vehicle Details
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Plate */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
+                          License plate
+                        </label>
+                        <input
+                          type="text"
+                          name="placa"
+                          value={this.state.formData.placa}
+                          onChange={this.handleInputChange}
+                          placeholder="e.g. ABC123"
+                          className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
+                            this.state.formErrors.placa ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
+                          }`}
+                        />
+                        {this.state.formErrors.placa && (
+                          <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.placa}</p>
+                        )}
+                      </div>
+
+                      {/* Type */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
+                          Type
+                        </label>
+                        <select
+                          name="tipo"
+                          value={this.state.formData.tipo}
+                          onChange={this.handleInputChange}
+                          className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
+                            this.state.formErrors.tipo ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
+                          }`}
+                        >
+                          <option value="motorcycle">Motorcycle</option>
+                          <option value="car">Car</option>
+                        </select>
+                        {this.state.formErrors.tipo && (
+                          <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.tipo}</p>
+                        )}
+                      </div>
+
+                      {/* Brand */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
+                          Brand
+                        </label>
+                        <input
+                          type="text"
+                          name="brand"
+                          value={this.state.formData.brand}
+                          onChange={this.handleInputChange}
+                          placeholder="e.g. Yamaha, Honda, Toyota"
+                          className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
+                            this.state.formErrors.brand ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
+                          }`}
+                        />
+                        {this.state.formErrors.brand && (
+                          <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.brand}</p>
+                        )}
+                      </div>
+
+                      {/* Year */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
+                          Year
+                        </label>
+                        <input
+                          type="text"
+                          name="year"
+                          value={this.state.formData.year}
+                          onChange={this.handleInputChange}
+                          placeholder={`e.g. ${new Date().getFullYear()}`}
+                          className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
+                            this.state.formErrors.year ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
+                          }`}
+                        />
+                        {this.state.formErrors.year && (
+                          <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.year}</p>
+                        )}
+                      </div>
+
+                      {/* Color */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
+                          Color
+                        </label>
+                        <input
+                          type="text"
+                          name="color"
+                          value={this.state.formData.color}
+                          onChange={this.handleInputChange}
+                          placeholder="e.g. Black, White, Red"
+                          className="w-full h-[42px] px-4 bg-[#1a1d27] border border-[#2a2d3a] rounded-xl text-[#F8FAFC] text-sm focus:outline-none focus:border-[#2563EB] transition-all"
+                        />
+                      </div>
+
+                      {/* Model */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
+                          Model / Reference
+                        </label>
+                        <input
+                          type="text"
+                          name="model"
+                          value={this.state.formData.model}
+                          onChange={this.handleInputChange}
+                          placeholder="e.g. MT-07, Civic, NX4"
+                          className="w-full h-[42px] px-4 bg-[#1a1d27] border border-[#2a2d3a] rounded-xl text-[#F8FAFC] text-sm focus:outline-none focus:border-[#2563EB] transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex flex-col gap-3 pt-4">
+                    <button
+                      type="submit"
+                      disabled={this.state.isSubmitting}
+                      className="w-full px-8 py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-[#2a2d3a] disabled:text-[#6b7080] disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-purple-600/20 transition-all active:scale-95"
+                    >
+                      {this.state.isSubmitting ? 'Registering...' : 'Register unit'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => this.setState({ 
+                        showForm: false, 
+                        formData: {
+                          documentType: '',
+                          documentNumber: '',
+                          placa: '',
+                          tipo: 'motorcycle',
+                          brand: '',
+                          year: '',
+                          color: '',
+                          model: ''
+                        },
+                        formErrors: {} 
+                      })}
+                      className="w-full px-8 py-4 bg-[#2a2d3a] hover:bg-[#3a3d4a] text-[#94A3B8] font-black text-xs uppercase tracking-[0.2em] rounded-2xl border border-[#2a2d3a] transition-all active:scale-95"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
