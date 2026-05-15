@@ -17,7 +17,7 @@ class Navbar extends Component {
 
     if (role === "admin") {
       return [
-        { key: "dashboard", label: "Dashboard", view: "dashboard", icon: "grid" },
+        { key: "dashboard", label: "Inicio", view: "dashboard", icon: "grid" },
         { key: "servicios", label: "Servicios", view: "servicios", icon: "spark" },
         { key: "users", label: "Usuarios", view: "users", icon: "users" },
         { key: "cuenta", label: "Cuenta", view: "cuenta", icon: "user" },
