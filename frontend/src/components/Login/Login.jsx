@@ -2,446 +2,527 @@ import React, { Component } from "react";
 import { AuthContext } from '../../context/AuthContext';
 import GoogleLoginButton from '../GoogleLoginButton';
 
-// ─── Inline styles & keyframes injected once ────────────────────────────────
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 const STYLE = `
-  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap');
 
-  .mxp-root * { box-sizing: border-box; font-family: 'Nunito', sans-serif; }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(18px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateX(-14px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-  @keyframes pulse-blob {
-    0%,100% { transform: scale(1);   opacity:.55; }
-    50%      { transform: scale(1.1); opacity:.75; }
-  }
-  @keyframes float {
-    0%,100% { transform: translateY(0px); }
-    50%      { transform: translateY(-10px); }
-  }
-
-  .mxp-card {
+  .mxp-login-root {
+    min-height: 100vh;
+    background: #001a33;
     display: flex;
-    width: 900px;
-    min-height: 540px;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Barlow', sans-serif;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ── Background animated scene ── */
+  .scene {
+    position: fixed; inset: 0; overflow: hidden; z-index: 0;
+  }
+
+  .scene-grad {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 120% 80% at 60% 110%, #003366 0%, #001a33 55%, #000d1a 100%);
+  }
+
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(0,212,255,0.18);
+    animation: ripple-expand 6s linear infinite;
+    transform-origin: center;
+  }
+  .ripple-1 { width: 300px; height: 300px; bottom: -150px; left: 10%; animation-delay: 0s; }
+  .ripple-2 { width: 500px; height: 500px; bottom: -250px; left: 5%; animation-delay: 2s; }
+  .ripple-3 { width: 700px; height: 700px; bottom: -350px; left: 0%; animation-delay: 4s; }
+  .ripple-4 { width: 400px; height: 400px; bottom: -200px; right: 5%; animation-delay: 1s; }
+  .ripple-5 { width: 600px; height: 600px; bottom: -300px; right: 0%; animation-delay: 3s; }
+
+  @keyframes ripple-expand {
+    0%   { transform: scale(0.7); opacity: 0.4; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.35), rgba(0,212,255,0.05));
+    border: 1px solid rgba(0,212,255,0.3);
+    animation: float-up linear infinite;
+  }
+  @keyframes float-up {
+    0%   { transform: translateY(0) scale(1);   opacity: 0.7; }
+    80%  { opacity: 0.5; }
+    100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+  }
+
+  .drop {
+    position: absolute;
+    border-radius: 50% 50% 50% 0 / 60% 60% 40% 40%;
+    background: rgba(0,212,255,0.15);
+    animation: drop-fall linear infinite;
+  }
+  @keyframes drop-fall {
+    0%   { transform: translateY(-10px) scaleY(0.8); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.6; }
+    100% { transform: translateY(100vh) scaleY(1.2); opacity: 0; }
+  }
+
+  .car-wrap {
+    position: absolute;
+    bottom: 14%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0.07;
+    animation: car-drift 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes car-drift {
+    0%,100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-8px); }
+  }
+
+  .card {
+    position: relative; z-index: 10;
+    width: 900px; min-height: 540px;
+    display: flex;
     border-radius: 24px;
     overflow: hidden;
-    box-shadow: 0 32px 80px rgba(88,60,220,.25);
-    animation: fadeUp .55s ease both;
+    box-shadow: 0 32px 80px rgba(0,30,60,0.7), 0 0 0 1px rgba(0,212,255,0.25);
+    animation: card-in 0.8s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(40px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
   }
 
-  /* ── LEFT PANEL ── */
-  .mxp-left {
+  .brand-panel {
+    width: 340px;
+    flex-shrink: 0;
+    background: linear-gradient(160deg, #004080 0%, #002655 50%, #001133 100%);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 36px;
+    gap: 28px;
+    overflow: hidden;
+  }
+
+  .ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(0,212,255,0.25);
+    animation: spin linear infinite;
+  }
+  .ring-1 { width: 260px; height: 260px; top: 50%; left: 50%; margin: -130px 0 0 -130px; animation-duration: 18s; }
+  .ring-2 { width: 180px; height: 180px; top: 50%; left: 50%; margin: -90px 0 0 -90px; border-color: rgba(0,212,255,0.15); animation-duration: 12s; animation-direction: reverse; }
+  @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+  .brand-logo {
+    position: relative; z-index: 2;
+    text-align: center;
+  }
+  .brand-logo .drop-icon {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, #00d4ff, #0088cc);
+    border-radius: 50% 50% 50% 0 / 60% 60% 40% 40%;
+    margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 32px rgba(0,212,255,0.5);
+    animation: drop-pulse 3s ease-in-out infinite;
+  }
+  @keyframes drop-pulse {
+    0%,100% { box-shadow: 0 0 24px rgba(0,212,255,0.4); }
+    50%      { box-shadow: 0 0 48px rgba(0,212,255,0.7); }
+  }
+
+  .brand-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 38px; font-weight: 900;
+    color: #fff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+  .brand-name span { color: #00d4ff; }
+
+  .brand-tagline {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .brand-features {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; gap: 12px; width: 100%;
+  }
+  .feat {
+    display: flex; align-items: center; gap: 10px;
+    color: rgba(255,255,255,0.7);
+    font-size: 13px;
+    animation: feat-in 0.6s ease both;
+  }
+  .feat-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #00d4ff;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px #00d4ff;
+  }
+
+  .brand-badge {
+    position: relative; z-index: 2;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 100px;
+    padding: 6px 18px;
+    font-size: 12px;
+    color: #00d4ff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .form-panel {
     flex: 1;
-    background: #ffffff;
-    padding: 48px 44px 40px;
+    background: rgba(0,10,25,0.92);
+    backdrop-filter: blur(20px);
+    padding: 48px 44px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-  }
-  .mxp-title {
-    font-size: 28px;
-    font-weight: 900;
-    color: #1a1a2e;
-    letter-spacing: -.5px;
-    margin: 0 0 4px;
-    animation: slideIn .45s .1s ease both;
-  }
-  .mxp-subtitle {
-    font-size: 13px;
-    color: #9095a0;
-    margin: 0 0 28px;
-    animation: slideIn .45s .15s ease both;
-  }
-
-  .mxp-field {
     position: relative;
-    margin-bottom: 14px;
-    animation: slideIn .45s ease both;
+    overflow: hidden;
   }
-  .mxp-field:nth-child(1){ animation-delay:.18s }
-  .mxp-field:nth-child(2){ animation-delay:.23s }
-  .mxp-field:nth-child(3){ animation-delay:.26s }
 
-  .mxp-field svg {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #b0b8c8;
-    pointer-events: none;
-    width: 17px; height: 17px;
+  .tabs {
+    display: flex; gap: 0; margin-bottom: 36px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
   }
-  .mxp-field input {
+  .tab {
+    background: none; border: none; cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px; font-weight: 700;
+    color: rgba(255,255,255,0.35);
+    padding: 10px 28px 14px;
+    text-transform: uppercase; letter-spacing: 1px;
+    position: relative;
+    transition: color 0.3s;
+  }
+  .tab.active { color: #00d4ff; }
+  .tab.active::after {
+    content: '';
+    position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;
+    background: #00d4ff;
+    box-shadow: 0 0 12px #00d4ff;
+  }
+
+  .form-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px; font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    line-height: 1;
+  }
+  .form-sub {
+    font-size: 13px; color: rgba(255,255,255,0.4);
+    margin-bottom: 28px;
+  }
+
+  .field {
+    position: relative; margin-bottom: 14px;
+  }
+  .field svg {
+    position: absolute; left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: rgba(0,212,255,0.5);
+    width: 16px; height: 16px;
+    pointer-events: none;
+  }
+  .field input {
     width: 100%;
     padding: 13px 14px 13px 40px;
-    background: #f3f4ff;
-    border: 1.5px solid transparent;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 10px;
-    font-size: 14px;
-    color: #1a1a2e;
+    font-size: 14px; color: #fff;
+    font-family: 'Barlow', sans-serif;
     outline: none;
-    transition: border-color .2s, background .2s;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   }
-  .mxp-field input:focus {
-    border-color: #6c63ff;
-    background: #fff;
+  .field input:focus {
+    border-color: #00d4ff;
+    background: rgba(0,212,255,0.05);
   }
-  .mxp-field input::placeholder { color: #b0b8c8; }
 
-  .mxp-forgot {
-    text-align: right;
-    margin: -6px 0 18px;
-    animation: slideIn .45s .28s ease both;
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .forgot {
+    text-align: right; margin: -6px 0 20px;
   }
-  .mxp-forgot button {
+  .forgot button {
     background: none; border: none; cursor: pointer;
-    font-size: 12px; font-weight: 700; color: #6c63ff;
+    font-size: 12px; color: rgba(0,212,255,0.7);
+    font-family: 'Barlow', sans-serif;
   }
-  .mxp-forgot button:hover { text-decoration: underline; }
 
-  .mxp-btn-primary {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, #6c63ff 0%, #5046e4 100%);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 800;
+  .check-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 18px;
+  }
+  .check-row button {
+    background: none; border: none; cursor: pointer;
+    color: #00d4ff; font-size: 13px;
+  }
+
+  .btn-primary {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #00a8d4, #0066cc);
+    color: #fff; border: none; border-radius: 10px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 2px;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(108,99,255,.4);
-    transition: transform .15s, box-shadow .15s;
-    animation: slideIn .45s .3s ease both;
+    position: relative; overflow: hidden;
+    transition: transform 0.15s;
   }
-  .mxp-btn-primary:hover   { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(108,99,255,.45); }
-  .mxp-btn-primary:active  { transform: translateY(0); }
-  .mxp-btn-primary:disabled{ background: #c5c9d6; box-shadow: none; cursor: not-allowed; }
+  .btn-primary:disabled { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.25); cursor: not-allowed; }
 
-  .mxp-divider {
+  .divider {
     display: flex; align-items: center; gap: 10px;
-    margin: 18px 0 14px;
-    animation: slideIn .45s .34s ease both;
+    margin: 16px 0;
   }
-  .mxp-divider span { font-size: 12px; color: #b0b8c8; white-space: nowrap; }
-  .mxp-divider::before,.mxp-divider::after {
-    content:''; flex:1; height:1px; background:#e8eaf0;
-  }
+  .divider::before,.divider::after { content:''; flex:1; height:1px; background: rgba(255,255,255,0.08); }
+  .divider span { font-size: 11px; color: rgba(255,255,255,0.25); }
 
-  .mxp-social-btn {
+  .btn-social {
+    width: 100%; padding: 11px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: rgba(255,255,255,0.7);
+    font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; margin-bottom: 10px;
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    width: 100%; padding: 11px 14px;
-    background: #fff; border: 1.5px solid #e8eaf0;
-    border-radius: 10px; font-size: 13px; font-weight: 700;
-    color: #1a1a2e; cursor: pointer; margin-bottom: 10px;
-    transition: border-color .2s, box-shadow .2s;
-    animation: slideIn .45s ease both;
   }
-  .mxp-social-btn:hover { border-color: #6c63ff; box-shadow: 0 2px 12px rgba(108,99,255,.12); }
-  .mxp-social-btn:nth-child(1){ animation-delay:.37s }
-  .mxp-social-btn:nth-child(2){ animation-delay:.41s }
 
-  .mxp-toggle {
-    text-align: center; margin-top: 16px;
-    font-size: 13px; color: #9095a0;
-    animation: slideIn .45s .44s ease both;
+  .msg {
+    padding: 10px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; margin-bottom: 16px;
   }
-  .mxp-toggle button {
+  .msg.ok  { background: rgba(0,180,100,0.12); color: #4ade80; border: 1px solid rgba(0,180,100,0.2); }
+  .msg.err { background: rgba(220,50,50,0.12); color: #f87171; border: 1px solid rgba(220,50,50,0.2); }
+
+  .back-btn {
     background: none; border: none; cursor: pointer;
-    font-weight: 800; color: #6c63ff; font-size: 13px;
-  }
-  .mxp-toggle button:hover { text-decoration: underline; }
-
-  /* ── RIGHT PANEL ── */
-  .mxp-right {
-    width: 360px;
-    background: linear-gradient(145deg, #7c73f5 0%, #5046e4 100%);
-    position: relative;
-    overflow: hidden;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .mxp-blob {
-    position: absolute; border-radius: 50%;
-    background: rgba(255,255,255,.12);
-    animation: pulse-blob 4s ease-in-out infinite;
-  }
-  .mxp-blob-1 { width:220px; height:220px; top:-40px; right:-50px; animation-delay:0s; }
-  .mxp-blob-2 { width:160px; height:160px; bottom:-30px; left:-40px; animation-delay:1.5s; }
-  .mxp-blob-3 { width:90px;  height:90px;  bottom:80px; right:20px; animation-delay:.8s; }
-
-  .mxp-right-content {
-    position: relative; z-index: 2;
-    display: flex; flex-direction: column;
-    align-items: center; gap: 24px;
-    padding: 32px;
-  }
-  .mxp-brand {
-    font-size: 32px; font-weight: 900;
-    color: #fff; letter-spacing: -1px;
-    font-style: italic; text-shadow: 0 2px 12px rgba(0,0,0,.2);
+    font-size: 13px; color: rgba(0,212,255,0.7);
+    display: block; margin: 14px auto 0;
   }
 
-  .mxp-img-frame {
-    width: 220px; height: 260px;
-    background: rgba(255,255,255,.18);
+  .overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,5,15,0.8); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal {
+    background: #001a33;
+    border: 1px solid rgba(0,212,255,0.25);
     border-radius: 20px;
-    backdrop-filter: blur(8px);
-    border: 1.5px solid rgba(255,255,255,.3);
+    max-width: 440px; width: 100%;
     overflow: hidden;
-    display: flex; align-items: flex-end; justify-content: center;
-    box-shadow: 0 16px 48px rgba(0,0,0,.2);
-    animation: float 4s ease-in-out infinite;
   }
-  .mxp-img-frame img {
-    width: 100%; height: 100%;
-    object-fit: cover; object-position: top;
+  .modal-head {
+    background: linear-gradient(135deg, #004080, #001a40);
+    padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;
   }
-  .mxp-img-placeholder {
-    width:100%; height:100%;
-    display:flex; align-items:center; justify-content:center;
-    flex-direction:column; gap:8px; color:rgba(255,255,255,.7);
-    font-size:13px; font-weight:700;
+  .modal-head h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px; font-weight: 800;
+    color: #00d4ff; text-transform: uppercase;
   }
-
-  .mxp-badge {
-    position: absolute; bottom: 52px; left: 28px;
-    background: #fff; border-radius: 50%;
-    width: 46px; height: 46px;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 16px rgba(0,0,0,.18);
-    font-size: 22px;
-    animation: float 3s 1s ease-in-out infinite;
-  }
-
-  /* ── REGISTER GRID ── */
-  .mxp-grid-2 {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-  }
-  .mxp-grid-2 .mxp-field { margin-bottom: 0; }
-
-  /* ── CHECKBOX ── */
-  .mxp-check-row {
-    display: flex; align-items: flex-start; gap: 8px;
-    font-size: 13px; color: #6b7280; margin: 4px 0 14px;
-    animation: slideIn .45s .28s ease both;
-  }
-  .mxp-check-row input { margin-top:2px; accent-color:#6c63ff; cursor:pointer; }
-  .mxp-check-row button {
-    background:none; border:none; cursor:pointer;
-    color:#6c63ff; font-weight:700; font-size:13px; padding:0;
-  }
-  .mxp-check-row button:hover { text-decoration:underline; }
-
-  /* ── RECOVERY VIEWS ── */
-  .mxp-recover-hint {
-    font-size:13px; color:#9095a0; text-align:center;
-    margin-bottom:20px; line-height:1.6;
-  }
-  .mxp-back-btn {
-    background:none; border:none; cursor:pointer;
-    font-size:13px; font-weight:700; color:#6c63ff;
-    display:block; margin:14px auto 0; text-align:center;
-  }
-  .mxp-back-btn:hover { text-decoration:underline; }
-
-  /* ── MODAL ── */
-  .mxp-modal-overlay {
-    position:fixed; inset:0; z-index:200;
-    background:rgba(30,20,80,.55); backdrop-filter:blur(4px);
-    display:flex; align-items:center; justify-content:center; padding:16px;
-  }
-  .mxp-modal {
-    background:#fff; border-radius:20px;
-    max-width:480px; width:100%; max-height:80vh;
-    display:flex; flex-direction:column; overflow:hidden;
-    box-shadow:0 24px 64px rgba(0,0,0,.22);
-    animation:fadeUp .3s ease both;
-  }
-  .mxp-modal-header {
-    background:linear-gradient(135deg,#6c63ff,#5046e4);
-    padding:20px 24px; color:#fff;
-    display:flex; justify-content:space-between; align-items:center;
-  }
-  .mxp-modal-header h3 { margin:0; font-size:18px; font-weight:800; }
-  .mxp-modal-header button {
-    background:none; border:none; cursor:pointer;
-    color:#fff; font-size:20px; line-height:1;
-    opacity:.8; transition:opacity .2s;
-  }
-  .mxp-modal-header button:hover { opacity:1; }
-  .mxp-modal-body {
-    padding:24px; overflow-y:auto;
-    font-size:14px; color:#555; line-height:1.7;
-  }
-  .mxp-modal-footer {
-    padding:16px 24px; border-top:1px solid #f0f0f0;
-    display:flex; justify-content:flex-end;
-  }
-  .mxp-modal-footer button {
-    padding:10px 24px; background:linear-gradient(135deg,#6c63ff,#5046e4);
-    color:#fff; border:none; border-radius:8px;
-    font-weight:800; font-size:14px; cursor:pointer;
-    box-shadow:0 4px 14px rgba(108,99,255,.35);
+  .modal-foot button {
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #00a8d4, #0066cc);
+    color: #fff; border: none; border-radius: 8px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    cursor: pointer;
   }
 `;
 
-// ─── Icon helpers ─────────────────────────────────────────────────────────────
-const IconUser = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-  </svg>
-);
-const IconLock = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-  </svg>
-);
-const IconMail = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/>
-  </svg>
-);
-const IconPhone = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.86 19.86 0 0 1 3.09 4.18 2 2 0 0 1 5.07 2h3a2 2 0 0 1 2 1.72c.13 1 .37 1.97.72 2.9a2 2 0 0 1-.45 2.11L9.09 9.91a16 16 0 0 0 5.91 5.91l1.18-1.18a2 2 0 0 1 2.11-.45c.93.35 1.9.59 2.9.72A2 2 0 0 1 22 16.92z"/>
-  </svg>
-);
-const IconId = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 10h2M16 14h2M6 10h.01M6 14h.01M9 10h3M9 14h3"/>
-  </svg>
-);
-const IconOtp = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4M2 11h20"/>
-  </svg>
-);
-
-// ─── Google SVG ───────────────────────────────────────────────────────────────
-const GoogleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18">
-    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
-    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
-    <path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/>
-    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z"/>
-  </svg>
-);
-
-// ─── Facebook SVG ─────────────────────────────────────────────────────────────
-const FacebookIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2">
-    <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
-  </svg>
-);
-
-// ─── Right panel illustration ─────────────────────────────────────────────────
-const RightPanel = () => {
-  const userPicture = localStorage.getItem("userPicture");
-  return (
-    <div className="mxp-right">
-      <div className="mxp-blob mxp-blob-1" />
-      <div className="mxp-blob mxp-blob-2" />
-      <div className="mxp-blob mxp-blob-3" />
-      <div className="mxp-right-content">
-        <div className="mxp-brand">MotoExpert</div>
-        <div className="mxp-img-frame">
-          {userPicture ? (
-            <img src={userPicture} alt="User Profile" />
-          ) : (
-            <div className="mxp-img-placeholder">
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/>
-              </svg>
-              <span>Tu foto aquí</span>
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="mxp-badge">⚡</div>
-    </div>
-  );
-};
-
-// ─── Main component ───────────────────────────────────────────────────────────
 class Login extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      nombre: "", apellidos: "", documento: "", email: "",
-      telefono: "", password: "", confirmPassword: "",
-      aceptaTerminos: false, showModal: false, loading: false,
-      isLogin: props.initialMode !== "register",
-      view: "auth",
-      identifier: "", otp: "", recoveryUserId: null, resetToken: "",
+      isLogin: true,
+      loading: false,
+      nombre: "",
+      apellidos: "",
+      documento: "",
+      email: "",
+      telefono: "",
+      password: "",
+      confirmPassword: "",
+      aceptaTerminos: false,
+      showModal: false,
+      view: "auth", // auth, forgot, reset
+      identifier: "",
+      otp: "",
+      recoveryUserId: null,
+      message: { text: "", isErr: false }
     };
+    this.bubblesRef = React.createRef();
+    this.dropsRef = React.createRef();
   }
+
+  componentDidMount() {
+    this.generateParticles();
+  }
+
+  generateParticles = () => {
+    if (this.bubblesRef.current) {
+      const wrap = this.bubblesRef.current;
+      for (let i = 0; i < 18; i++) {
+        const b = document.createElement('div');
+        b.className = 'bubble';
+        const s = Math.random() * 20 + 6;
+        b.style.cssText = `
+          width:${s}px; height:${s}px;
+          left:${Math.random() * 100}%;
+          bottom:${Math.random() * 30 - 10}%;
+          animation-duration:${Math.random() * 8 + 6}s;
+          animation-delay:${Math.random() * 8}s;
+        `;
+        wrap.appendChild(b);
+      }
+    }
+    if (this.dropsRef.current) {
+      const drops = this.dropsRef.current;
+      for (let i = 0; i < 12; i++) {
+        const d = document.createElement('div');
+        d.className = 'drop';
+        const w = Math.random() * 6 + 3;
+        d.style.cssText = `
+          width:${w}px; height:${w * 1.4}px;
+          left:${Math.random() * 100}%;
+          top:-20px;
+          animation-duration:${Math.random() * 5 + 4}s;
+          animation-delay:${Math.random() * 6}s;
+        `;
+        drops.appendChild(d);
+      }
+    }
+  };
+
+  toggleMode = () => this.setState({ isLogin: !this.state.isLogin, message: { text: "", isErr: false } });
+  toggleModal = () => this.setState({ showModal: !this.state.showModal });
 
   handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     this.setState({ [name]: type === "checkbox" ? checked : value });
   };
 
-  toggleModal  = () => this.setState(s => ({ showModal: !s.showModal }));
-  toggleMode   = () => this.setState(s => ({
-    isLogin: !s.isLogin,
-    nombre:"", apellidos:"", documento:"", email:"", telefono:"",
-    password:"", confirmPassword:"", aceptaTerminos:false, loading:false, view:"auth"
-  }));
+  showMsg = (text, isErr) => this.setState({ message: { text, isErr } });
 
   handleForgotPassword = async (e) => {
     e.preventDefault();
     this.setState({ loading: true });
     try {
-      const res  = await fetch("http://localhost:3000/auth/forgot-password", {
-        method:"POST", headers:{"Content-Type":"application/json"},
+      const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: this.state.identifier }),
       });
       const data = await res.json();
-      if (res.ok) { alert(data.message); this.setState({ view:"reset", recoveryUserId:data.userId }); }
-      else alert(data.message || "Error al solicitar recuperación");
-    } catch { alert("Error de conexión"); }
-    finally { this.setState({ loading:false }); }
+      if (res.ok) {
+        this.showMsg(data.message, false);
+        this.setState({ view: "reset", recoveryUserId: data.userId });
+      } else {
+        this.showMsg(data.message || "Error al solicitar recuperación", true);
+      }
+    } catch {
+      this.showMsg("Error de conexión", true);
+    } finally {
+      this.setState({ loading: false });
+    }
   };
 
   handleResetPassword = async (e) => {
     e.preventDefault();
     const { recoveryUserId, otp, password, confirmPassword } = this.state;
-    if (password !== confirmPassword) { alert("Las contraseñas no coinciden"); return; }
-    this.setState({ loading:true });
+    if (password !== confirmPassword) {
+      this.showMsg("Las contraseñas no coinciden", true);
+      return;
+    }
+    this.setState({ loading: true });
     try {
-      const vr   = await fetch("http://localhost:3000/auth/verify-recovery-otp", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ userId:recoveryUserId, code:otp }),
+      const vr = await fetch(`${API_BASE_URL}/auth/verify-recovery-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: recoveryUserId, code: otp }),
       });
-      const vd   = await vr.json();
-      if (!vr.ok) { alert(vd.message || "Código inválido"); this.setState({ loading:false }); return; }
-      const rr   = await fetch("http://localhost:3000/auth/reset-password", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ resetToken:vd.resetToken, newPassword:password }),
+      const vd = await vr.json();
+      if (!vr.ok) {
+        this.showMsg(vd.message || "Código inválido", true);
+        this.setState({ loading: false });
+        return;
+      }
+      const rr = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resetToken: vd.resetToken, newPassword: password }),
       });
-      const rd   = await rr.json();
-      if (rr.ok) { alert(rd.message); this.setState({ view:"auth", isLogin:true, identifier:"", otp:"", password:"", confirmPassword:"", recoveryUserId:null, resetToken:"" }); }
-      else alert(rd.message || "Error al restablecer contraseña");
-    } catch { alert("Error de conexión"); }
-    finally { this.setState({ loading:false }); }
+      const rd = await rr.json();
+      if (rr.ok) {
+        alert(rd.message);
+        this.setState({
+          view: "auth",
+          isLogin: true,
+          identifier: "",
+          otp: "",
+          password: "",
+          confirmPassword: "",
+          recoveryUserId: null,
+          message: { text: "", isErr: false }
+        });
+      } else {
+        this.showMsg(rd.message || "Error al restablecer contraseña", true);
+      }
+    } catch {
+      this.showMsg("Error de conexión", true);
+    } finally {
+      this.setState({ loading: false });
+    }
   };
 
   handleSubmit = async (e) => {
     e.preventDefault();
     const { nombre, apellidos, documento, email, telefono, password, confirmPassword, aceptaTerminos, isLogin } = this.state;
-    if (!isLogin && password !== confirmPassword) { alert("Las contraseñas no coinciden."); return; }
-    if (!isLogin && !aceptaTerminos) { alert("Debes aceptar los términos."); return; }
-    this.setState({ loading:true });
+    if (!isLogin && password !== confirmPassword) {
+      this.showMsg("Las contraseñas no coinciden.", true);
+      return;
+    }
+    if (!isLogin && !aceptaTerminos) {
+      this.showMsg("Debes aceptar los términos.", true);
+      return;
+    }
+    this.setState({ loading: true });
     const endpoint = isLogin ? "/auth/login" : "/auth/register";
-    const payload  = isLogin ? { email, password } : { nombre, apellidos, documento, email, telefono, password, aceptaTerminos };
+    const payload = isLogin ? { email, password } : { nombre, apellidos, documento, email, telefono, password, aceptaTerminos };
     try {
-      const res  = await fetch(`http://localhost:3000${endpoint}`, {
-        method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload),
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok) {
@@ -453,211 +534,255 @@ class Login extends Component {
           localStorage.setItem("userEmail", email          || "");
           localStorage.setItem("userPicture", data.picture || "");
           this.props.onLoginSuccess(data.role);
-        } else { alert("¡Registro exitoso! Ya puedes iniciar sesión."); this.toggleMode(); }
-      } else alert(data.message || "Error en los datos proporcionados.");
-    } catch { alert("No se pudo conectar con el servidor."); }
-    finally { this.setState({ loading:false }); }
+        } else {
+          this.showMsg("¡Registro exitoso! Ya puedes iniciar sesión.", false);
+          this.toggleMode();
+        }
+      } else {
+        this.showMsg(data.message || "Error en los datos proporcionados.", true);
+      }
+    } catch {
+      this.showMsg("No se pudo conectar con el servidor.", true);
+    } finally {
+      this.setState({ loading: false });
+    }
   };
 
   render() {
     const {
       isLogin, loading, nombre, apellidos, documento, email, telefono,
-      password, confirmPassword, aceptaTerminos, showModal, view, identifier, otp
+      password, confirmPassword, aceptaTerminos, showModal, view, identifier, otp, message
     } = this.state;
 
     return (
-      <div className="mxp-root">
+      <div className="mxp-login-root">
         <style>{STYLE}</style>
 
-        {/* ── MODAL ── */}
+        {/* ── Background Scene ── */}
+        <div className="scene">
+          <div className="scene-grad"></div>
+          <div className="ripple ripple-1"></div>
+          <div className="ripple ripple-2"></div>
+          <div className="ripple ripple-3"></div>
+          <div className="ripple ripple-4"></div>
+          <div className="ripple ripple-5"></div>
+
+          <div className="car-wrap">
+            <svg width="500" height="180" viewBox="0 0 500 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M60 120 L100 70 Q130 50 180 48 L320 48 Q370 48 400 70 L440 120 L60 120Z" fill="#00d4ff"/>
+              <rect x="40" y="120" width="420" height="28" rx="14" fill="#00d4ff"/>
+              <circle cx="120" cy="152" r="22" fill="#001a33" stroke="#00d4ff" stroke-width="3"/>
+              <circle cx="120" cy="152" r="10" fill="#00d4ff" opacity="0.4"/>
+              <circle cx="380" cy="152" r="22" fill="#001a33" stroke="#00d4ff" stroke-width="3"/>
+              <circle cx="380" cy="152" r="10" fill="#00d4ff" opacity="0.4"/>
+              <path d="M185 55 L175 110 L325 110 L315 55Z" fill="#001a33" opacity="0.5"/>
+              <line x1="250" y1="55" x2="250" y2="110" stroke="#00d4ff" stroke-width="1" opacity="0.3"/>
+            </svg>
+          </div>
+        </div>
+
+        {/* Dynamic bubbles */}
+        <div ref={this.bubblesRef}></div>
+        <div ref={this.dropsRef}></div>
+
+        {/* ── Modal ── */}
         {showModal && (
-          <div className="mxp-modal-overlay">
-            <div className="mxp-modal">
-              <div className="mxp-modal-header">
+          <div className="overlay" role="dialog">
+            <div className="modal">
+              <div className="modal-head">
                 <h3>Términos y Condiciones</h3>
                 <button onClick={this.toggleModal}>✕</button>
               </div>
-              <div className="mxp-modal-body">
-                <p><strong>Aviso Legal — MotoExpert</strong></p>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-                <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
-                <p>Al utilizar esta plataforma, usted acepta que MotoExpert recopile y procese sus datos personales de acuerdo con nuestra política de privacidad.</p>
-                <p>El acceso es personal e intransferible. El usuario es responsable de mantener la confidencialidad de sus credenciales.</p>
+              <div className="modal-body">
+                <p><strong style={{color:"#fff"}}>Aviso Legal — MotoExpert</strong></p>
+                <p>Al utilizar esta plataforma, usted acepta que MotoExpert recopile y procese sus datos personales de acuerdo con nuestra política de privacidad vigente.</p>
+                <p>El acceso es personal e intransferible. El usuario es responsable de mantener la confidencialidad de sus credenciales de acceso.</p>
+                <p>El uso indebido de la plataforma o la transferencia de credenciales a terceros puede resultar en la suspensión inmediata de la cuenta.</p>
               </div>
-              <div className="mxp-modal-footer">
+              <div className="modal-foot">
                 <button onClick={this.toggleModal}>Cerrar</button>
               </div>
             </div>
           </div>
         )}
 
-        <div className="mxp-card">
-          {/* ── LEFT PANEL ── */}
-          <div className="mxp-left">
-
-            {/* FORGOT PASSWORD */}
-            {view === "forgot" && (
-              <>
-                <p className="mxp-title">Recuperar contraseña</p>
-                <p className="mxp-subtitle">Te enviaremos un código a tu correo</p>
-                <form onSubmit={this.handleForgotPassword}>
-                  <div className="mxp-field">
-                    <IconMail />
-                    <input name="identifier" type="email" placeholder="tu@email.com" value={identifier} onChange={this.handleChange} required />
-                  </div>
-                  <button type="submit" className="mxp-btn-primary" disabled={loading} style={{marginTop:8}}>
-                    {loading ? "Enviando..." : "Enviar código"}
-                  </button>
-                </form>
-                <button className="mxp-back-btn" onClick={() => this.setState({ view:"auth", isLogin:true })}>
-                  ← Volver al inicio de sesión
-                </button>
-              </>
-            )}
-
-            {/* RESET PASSWORD */}
-            {view === "reset" && (
-              <>
-                <p className="mxp-title">Nueva contraseña</p>
-                <p className="mxp-subtitle">Ingresa el código recibido y tu nueva clave</p>
-                <form onSubmit={this.handleResetPassword}>
-                  <div className="mxp-field">
-                    <IconOtp />
-                    <input name="otp" type="text" placeholder="Código OTP" value={otp} onChange={this.handleChange} required />
-                  </div>
-                  <div className="mxp-field">
-                    <IconLock />
-                    <input name="password" type="password" placeholder="Nueva contraseña" value={password} onChange={this.handleChange} required />
-                  </div>
-                  <div className="mxp-field">
-                    <IconLock />
-                    <input name="confirmPassword" type="password" placeholder="Confirmar contraseña" value={confirmPassword} onChange={this.handleChange} required />
-                  </div>
-                  <button
-                    type="submit"
-                    className="mxp-btn-primary"
-                    disabled={loading || !otp || !password || password !== confirmPassword}
-                    style={{marginTop:8}}
-                  >
-                    {loading ? "Procesando..." : "Restablecer contraseña"}
-                  </button>
-                </form>
-                <button className="mxp-back-btn" onClick={() => this.setState({ view:"forgot" })}>
-                  ¿No recibiste el código? Reenviar
-                </button>
-              </>
-            )}
-
-            {/* AUTH (LOGIN / REGISTER) */}
-            {view === "auth" && (
-              <>
-                <p className="mxp-title">{isLogin ? "LOGIN" : "REGISTRO"}</p>
-                <p className="mxp-subtitle">
-                  {isLogin ? "¿Cómo accedo? Ingresa tus credenciales" : "Crea tu cuenta en MotoExpert"}
-                </p>
-
-                <form onSubmit={this.handleSubmit}>
-                  {!isLogin && (
-                    <div className="mxp-grid-2" style={{marginBottom:14}}>
-                      <div className="mxp-field">
-                        <IconUser />
-                        <input name="nombre" type="text" placeholder="Nombre" value={nombre} onChange={this.handleChange} required />
-                      </div>
-                      <div className="mxp-field">
-                        <IconUser />
-                        <input name="apellidos" type="text" placeholder="Apellidos" value={apellidos} onChange={this.handleChange} required />
-                      </div>
-                    </div>
-                  )}
-
-                  {!isLogin && (
-                    <div className="mxp-field">
-                      <IconId />
-                      <input name="documento" type="text" placeholder="Número de documento" value={documento} onChange={this.handleChange} required />
-                    </div>
-                  )}
-
-                  <div className="mxp-field">
-                    <IconMail />
-                    <input name="email" type="email" placeholder="Username / Correo" value={email} onChange={this.handleChange} required />
-                  </div>
-
-                  {!isLogin && (
-                    <div className="mxp-field">
-                      <IconPhone />
-                      <input name="telefono" type="tel" placeholder="Teléfono" value={telefono} onChange={this.handleChange} required />
-                    </div>
-                  )}
-
-                  <div className="mxp-field">
-                    <IconLock />
-                    <input name="password" type="password" placeholder="Password" value={password} onChange={this.handleChange} required />
-                  </div>
-
-                  {isLogin && (
-                    <div className="mxp-forgot">
-                      <button type="button" onClick={() => this.setState({ view:"forgot", identifier:email })}>
-                        ¿Olvidó su contraseña?
-                      </button>
-                    </div>
-                  )}
-
-                  {!isLogin && (
-                    <div className="mxp-field">
-                      <IconLock />
-                      <input name="confirmPassword" type="password" placeholder="Confirmar contraseña" value={confirmPassword} onChange={this.handleChange} required />
-                    </div>
-                  )}
-
-                  {!isLogin && (
-                    <div className="mxp-check-row">
-                      <input id="aceptaTerminos" name="aceptaTerminos" type="checkbox" checked={aceptaTerminos} onChange={this.handleChange} required />
-                      <label htmlFor="aceptaTerminos">
-                        Acepto los <button type="button" onClick={this.toggleModal}>Términos y Condiciones</button>
-                      </label>
-                    </div>
-                  )}
-
-                  <button type="submit" className="mxp-btn-primary" disabled={loading || (!isLogin && !aceptaTerminos)}>
-                    {loading ? "Procesando..." : isLogin ? "Login Now" : "Registrarse"}
-                  </button>
-                </form>
-
-                <div className="mxp-divider"><span>Login with Others</span></div>
-
-                <button className="mxp-social-btn" type="button">
-                  <GoogleIcon /> Login with <strong>google</strong>
-                </button>
-                <button className="mxp-social-btn" type="button">
-                  <FacebookIcon /> Login with <strong>Facebook</strong>
-                </button>
-
-                {/* Hidden real Google login */}
-                <div style={{display:"none"}}>
-                  <AuthContext.Consumer>
-                    {({ googleLogin }) => (
-                      <GoogleLoginButton
-                        onSuccess={async (credential) => {
-                          try { await googleLogin(credential); this.props.onLoginSuccess("user"); }
-                          catch (err) { console.error("Google login error:", err); }
-                        }}
-                      />
-                    )}
-                  </AuthContext.Consumer>
-                </div>
-
-                <div className="mxp-toggle">
-                  {isLogin ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
-                  <button type="button" onClick={this.toggleMode}>
-                    {isLogin ? "Regístrate" : "Inicia Sesión"}
-                  </button>
-                </div>
-              </>
-            )}
+        {/* ── CARD ── */}
+        <div className="card">
+          {/* Brand Panel */}
+          <div className="brand-panel">
+            <div className="ring ring-1"></div>
+            <div className="ring ring-2"></div>
+            <div className="brand-logo">
+              <div className="drop-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2 C12 2, 4 10, 4 15 a8 8 0 0 0 16 0 C20 10 12 2 12 2Z"/>
+                </svg>
+              </div>
+              <div className="brand-name">moto<span>expert</span></div>
+              <div className="brand-tagline">Autolavado Premium</div>
+            </div>
+            <div className="brand-features">
+              <div className="feat"><div className="feat-dot"></div>Lavado a presión HD</div>
+              <div className="feat"><div className="feat-dot"></div>Cera protectora UV</div>
+              <div className="feat"><div className="feat-dot"></div>Secado por aire caliente</div>
+            </div>
+            <div className="brand-badge">★ Servicio 24/7</div>
           </div>
 
-          {/* ── RIGHT PANEL ── */}
-          <RightPanel />
+          {/* Form Panel */}
+          <div className="form-panel">
+            {view === "auth" && (
+              <>
+                <div className="tabs">
+                  <button className={`tab ${isLogin ? "active" : ""}`} onClick={() => this.setState({ isLogin: true })}>Ingresar</button>
+                  <button className={`tab ${!isLogin ? "active" : ""}`} onClick={() => this.setState({ isLogin: false })}>Registrarse</button>
+                </div>
+
+                {message.text && (
+                  <div className={`msg ${message.isErr ? "err" : "ok"}`}>
+                    {message.text}
+                  </div>
+                )}
+
+                {isLogin ? (
+                  <div className="view active">
+                    <div className="form-title">Bienvenido de vuelta</div>
+                    <div className="form-sub">Ingresa tus credenciales para continuar</div>
+                    <form onSubmit={this.handleSubmit}>
+                      <div className="field">
+                        <input name="email" type="email" placeholder="Correo electrónico" value={email} onChange={this.handleChange} required />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
+                      </div>
+                      <div className="field">
+                        <input name="password" type="password" placeholder="Contraseña" value={password} onChange={this.handleChange} required />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      </div>
+                      <div className="forgot">
+                        <button type="button" onClick={() => this.setState({ view: "forgot", identifier: email })}>¿Olvidó su contraseña?</button>
+                      </div>
+                      <button type="submit" className="btn-primary" disabled={loading}>
+                        {loading ? "Procesando..." : "Iniciar Sesión"}
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="view active">
+                    <div className="form-title">Crea tu cuenta</div>
+                    <div className="form-sub">Únete a MotoExpert y agenda tu servicio</div>
+                    <form onSubmit={this.handleSubmit}>
+                      <div className="grid2">
+                        <div className="field">
+                          <input name="nombre" type="text" placeholder="Nombre" value={nombre} onChange={this.handleChange} required />
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                        <div className="field">
+                          <input name="apellidos" type="text" placeholder="Apellidos" value={apellidos} onChange={this.handleChange} required />
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                      </div>
+                      <div className="field">
+                        <input name="documento" type="text" placeholder="Número de documento" value={documento} onChange={this.handleChange} required />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </div>
+                      <div className="field">
+                        <input name="email" type="email" placeholder="Correo electrónico" value={email} onChange={this.handleChange} required />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
+                      </div>
+                      <div className="field">
+                        <input name="telefono" type="tel" placeholder="Teléfono" value={telefono} onChange={this.handleChange} required />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.86 19.86 0 0 1 3.09 4.18 2 2 0 0 1 5.07 2h3a2 2 0 0 1 2 1.72c.13 1 .37 1.97.72 2.9a2 2 0 0 1-.45 2.11L9.09 9.91a16 16 0 0 0 5.91 5.91l1.18-1.18a2 2 0 0 1 2.11-.45c.93.35 1.9.59 2.9.72A2 2 0 0 1 22 16.92z"/></svg>
+                      </div>
+                      <div className="grid2">
+                        <div className="field">
+                          <input name="password" type="password" placeholder="Contraseña" value={password} onChange={this.handleChange} required />
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        </div>
+                        <div className="field">
+                          <input name="confirmPassword" type="password" placeholder="Confirmar" value={confirmPassword} onChange={this.handleChange} required />
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        </div>
+                      </div>
+                      <div className="check-row">
+                        <input name="aceptaTerminos" type="checkbox" id="terminos" checked={aceptaTerminos} onChange={this.handleChange} required />
+                        <label htmlFor="terminos">Acepto los <button type="button" onClick={this.toggleModal}>Términos y Condiciones</button></label>
+                      </div>
+                      <button type="submit" className="btn-primary" disabled={loading || !aceptaTerminos}>
+                        {loading ? "Procesando..." : "Crear Cuenta"}
+                      </button>
+                    </form>
+                  </div>
+                )}
+
+                <div className="divider"><span>o continuar con</span></div>
+                <AuthContext.Consumer>
+                  {({ googleLogin }) => (
+                    <GoogleLoginButton
+                      onSuccess={async (credential) => {
+                        try {
+                          await googleLogin(credential);
+                          this.props.onLoginSuccess("user");
+                        } catch (err) {
+                          console.error("Google login error:", err);
+                        }
+                      }}
+                    />
+                  )}
+                </AuthContext.Consumer>
+              </>
+            )}
+
+            {view === "forgot" && (
+              <div className="view active">
+                <div className="form-title">Recuperar acceso</div>
+                <div className="form-sub">Te enviaremos un código a tu correo</div>
+                {message.text && (
+                  <div className={`msg ${message.isErr ? "err" : "ok"}`}>
+                    {message.text}
+                  </div>
+                )}
+                <form onSubmit={this.handleForgotPassword}>
+                  <div className="field">
+                    <input name="identifier" type="email" placeholder="tu@correo.com" value={identifier} onChange={this.handleChange} required />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
+                  </div>
+                  <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: 8 }}>
+                    {loading ? "Enviando..." : "Enviar Código"}
+                  </button>
+                </form>
+                <button className="back-btn" onClick={() => this.setState({ view: "auth" })}>← Volver al inicio de sesión</button>
+              </div>
+            )}
+
+            {view === "reset" && (
+              <div className="view active">
+                <div className="form-title">Nueva contraseña</div>
+                <div className="form-sub">Ingresa el código recibido y tu nueva clave</div>
+                {message.text && (
+                  <div className={`msg ${message.isErr ? "err" : "ok"}`}>
+                    {message.text}
+                  </div>
+                )}
+                <form onSubmit={this.handleResetPassword}>
+                  <div className="field">
+                    <input name="otp" type="text" placeholder="Código OTP" value={otp} onChange={this.handleChange} required maxLength="6" style={{ letterSpacing: 4, fontSize: 18, fontWeight: 600 }} />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>
+                  </div>
+                  <div className="field">
+                    <input name="password" type="password" placeholder="Nueva contraseña" value={password} onChange={this.handleChange} required />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  </div>
+                  <div className="field">
+                    <input name="confirmPassword" type="password" placeholder="Confirmar contraseña" value={confirmPassword} onChange={this.handleChange} required />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  </div>
+                  <button type="submit" className="btn-primary" disabled={loading}>
+                    {loading ? "Procesando..." : "Restablecer Contraseña"}
+                  </button>
+                </form>
+                <button className="back-btn" onClick={() => this.setState({ view: "forgot" })}>¿No recibiste el código? Reenviar</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
