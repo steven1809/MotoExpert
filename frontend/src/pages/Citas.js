@@ -4,7 +4,7 @@ import NoVehicleWarning from '../components/NoVehicleWarning';
 import DuplicateBookingWarning from '../components/DuplicateBookingWarning';
 import AppointmentsSearchAndFilter from '../components/AppointmentsSearchAndFilter';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 const Citas = ({ setView }) => {
   const { hasVehicles, loading: loadingVehicles } = useVehicleGuard();

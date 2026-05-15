@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 const UsersList = () => {
   const [users, setUsers] = useState([]);
@@ -21,6 +24,68 @@ const UsersList = () => {
   const [empleados, setEmpleados] = useState([]);
   const [citasGenerales, setCitasGenerales] = useState([]);
   const [filtroEstadoCita, setFiltroEstadoCita] = useState('TODAS');
+
+  const exportUsers = (format) => {
+    const list = filteredUsers;
+    if (!Array.isArray(list) || list.length === 0) {
+      alert('No hay usuarios para exportar con los filtros actuales.');
+      return;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const fileBaseName = `motoexpert_usuarios_${today}`;
+    const headers = [
+      'ID',
+      'Nombre',
+      'Apellidos',
+      'Email',
+      'Teléfono',
+      'Documento',
+      'Rol',
+      'Proveedor',
+      'Google ID',
+    ];
+
+    const body = list.map((u) => [
+      u.id ?? '',
+      u.nombre ?? '',
+      u.apellidos ?? '',
+      u.email ?? '',
+      u.telefono ?? '',
+      u.documento ?? '',
+      u.role ?? '',
+      u.provider ?? '',
+      u.googleId ?? '',
+    ]);
+
+    if (format === 'excel') {
+      const worksheet = XLSX.utils.aoa_to_sheet([headers, ...body]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuarios');
+      XLSX.writeFile(workbook, `${fileBaseName}.xlsx`);
+      return;
+    }
+
+    if (format === 'pdf') {
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      doc.setFontSize(14);
+      doc.text('MotoExpert - Usuarios', 40, 40);
+      doc.setFontSize(10);
+      doc.text(`Exportado: ${today}`, 40, 58);
+
+      autoTable(doc, {
+        startY: 76,
+        head: [headers],
+        body,
+        styles: { fontSize: 8, cellPadding: 4 },
+        headStyles: { fillColor: [37, 99, 235] },
+        alternateRowStyles: { fillColor: [245, 247, 255] },
+        margin: { left: 40, right: 40 },
+      });
+
+      doc.save(`${fileBaseName}.pdf`);
+    }
+  };
 
   useEffect(() => {
     const role = localStorage.getItem('role');
@@ -411,17 +476,35 @@ const UsersList = () => {
 
         {/* Barra de Búsqueda Dinámica (Solo visible en Usuarios) */}
         {activeTab === 'usuarios' && (
-          <div className="relative w-full md:w-96 group">
-            <input 
-              type="text" 
-              placeholder="Buscar por nombre, email o ID..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-purple-600 outline-none transition-all group-hover:border-purple-500/50"
-            />
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+            <div className="relative w-full md:w-96 group">
+              <input 
+                type="text" 
+                placeholder="Buscar por nombre, email o ID..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-purple-600 outline-none transition-all group-hover:border-purple-500/50"
+              />
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => exportUsers('excel')}
+              className="px-5 py-3 rounded-2xl bg-emerald-600/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/20 hover:border-emerald-500/40 font-bold text-xs uppercase tracking-widest transition-all"
+            >
+              Exportar Excel
+            </button>
+
+            <button
+              type="button"
+              onClick={() => exportUsers('pdf')}
+              className="px-5 py-3 rounded-2xl bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 hover:border-blue-500/40 font-bold text-xs uppercase tracking-widest transition-all"
+            >
+              Exportar PDF
+            </button>
           </div>
         )}
       </div>

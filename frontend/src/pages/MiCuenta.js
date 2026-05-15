@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 class MiCuenta extends Component {
   constructor(props) {
     super(props);
@@ -28,7 +30,7 @@ class MiCuenta extends Component {
   fetchVehiculos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/vehiculos', {
+      const response = await fetch(`${API_BASE_URL}/vehiculos`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -65,7 +67,7 @@ class MiCuenta extends Component {
     if (window.confirm(`¿Estás seguro de que deseas ${accion} este vehículo?`)) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:3000/vehiculos/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/vehiculos/${id}`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -108,7 +110,7 @@ class MiCuenta extends Component {
     formData.append('file', file);
 
     try {
-      const response = await fetch(`http://localhost:3000/usuarios/${userId}/upload-photo`, {
+      const response = await fetch(`${API_BASE_URL}/usuarios/${userId}/upload-photo`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -136,7 +138,7 @@ class MiCuenta extends Component {
 
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:3000/vehiculos/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/vehiculos/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -163,7 +165,7 @@ class MiCuenta extends Component {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/usuarios/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/usuarios/${userId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
