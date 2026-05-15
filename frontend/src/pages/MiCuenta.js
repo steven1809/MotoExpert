@@ -18,6 +18,11 @@ class MiCuenta extends Component {
 
   componentDidMount() {
     this.fetchVehiculos();
+    // Cargar foto desde localStorage si existe
+    const savedPicture = localStorage.getItem('userPicture');
+    if (savedPicture) {
+      this.setState({ fotoPerfil: savedPicture });
+    }
   }
 
   fetchVehiculos = async () => {
@@ -92,11 +97,36 @@ class MiCuenta extends Component {
   };
 
   // Manejador para la subida de imagen
-  handleImageUpload = (e) => {
+  handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      this.setState({ fotoPerfil: imageUrl });
+    if (!file) return;
+
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('token');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`http://localhost:3000/usuarios/${userId}/upload-photo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        this.setState({ fotoPerfil: data.picture });
+        localStorage.setItem('userPicture', data.picture);
+        alert('Foto de perfil actualizada');
+      } else {
+        alert('Error al subir la imagen');
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Error de conexión');
     }
   };
 
@@ -118,6 +148,45 @@ class MiCuenta extends Component {
       }
     } catch (err) {
       alert('Error al eliminar vehículo');
+    }
+  };
+
+  // Guardar cambios del perfil
+  handleGuardarPerfil = async () => {
+    const { nombre, email, telefono } = this.state;
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('token');
+
+    if (!userId || !token) {
+      alert('Error: Sesión no válida');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/usuarios/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nombre, email, telefono }),
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        
+        // Actualizar localStorage para que se refleje en el Navbar y otras partes
+        localStorage.setItem('userName', updatedUser.nombre);
+        localStorage.setItem('userEmail', updatedUser.email);
+        
+        alert('Perfil actualizado correctamente');
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.message || 'No se pudo actualizar el perfil'}`);
+      }
+    } catch (err) {
+      console.error('Error al guardar perfil:', err);
+      alert('Error de conexión con el servidor');
     }
   };
 
@@ -188,7 +257,10 @@ class MiCuenta extends Component {
                     className="w-full p-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
                   />
                 </div>
-                <button className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl shadow-lg mt-4 transform active:scale-95 transition-all">
+                <button 
+                  onClick={this.handleGuardarPerfil}
+                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl shadow-lg mt-4 transform active:scale-95 transition-all"
+                >
                   Guardar Cambios
                 </button>
               </div>

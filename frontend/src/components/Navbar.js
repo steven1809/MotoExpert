@@ -98,9 +98,9 @@ class Navbar extends Component {
           </svg>
         );
     }
-  };
-
-  renderNavItem = (item) => {
+  }
+  
+  renderNavItem = (item, isHorizontal = false) => {
     const { setView, view } = this.props;
     const isActive = view === item.view || (item.view === "dashboard" && view === "dashboard");
 
@@ -111,143 +111,231 @@ class Navbar extends Component {
           setView(item.view);
           if (this.state.open) this.toggleMenu();
         }}
-        className={`w-full flex items-center gap-3 px-4 py-3 text-left font-mono text-[11px] uppercase tracking-[0.1em] border-l-2 transition-colors ${
+        className={`relative group flex items-center transition-all duration-300 ${
+          isHorizontal 
+            ? "h-full px-5 gap-2.5" 
+            : "w-full gap-3 px-4 py-3.5 text-left border-l-2"
+        } ${
           isActive
-            ? "bg-[#1a1a2e] border-[#7b9cff] text-white"
-            : "bg-transparent border-transparent text-slate-300 hover:bg-[#1a1a2e]/60 hover:border-[#7b9cff]/60 hover:text-white"
+            ? isHorizontal 
+              ? "text-white" 
+              : "bg-white/[0.03] border-[#7b9cff] text-white"
+            : isHorizontal
+              ? "text-slate-400 hover:text-white"
+              : "border-transparent text-slate-400 hover:bg-white/[0.02] hover:text-white"
         }`}
       >
-        <span className="text-[#7b9cff]">{this.renderIcon(item.icon)}</span>
-        <span>{item.label}</span>
+        <span className={`transition-transform duration-300 group-hover:scale-110 ${
+          isActive ? "text-[#7b9cff]" : "text-slate-500 group-hover:text-[#7b9cff]"
+        }`}>
+          {this.renderIcon(item.icon)}
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] font-medium">
+          {item.label}
+        </span>
+        
+        {/* Underline effect for horizontal */}
+        {isHorizontal && (
+          <div className={`absolute bottom-0 left-0 right-0 h-[2px] transition-all duration-300 ${
+            isActive ? "bg-[#7b9cff] shadow-[0_0_8px_rgba(123,156,255,0.5)]" : "bg-transparent group-hover:bg-white/10"
+          }`} />
+        )}
       </button>
     );
   };
 
   render() {
-    const { handleLogout } = this.props;
+    const { handleLogout, setView, userRole } = this.props;
     const { open } = this.state;
-    const { setView, userRole } = this.props;
     const userName = localStorage.getItem('userName') || 'Usuario';
+    const userPicture = localStorage.getItem('userPicture');
+    const role = (userRole || "user").toLowerCase();
+    const isStandardUser = role === "user" || role === "cliente" || role === "usuario";
     const userRank = (userRole || "user").toUpperCase();
     const initial = userName.charAt(0).toUpperCase();
     const items = this.getMenuConfig();
 
     return (
       <>
-        <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 bg-[#0a0a0d] border-r border-white/[0.08] flex-col">
-          <div className="px-6 pt-6 pb-5 border-b border-white/[0.08]">
-            <button onClick={() => setView("dashboard")} className="text-left w-full">
-              <div className="text-white font-extrabold text-xl tracking-tight">MOTOEXPERT</div>
-              <div className="text-slate-500 text-[11px] font-mono tracking-[0.12em] uppercase">v-0.98.4</div>
-            </button>
-          </div>
+        {/* Sidebar for Admin/Employee */}
+        {!isStandardUser && (
+          <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 bg-[#050507] border-r border-white/[0.05] flex-col z-[60]">
+            <div className="px-8 pt-8 pb-6">
+              <button onClick={() => setView("dashboard")} className="group text-left w-full">
+                <div className="text-white font-black text-2xl tracking-tighter transition-colors group-hover:text-[#7b9cff]">
+                  MOTO<span className="text-[#7b9cff]">EXPERT</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="h-[1px] w-4 bg-[#7b9cff]/50" />
+                  <div className="text-slate-500 text-[9px] font-mono tracking-[0.2em] uppercase">Control Panel</div>
+                </div>
+              </button>
+            </div>
 
-          <nav className="px-3 py-4 flex-1 space-y-1">
-            {items.map(this.renderNavItem)}
-          </nav>
+            <nav className="px-4 py-6 flex-1 space-y-1">
+              {items.map(item => this.renderNavItem(item))}
+            </nav>
 
-          <div className="px-4 pb-6 space-y-4 border-t border-white/[0.08]">
-            <div className="pt-5">
-              <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#3ddc84]/30 bg-[#0a0a0d]">
-                <span className="w-2 h-2 rounded-full bg-[#3ddc84]" />
-                <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#3ddc84]">
-                  System Secure / Encryption Active
-                </span>
+            <div className="px-6 pb-8 space-y-6">
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-[#3ddc84] animate-pulse" />
+                  <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-400">System Status</span>
+                </div>
+                <div className="text-[10px] text-[#3ddc84] font-mono leading-relaxed">
+                  CORE: SECURE<br/>
+                  ENCRYPT: ACTIVE
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.05]">
+                <button
+                  onClick={() => setView("cuenta")}
+                  className="flex items-center gap-3 group min-w-0"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center text-[#7b9cff] font-mono text-sm transition-all group-hover:bg-[#7b9cff]/20 overflow-hidden">
+                    {userPicture ? (
+                      <img src={userPicture} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      initial
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-white font-bold text-sm truncate group-hover:text-[#7b9cff] transition-colors">{userName}</div>
+                    <div className="text-slate-500 text-[9px] font-mono uppercase tracking-[0.15em]">{userRank}</div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={handleLogout}
+                  className="p-2.5 rounded-xl border border-white/[0.05] text-slate-400 hover:text-[#ff4d4d] hover:bg-[#ff4d4d]/5 transition-all"
+                  title="Salir"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                  </svg>
+                </button>
               </div>
             </div>
+          </aside>
+        )}
 
-            <div className="flex items-center justify-between gap-3">
+        {/* Top Navbar for Standard User (Desktop) */}
+        {isStandardUser && (
+          <header className="hidden md:flex fixed top-0 left-0 right-0 h-20 bg-[#050507]/80 backdrop-blur-xl border-b border-white/[0.05] z-[60] items-center justify-between px-10">
+            <button onClick={() => setView("dashboard")} className="group text-left">
+              <div className="text-white font-black text-2xl tracking-tighter transition-colors group-hover:text-[#7b9cff]">
+                MOTO<span className="text-[#7b9cff]">EXPERT</span>
+              </div>
+              <div className="text-slate-500 text-[9px] font-mono uppercase tracking-[0.2em] mt-0.5">Automotive Core</div>
+            </button>
+
+            <nav className="flex h-full items-center">
+              {items.map(item => this.renderNavItem(item, true))}
+            </nav>
+
+            <div className="flex items-center gap-6">
               <button
                 onClick={() => setView("cuenta")}
-                className="flex items-center gap-3 text-left flex-1 min-w-0"
+                className="flex items-center gap-3 group pl-4 border-l border-white/[0.05]"
               >
-                <div className="w-10 h-10 rounded-xl bg-[#0a0a0d] border border-white/[0.08] flex items-center justify-center text-white font-mono text-sm">
-                  {initial}
+                <div className="text-right hidden lg:block">
+                  <div className="text-white font-bold text-sm group-hover:text-[#7b9cff] transition-colors">{userName}</div>
+                  <div className="text-slate-500 text-[9px] font-mono uppercase tracking-[0.15em]">{userRank}</div>
                 </div>
-                <div className="min-w-0">
-                  <div className="text-white font-semibold truncate">{userName}</div>
-                  <div className="text-slate-500 text-[11px] font-mono uppercase tracking-[0.12em] truncate">
-                    {userRank}
-                  </div>
+                <div className="w-10 h-10 rounded-xl bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center text-[#7b9cff] font-mono text-sm transition-all group-hover:bg-[#7b9cff]/20 group-hover:scale-105 overflow-hidden">
+                  {userPicture ? (
+                    <img src={userPicture} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    initial
+                  )}
                 </div>
               </button>
-
+              
               <button
                 onClick={handleLogout}
-                className="px-3 py-2 rounded-xl border border-[#ff4d4d]/40 text-[#ff4d4d] hover:bg-[#ff4d4d]/10 transition-colors font-mono text-[11px] uppercase tracking-[0.12em]"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05] text-slate-400 hover:text-white hover:bg-[#ff4d4d]/10 hover:border-[#ff4d4d]/20 transition-all font-mono text-[9px] uppercase tracking-[0.15em]"
               >
-                Salir
+                <span>Logout</span>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                </svg>
               </button>
             </div>
-          </div>
-        </aside>
+          </header>
+        )}
 
-        <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0a0d] border-b border-white/[0.08]">
-          <div className="h-16 px-4 flex items-center justify-between">
+        {/* Mobile Header */}
+        <header className="md:hidden fixed top-0 left-0 right-0 z-[60] bg-[#050507]/90 backdrop-blur-lg border-b border-white/[0.05]">
+          <div className="h-18 px-5 flex items-center justify-between py-4">
             <button onClick={() => setView("dashboard")} className="text-left">
-              <div className="text-white font-extrabold tracking-tight">MOTOEXPERT</div>
-              <div className="text-slate-500 text-[10px] font-mono uppercase tracking-[0.12em]">v-0.98.4</div>
+              <div className="text-white font-black text-xl tracking-tighter">
+                MOTO<span className="text-[#7b9cff]">EXPERT</span>
+              </div>
+              <div className="text-slate-500 text-[9px] font-mono uppercase tracking-[0.2em]">v-0.98.4</div>
             </button>
             <button
               onClick={this.toggleMenu}
-              className="w-11 h-11 rounded-xl border border-white/[0.08] bg-[#0a0a0d] text-white flex items-center justify-center"
-              aria-label="Menu"
+              className={`w-12 h-12 rounded-2xl border transition-all duration-300 flex items-center justify-center ${
+                open ? "bg-[#7b9cff] border-[#7b9cff] text-white shadow-[0_0_15px_rgba(123,156,255,0.4)]" : "bg-white/[0.02] border-white/[0.05] text-white"
+              }`}
             >
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d={open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
               </svg>
             </button>
           </div>
         </header>
 
+        {/* Mobile Menu */}
         {open && (
-          <div className="fixed inset-0 z-[9999] md:hidden">
-            <div className="absolute inset-0 bg-black/60" onClick={this.toggleMenu} />
-            <div className="absolute top-0 left-0 w-[84%] max-w-xs h-full bg-[#0a0a0d] border-r border-white/[0.08] flex flex-col">
-              <div className="px-6 pt-6 pb-5 border-b border-white/[0.08]">
-                <div className="text-white font-extrabold text-xl tracking-tight">MOTOEXPERT</div>
-                <div className="text-slate-500 text-[11px] font-mono tracking-[0.12em] uppercase">v-0.98.4</div>
-              </div>
-              <nav className="px-3 py-4 flex-1 space-y-1">
-                {items.map(this.renderNavItem)}
-              </nav>
-              <div className="px-4 pb-6 space-y-4 border-t border-white/[0.08]">
-                <div className="pt-5">
-                  <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#3ddc84]/30 bg-[#0a0a0d]">
-                    <span className="w-2 h-2 rounded-full bg-[#3ddc84]" />
-                    <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#3ddc84]">
-                      System Secure / Encryption Active
-                    </span>
-                  </div>
+          <div className="fixed inset-0 z-[100] md:hidden overflow-hidden">
+            <div className="absolute inset-0 bg-[#050507]/95 backdrop-blur-sm" onClick={this.toggleMenu} />
+            <div className="absolute top-0 right-0 w-[85%] max-w-sm h-full bg-[#050507] border-l border-white/[0.05] flex flex-col animate-in slide-in-from-right duration-300">
+              <div className="px-8 pt-10 pb-8 border-b border-white/[0.05]">
+                <div className="text-white font-black text-2xl tracking-tighter">
+                  MOTO<span className="text-[#7b9cff]">EXPERT</span>
                 </div>
-                <div className="flex items-center justify-between gap-3">
+                <div className="text-slate-500 text-[10px] font-mono tracking-[0.2em] uppercase mt-1">Mobile Access</div>
+              </div>
+              
+              <nav className="px-4 py-8 flex-1 space-y-2 overflow-y-auto">
+                {items.map(item => this.renderNavItem(item))}
+              </nav>
+
+              <div className="p-8 space-y-6 border-t border-white/[0.05] bg-white/[0.01]">
                   <button
                     onClick={() => {
                       setView("cuenta");
                       this.toggleMenu();
                     }}
-                    className="flex items-center gap-3 text-left flex-1 min-w-0"
+                    className="flex items-center gap-4 group w-full"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-[#0a0a0d] border border-white/[0.08] flex items-center justify-center text-white font-mono text-sm">
-                      {initial}
+                    <div className="w-12 h-12 rounded-2xl bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center text-[#7b9cff] font-mono text-lg overflow-hidden">
+                      {userPicture ? (
+                        <img src={userPicture} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        initial
+                      )}
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-white font-semibold truncate">{userName}</div>
-                      <div className="text-slate-500 text-[11px] font-mono uppercase tracking-[0.12em] truncate">
-                        {userRank}
-                      </div>
+                    <div className="text-left">
+                      <div className="text-white font-bold text-base group-hover:text-[#7b9cff] transition-colors">{userName}</div>
+                      <div className="text-slate-500 text-[10px] font-mono uppercase tracking-[0.15em]">{userRank}</div>
                     </div>
                   </button>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      this.toggleMenu();
-                    }}
-                    className="px-3 py-2 rounded-xl border border-[#ff4d4d]/40 text-[#ff4d4d] hover:bg-[#ff4d4d]/10 transition-colors font-mono text-[11px] uppercase tracking-[0.12em]"
-                  >
-                    Salir
-                  </button>
-                </div>
+                
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    this.toggleMenu();
+                  }}
+                  className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-[#ff4d4d]/10 border border-[#ff4d4d]/20 text-[#ff4d4d] font-mono text-xs uppercase tracking-[0.2em] hover:bg-[#ff4d4d]/20 transition-all"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                  </svg>
+                  <span>Cerrar Sesión</span>
+                </button>
               </div>
             </div>
           </div>
