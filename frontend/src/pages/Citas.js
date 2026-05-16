@@ -30,6 +30,8 @@ const Citas = ({ setView }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(7);
   const [alertToCancel, setAlertToCancel] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [processedCitas, setProcessedCitas] = useState(new Set());
   
   const [formData, setFormData] = useState({
     fecha: '',
@@ -42,6 +44,13 @@ const Citas = ({ setView }) => {
   useEffect(() => {
     fetchInitialData();
     checkPendingAction();
+    
+    // Update current time every second
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timeInterval);
   }, []);
 
   const checkPendingAction = () => {
@@ -115,6 +124,72 @@ const Citas = ({ setView }) => {
       setLoadingSlots(false);
     }
   };
+
+  const getCitaTimeInfo = (cita) => {
+    const citaDateStr = cita.fecha;
+    const citaTimeStr = cita.hora_inicio?.substring(0, 5); // HH:MM
+    const citaDateTimeStr = `${citaDateStr}T${citaTimeStr}`;
+    const citaDateTime = new Date(citaDateTimeStr);
+    const now = currentTime;
+    
+    const timeUntilStartMs = citaDateTime - now;
+    const timePastStartMs = now - citaDateTime;
+    const gracePeriodMs = 10 * 60 * 1000; // 10 minutes
+    
+    return {
+      citaDateTime,
+      timeUntilStartMs,
+      timePastStartMs,
+      isOverdue: timePastStartMs > 0 && cita.estado === 'PENDIENTE',
+      isInGracePeriod: timePastStartMs > 0 && timePastStartMs <= gracePeriodMs,
+      isPastGracePeriod: timePastStartMs > gracePeriodMs && cita.estado === 'PENDIENTE',
+      gracePeriodRemainingMs: gracePeriodMs - timePastStartMs,
+    };
+  };
+
+  const formatCountdown = (ms) => {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  const cancelCita = async (citaId) => {
+    if (processedCitas.has(citaId)) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/citas/${citaId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ estado: 'CANCELADO' }),
+      });
+      
+      if (response.ok) {
+        setProcessedCitas(prev => new Set([...prev, citaId]));
+        setCitas(prev => prev.map(c => 
+          c.id === citaId ? { ...c, estado: 'CANCELADO' } : c
+        ));
+      }
+    } catch (err) {
+      console.error('Error canceling cita:', err);
+    }
+  };
+
+  useEffect(() => {
+    // Check for overdue appointments
+    citas.forEach(cita => {
+      if (cita.estado !== 'PENDIENTE') return;
+      
+      const timeInfo = getCitaTimeInfo(cita);
+      if (timeInfo.isPastGracePeriod && !processedCitas.has(cita.id)) {
+        cancelCita(cita.id);
+      }
+    });
+  }, [currentTime, citas, processedCitas]);
 
   const handleDateChange = (e) => {
     const fecha = e.target.value;
@@ -914,18 +989,48 @@ const Citas = ({ setView }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {citasPendientes.length > 0 ? (
-              citasPendientes.map(cita => (
+              citasPendientes.map(cita => {
+                const timeInfo = getCitaTimeInfo(cita);
+                const countdown = formatCountdown(timeInfo.gracePeriodRemainingMs);
+                const isUnderTwoMinutes = timeInfo.gracePeriodRemainingMs > 0 && timeInfo.gracePeriodRemainingMs < 2 * 60 * 1000;
+                
+                return (
                 <div key={cita.id} className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-8 rounded-[2.5rem] hover:border-[#2563EB]/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-6 opacity-10">
                     <span className="text-4xl font-black italic tracking-tighter text-slate-900 dark:text-white">#{cita.id}</span>
                   </div>
+                  
+                  {/* Overdue Warning Banner */}
+                  {timeInfo.isOverdue && cita.estado === 'PENDIENTE' && (
+                    <div className="relative z-10 p-4 rounded-2xl bg-[#EF9F27]/10 border border-[#EF9F27]/25 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-[#EF9F27]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div className="flex-1">
+                          <div className="text-sm font-bold text-[#EF9F27]">
+                            ⚠️ Your appointment was scheduled for {cita.hora_inicio.substring(0, 5)}.
+                          </div>
+                          <div className="text-xs text-[#9ca3af]">
+                            You have {countdown} to start the service or it will be automatically cancelled.
+                          </div>
+                        </div>
+                        <div className={`text-2xl font-black ${isUnderTwoMinutes ? 'text-[#E24B4A]' : 'text-[#EF9F27]'}`}>
+                          {countdown}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between items-start relative z-10">
                     <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                       cita.estado === 'PENDIENTE' 
-                        ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
+                        ? timeInfo.isInGracePeriod 
+                          ? 'bg-[#EF9F27]/10 text-[#EF9F27] border-[#EF9F27]/20' 
+                          : 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
                         : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                     }`}>
-                      {cita.estado}
+                      {cita.estado === 'PENDIENTE' && timeInfo.isInGracePeriod ? 'TARDÍO' : cita.estado}
                     </span>
                     <button
                       onClick={() => handleDelete(cita.id)}
@@ -954,7 +1059,7 @@ const Citas = ({ setView }) => {
                     </div>
                   </div>
                 </div>
-              ))
+              )})
             ) : (
               <div className="col-span-full py-16 text-center bg-slate-100 dark:bg-[#111827]/50 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-white/5">
                 <p className="text-slate-500 dark:text-[#94A3B8] italic font-medium text-sm">No hay citas pendientes actualmente.</p>
