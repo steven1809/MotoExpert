@@ -10,7 +10,6 @@ const SearchAndFilter = ({ vehiculos, onFilterChange }) => {
   const panelRef = useRef(null);
 
   // Extract unique values for dynamic selects
-  const uniqueTipos = [...new Set(vehiculos.map(v => v.tipo).filter(Boolean))];
   const uniqueAnios = [...new Set(vehiculos.map(v => v.anio).filter(Boolean))].sort((a, b) => b - a);
   const uniqueMarcas = [...new Set(vehiculos.map(v => v.marca).filter(Boolean))].sort();
 
@@ -64,6 +63,8 @@ const SearchAndFilter = ({ vehiculos, onFilterChange }) => {
         break;
       case 'marca':
         setMarcaFilter('');
+        break;
+      default:
         break;
     }
   };

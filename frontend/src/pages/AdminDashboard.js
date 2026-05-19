@@ -24,19 +24,17 @@ class AdminDashboard extends Component {
     const token = localStorage.getItem('token');
     const headers = { 'Authorization': `Bearer ${token}` };
     try {
-      const [usersRes, citasRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/auth`, { headers }),
-        fetch(`${API_BASE_URL}/citas`, { headers })
-      ]);
+      const usersRes = await fetch(`${API_BASE_URL}/auth`, { headers });
       const users = usersRes.ok ? await usersRes.json() : [];
-      const citas = citasRes.ok ? await citasRes.json() : [];
       
       this.setState({
         stats: {
-          usuarios: 13,
+          usuarios: Array.isArray(users) ? users.length : 0,
           ingresos: 12500.50,
           vehiculosEnProceso: 0,
-          trabajadoresActivos: users.filter(u => u.role?.toUpperCase() === 'EMPLEADO').length
+          trabajadoresActivos: Array.isArray(users)
+            ? users.filter(u => u.role?.toUpperCase() === 'EMPLEADO').length
+            : 0
         },
         loading: false
       });
@@ -69,6 +67,25 @@ class AdminDashboard extends Component {
             <p className="text-[#94A3B8] max-w-2xl mx-auto">
               Monitoreo de métricas críticas y gestión global del ecosistema MotoExpert.
             </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-6">
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">Usuarios</div>
+            <div className="mt-2 text-3xl font-black text-white">{stats.usuarios}</div>
+          </div>
+          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-6">
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">Ingresos</div>
+            <div className="mt-2 text-3xl font-black text-white">${stats.ingresos}</div>
+          </div>
+          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-6">
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">En proceso</div>
+            <div className="mt-2 text-3xl font-black text-white">{stats.vehiculosEnProceso}</div>
+          </div>
+          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-6">
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">Empleados</div>
+            <div className="mt-2 text-3xl font-black text-white">{stats.trabajadoresActivos}</div>
           </div>
         </div>
 

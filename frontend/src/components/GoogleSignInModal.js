@@ -1,7 +1,16 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 
 const GoogleSignInModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const googleButtonRef = useRef(null);
+
+  const handleGoogleCallback = useCallback(
+    (response) => {
+      if (!response?.credential) return;
+      onLoginSuccess('user');
+      onClose();
+    },
+    [onClose, onLoginSuccess],
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -32,20 +41,7 @@ const GoogleSignInModal = ({ isOpen, onClose, onLoginSuccess }) => {
         document.body.removeChild(existingScript);
       }
     };
-  }, [isOpen]);
-
-  const handleGoogleCallback = (response) => {
-    console.log('Google response:', response);
-    const userData = {
-      id: 'google_user_' + Date.now(),
-      name: 'Usuario Google',
-      email: 'google@example.com',
-      role: 'user',
-      token: response.credential,
-    };
-    onLoginSuccess('user');
-    onClose();
-  };
+  }, [handleGoogleCallback, isOpen]);
 
   if (!isOpen) return null;
 

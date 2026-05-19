@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import Login from "./components/Login/Login"; 
-import Register from "./components/Register/Register";
 import Servicios from "./pages/Servicios";
 import UsersList from "./pages/UsersList";
 import Vehiculos from "./pages/Vehiculos";
@@ -12,7 +11,6 @@ import Navbar from "./components/Navbar";
 import LandingPage from './pages/LandingPage';
 import DashboardAdmin from './pages/DashboardAdmin';
 import InactivityHandler from "./components/InactivityHandler";
-import MapView from "./components/MapView";
 import Toast from "./components/Toast";
 import UserDashboard from './pages/UserDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
