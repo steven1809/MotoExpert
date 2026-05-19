@@ -4,8 +4,11 @@ import {
   Controller,
   ExecutionContext,
   ForbiddenException,
+  Get,
   Injectable,
+  Param,
   Post,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -55,5 +58,14 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard, EmpleadoRoleGuard)
   validate(@Body() dto: ValidateTokenDto) {
     return this.paymentService.validateToken(dto.tokenCode);
+  }
+
+  @Get('appointment/:appointmentId')
+  @UseGuards(JwtAuthGuard, UsuarioRoleGuard)
+  getByAppointment(@Param('appointmentId') appointmentId: string, @Request() req) {
+    return this.paymentService.getTokenInfoForUser(
+      req.user.userId,
+      Number(appointmentId),
+    );
   }
 }

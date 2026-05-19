@@ -279,7 +279,7 @@ export class CitasService {
             id: empleado.id,
           },
         },
-        relations: ['usuario', 'vehiculo', 'servicio', 'empleado'],
+        relations: ['usuario', 'vehiculo', 'servicio', 'empleado', 'payment'],
       });
     }
 
@@ -291,20 +291,20 @@ export class CitasService {
             id: userId,
           },
         },
-        relations: ['usuario', 'vehiculo', 'servicio', 'empleado'],
+        relations: ['usuario', 'vehiculo', 'servicio', 'empleado', 'payment'],
       });
     }
 
     // ADMIN
     return this.repo.find({
-      relations: ['usuario', 'vehiculo', 'servicio', 'empleado'],
+      relations: ['usuario', 'vehiculo', 'servicio', 'empleado', 'payment'],
     });
   }
 
   findOne(id: number) {
     return this.repo.findOne({
       where: { id },
-      relations: ['usuario', 'vehiculo', 'servicio', 'empleado'],
+      relations: ['usuario', 'vehiculo', 'servicio', 'empleado', 'payment'],
     });
   }
 
