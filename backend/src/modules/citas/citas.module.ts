@@ -8,19 +8,41 @@ import { Vehiculo } from '../vehiculos/entities/vehiculo.entity';
 import { Servicio } from '../servicios/entities/servicio.entity';
 import { Empleado } from '../empleados/entities/empleado.entity';
 import { NotificacionesModule } from '../notificaciones/notificaciones.module';
+import { JwtModule } from '@nestjs/jwt';
+import { AppointmentTimeoutsGateway } from './appointment-timeouts.gateway';
+import { AppointmentTimeoutsService } from './appointment-timeouts.service';
+import { AppointmentChat } from './entities/appointment-chat.entity';
+import { AppointmentChatsService } from './appointment-chats.service';
+import { AppointmentChatsGateway } from './appointment-chats.gateway';
+import { AppointmentResolution } from './entities/appointment-resolution.entity';
+import { AppointmentResolutionsService } from './appointment-resolutions.service';
+import { Payment } from '../pagos/entities/payment.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Cita,
+      AppointmentChat,
+      AppointmentResolution,
       Usuario,
       Vehiculo,
       Servicio,
       Empleado,
+      Payment,
     ]),
     NotificacionesModule,
+    JwtModule.register({
+      secret: 'clave_secreta',
+    }),
   ],
   controllers: [CitasController],
-  providers: [CitasService],
+  providers: [
+    CitasService,
+    AppointmentTimeoutsGateway,
+    AppointmentTimeoutsService,
+    AppointmentChatsService,
+    AppointmentChatsGateway,
+    AppointmentResolutionsService,
+  ],
 })
 export class CitasModule {}

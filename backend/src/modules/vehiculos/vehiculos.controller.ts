@@ -1,4 +1,15 @@
-import { Controller, Post, Body, Get, Param, Delete, UseGuards, Request,Query, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  Query,
+  Patch,
+} from '@nestjs/common';
 import { VehiculosService } from './vehiculos.service';
 import { CreateVehiculoDto } from './dto/create-vehiculo.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -19,7 +30,11 @@ export class VehiculosController {
     const userRole = (req.user.rol || req.user.role)?.toLowerCase();
 
     // Si es admin o empleado puede ver todos los vehículos o filtrar por usuario
-    if (userRole === 'admin' || userRole === 'empleado' || userRole === 'trabajador') {
+    if (
+      userRole === 'admin' ||
+      userRole === 'empleado' ||
+      userRole === 'trabajador'
+    ) {
       if (userId) {
         return this.service.findAll(+userId);
       }
@@ -34,14 +49,24 @@ export class VehiculosController {
     const userRole = (req.user.rol || req.user.role)?.toLowerCase();
     const vehiculo = await this.service.findOne(+id);
     // Verificamos que el vehículo pertenezca al usuario o sea admin/empleado
-    if (vehiculo && (userRole === 'admin' || userRole === 'empleado' || userRole === 'trabajador' || vehiculo.usuario.id === req.user.userId)) {
+    if (
+      vehiculo &&
+      (userRole === 'admin' ||
+        userRole === 'empleado' ||
+        userRole === 'trabajador' ||
+        vehiculo.usuario.id === req.user.userId)
+    ) {
       return vehiculo;
     }
     return null;
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateData: any, @Request() req) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateData: any,
+    @Request() req,
+  ) {
     const vehiculo = await this.service.findOne(+id);
     if (vehiculo && vehiculo.usuario.id === req.user.userId) {
       return this.service.update(+id, updateData);

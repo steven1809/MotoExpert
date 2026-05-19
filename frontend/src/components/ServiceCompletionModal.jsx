@@ -1,14 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
+  const tokenInputRef = useRef(null);
+  const [tokenCode, setTokenCode] = useState('');
+  const [tokenError, setTokenError] = useState(null);
   const [workPerformed, setWorkPerformed] = useState('');
   const [partsUsed, setPartsUsed] = useState('');
   const [observations, setObservations] = useState('');
   const [condition, setCondition] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (tokenInputRef.current) tokenInputRef.current.focus();
+  }, []);
 
   const validate = () => {
     const newErrors = {};
@@ -23,12 +30,57 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
-
     setIsSubmitting(true);
     const token = localStorage.getItem('token');
     
     try {
+      setTokenError(null);
+      const sanitized = String(tokenCode || '').replace(/\D/g, '').slice(0, 6);
+      if (sanitized.length !== 6) {
+        setTokenError('Ingresa un código válido de 6 dígitos');
+        return;
+      }
+
+      const validateRes = await fetch(`${API_BASE_URL}/payments/validate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tokenCode: sanitized }),
+      });
+
+      if (!validateRes.ok) {
+        if (validateRes.status === 404) {
+          setTokenError('Código no encontrado');
+          return;
+        }
+        if (validateRes.status === 409) {
+          setTokenError('Código ya fue usado');
+          return;
+        }
+        if (validateRes.status === 410) {
+          setTokenError('Código expirado');
+          return;
+        }
+
+        const errData = await validateRes.json().catch(() => null);
+        const msg =
+          typeof errData?.message === 'string'
+            ? errData.message
+            : 'No se pudo validar el código';
+        setTokenError(msg);
+        return;
+      }
+
+      const validated = await validateRes.json().catch(() => null);
+      if (!validated || validated.valid !== true) {
+        setTokenError('No se pudo validar el código');
+        return;
+      }
+
+      if (!validate()) return;
+
       const report = {
         workPerformed,
         partsUsed: partsUsed.trim() || undefined,
@@ -83,7 +135,7 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
           </div>
           <div>
             <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">
-              Complete Service Report
+              Validar entrega del vehículo
             </h2>
             <p className="text-[#94A3B8] text-sm font-medium mt-1">
               {cita.servicio?.nombre} · {cita.vehiculo?.placa}
@@ -92,6 +144,32 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
         </div>
 
         <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
+              Código del cliente (6 dígitos)
+            </label>
+            <input
+              ref={tokenInputRef}
+              autoFocus
+              value={tokenCode}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                setTokenCode(v);
+              }}
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="000000"
+              className={`w-full px-4 py-4 bg-[#1a1d27] border rounded-2xl text-[#F8FAFC] placeholder-[#94A3B8] focus:outline-none transition-all font-mono text-2xl tracking-[0.25em] text-center ${
+                tokenError ? 'border-red-500' : 'border-[#2a2d3a] focus:border-[#1D9E75]/50'
+              }`}
+            />
+            {tokenError ? (
+              <p className="text-red-500 text-xs font-bold text-center">
+                {tokenError}
+              </p>
+            ) : null}
+          </div>
+
           {/* Work Performed */}
           <div className="space-y-1">
             <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
@@ -174,14 +252,14 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
             disabled={isSubmitting}
             className="w-full px-8 py-4 bg-[#1D9E75] hover:bg-[#168a62] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#1D9E75]/20 transition-all active:scale-95 disabled:opacity-50"
           >
-            {isSubmitting ? 'Processing...' : 'Finalize & notify customer'}
+            {isSubmitting ? 'Validando...' : 'Validar y finalizar'}
           </button>
           <button
             onClick={onClose}
             disabled={isSubmitting}
             className="w-full px-8 py-4 bg-[#2a2d3a] hover:bg-[#3a3d4a] text-[#94A3B8] font-black text-xs uppercase tracking-[0.2em] rounded-2xl border border-[#2a2d3a] transition-all active:scale-95 disabled:opacity-50"
           >
-            Cancel
+            Cancelar
           </button>
         </div>
       </div>

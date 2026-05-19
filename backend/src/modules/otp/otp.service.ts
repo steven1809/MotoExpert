@@ -10,10 +10,13 @@ export class OtpService {
     private otpRepository: Repository<Otp>,
   ) {}
 
-  async generateOtp(userId: number, purpose: string = 'password-reset'): Promise<string> {
+  async generateOtp(
+    userId: number,
+    purpose: string = 'password-reset',
+  ): Promise<string> {
     await this.otpRepository.update(
       { userId, purpose, used: false },
-      { used: true }
+      { used: true },
     );
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -32,7 +35,11 @@ export class OtpService {
     return code;
   }
 
-  async validateOtp(userId: number, code: string, purpose: string = 'password-reset'): Promise<boolean> {
+  async validateOtp(
+    userId: number,
+    code: string,
+    purpose: string = 'password-reset',
+  ): Promise<boolean> {
     const otp = await this.otpRepository.findOne({
       where: { userId, code, purpose, used: false },
     });

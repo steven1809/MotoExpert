@@ -187,13 +187,19 @@ const ResenasPage = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-[#020617] py-8 px-4">
       <div className="max-w-6xl mx-auto space-y-10">
-        <header className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#7b9cff]/10 border border-[#7b9cff]/20">
-            <span className="text-[#7b9cff] text-xs font-mono uppercase tracking-[0.2em]">Client Reviews</span>
+        <header className="bg-[#0d1117] border border-white/10 rounded-[18px] px-6 py-7">
+          <div className="flex flex-col items-center text-center gap-3">
+            <span className="inline-flex items-center px-4 py-1 rounded-full border border-[#8b7cf6]/50 text-[#8b7cf6] text-[10px] font-black uppercase tracking-[0.3em]">
+              Reseñas de Clientes
+            </span>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight uppercase leading-none">
+              <span className="text-white">OPINIONES DE </span>
+              <span className="text-[#3ecf8e] italic">CLIENTES</span>
+            </h1>
+            <p className="text-sm md:text-base text-white/70 italic">
+              La experiencia de nuestros usuarios habla por nosotros
+            </p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter">
-            Opiniones de Clientes
-          </h1>
         </header>
 
         {/* Summary Header */}

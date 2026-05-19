@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Rating } from './entities/rating.entity';
@@ -28,11 +32,17 @@ export class RatingsService {
   ) {
     const cita = await this.citaRepo.findOne({ where: { id: citaId } });
     if (!cita) throw new NotFoundException('Cita no encontrada');
-    if (cita.estado !== 'FINALIZADO') throw new BadRequestException('Solo puedes calificar servicios completados');
+    if (cita.estado !== 'FINALIZADO')
+      throw new BadRequestException(
+        'Solo puedes calificar servicios completados',
+      );
 
     // Check if already rated
-    const existingRating = await this.repo.findOne({ where: { cita: { id: citaId } } });
-    if (existingRating) throw new BadRequestException('Ya has calificado este servicio');
+    const existingRating = await this.repo.findOne({
+      where: { cita: { id: citaId } },
+    });
+    if (existingRating)
+      throw new BadRequestException('Ya has calificado este servicio');
 
     const empleado = cita.empleado;
 
@@ -56,7 +66,7 @@ export class RatingsService {
       empleado.usuario, // Assuming Empleado has a usuario relation
       'new_rating',
       'You received a new rating',
-      `A customer rated your service ${cita.servicio.nombre} ${specialistRating}/5 stars.`
+      `A customer rated your service ${cita.servicio.nombre} ${specialistRating}/5 stars.`,
     );
 
     return savedRating;
@@ -68,22 +78,25 @@ export class RatingsService {
 
   async findByEmpleado(empleadoId: number) {
     // Find empleado by its id (assuming Empleado has an id field)
-    const empleado = await this.empleadoRepo.findOne({ where: { id: empleadoId } });
+    const empleado = await this.empleadoRepo.findOne({
+      where: { id: empleadoId },
+    });
     if (!empleado) return [];
-    
-    return this.repo.find({ 
+
+    return this.repo.find({
       where: { empleado: { id: empleadoId } },
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
   }
 
   async getEmpleadoStats(empleadoId: number) {
     const ratings = await this.findByEmpleado(empleadoId);
     const total = ratings.length;
-    const averageSpecialistRating = total > 0 
-      ? ratings.reduce((sum, r) => sum + r.specialistRating, 0) / total 
-      : 0;
-    
+    const averageSpecialistRating =
+      total > 0
+        ? ratings.reduce((sum, r) => sum + r.specialistRating, 0) / total
+        : 0;
+
     return {
       totalReviews: total,
       averageRating: averageSpecialistRating.toFixed(1),

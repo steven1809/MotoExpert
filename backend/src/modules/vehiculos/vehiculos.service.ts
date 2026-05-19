@@ -20,7 +20,9 @@ export class VehiculosService {
     });
 
     if (!usuario) {
-      throw new NotFoundException(`Usuario con ID ${dto.usuarioId} no encontrado`);
+      throw new NotFoundException(
+        `Usuario con ID ${dto.usuarioId} no encontrado`,
+      );
     }
 
     const vehiculo = this.repo.create({

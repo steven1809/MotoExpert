@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -31,40 +35,40 @@ export class AuthService {
   }
 
   async login(usuario: Usuario) {
-  const payload = { 
-    email: usuario.email, 
-    sub: usuario.id, 
-    role: usuario.role
-  };
-  
-  return {
-    access_token: this.jwtService.sign(payload),
-    role: usuario.role, 
-    nombre: usuario.nombre,
-    userId: usuario.id,
-    picture: usuario.picture
-  };
-}
+    const payload = {
+      email: usuario.email,
+      sub: usuario.id,
+      role: usuario.role,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      role: usuario.role,
+      nombre: usuario.nombre,
+      userId: usuario.id,
+      picture: usuario.picture,
+    };
+  }
 
   async register(createUserDto: CreateUserDto) {
     const { password, email, ...userData } = createUserDto;
 
     try {
-      if (!password) throw new BadRequestException('La contraseña es requerida'); 
+      if (!password)
+        throw new BadRequestException('La contraseña es requerida');
       const hashedPassword = bcrypt.hashSync(password, 10);
 
       const user = this.userRepository.create({
         ...userData,
         email: email.toLowerCase().trim(),
         password: hashedPassword,
-        role: createUserDto.role || 'user'
+        role: createUserDto.role || 'user',
       });
 
       await this.userRepository.save(user);
 
       const { password: _pw, ...userWithoutPassword } = user;
       return userWithoutPassword;
-
     } catch (error) {
       if (error.code === '23505') {
         throw new BadRequestException('Ese correo ya está registrado');
@@ -75,8 +79,8 @@ export class AuthService {
 
   async findAll() {
     const users = await this.userRepository.find();
-    
-    return users.map(user => {
+
+    return users.map((user) => {
       const { password, ...rest } = user;
       return rest;
     });
@@ -89,9 +93,9 @@ export class AuthService {
   }
 
   async forgotPassword(email: string) {
-    if (!email) { 
-      throw new BadRequestException('El correo es requerido'); 
-    } 
+    if (!email) {
+      throw new BadRequestException('El correo es requerido');
+    }
     const normalizedEmail = email.toLowerCase().trim();
     const user = await this.userRepository.findOne({
       where: { email: normalizedEmail },
@@ -100,26 +104,41 @@ export class AuthService {
     if (user) {
       const code = await this.otpService.generateOtp(user.id, 'password-reset');
       try {
-        if (!user.email || !user.nombre) throw new BadRequestException('Usuario inválido'); 
-        await this.mailService.sendPasswordRecoveryEmail(user.email, user.nombre, code);
+        if (!user.email || !user.nombre)
+          throw new BadRequestException('Usuario inválido');
+        await this.mailService.sendPasswordRecoveryEmail(
+          user.email,
+          user.nombre,
+          code,
+        );
       } catch (mailError) {
         console.error('Error sending recovery email:', mailError);
       }
-      return { message: 'Si el correo existe, recibirás un código', userId: user.id };
+      return {
+        message: 'Si el correo existe, recibirás un código',
+        userId: user.id,
+      };
     }
 
-    return { message: 'Si el correo existe, recibirás un código', userId: null };
+    return {
+      message: 'Si el correo existe, recibirás un código',
+      userId: null,
+    };
   }
 
   async verifyRecoveryOtp(userId: number, code: string) {
-    const isValid = await this.otpService.validateOtp(userId, code, 'password-reset');
+    const isValid = await this.otpService.validateOtp(
+      userId,
+      code,
+      'password-reset',
+    );
     if (!isValid) {
       throw new UnauthorizedException('Código inválido o expirado');
     }
 
     const resetToken = this.jwtService.sign(
       { sub: userId, purpose: 'password-reset' },
-      { expiresIn: '15m' }
+      { expiresIn: '15m' },
     );
 
     return { resetToken };
@@ -132,7 +151,9 @@ export class AuthService {
         throw new UnauthorizedException('Token inválido');
       }
 
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
       if (!user) throw new BadRequestException('Usuario no encontrado');
 
       user.password = bcrypt.hashSync(newPassword, 10);
@@ -146,18 +167,27 @@ export class AuthService {
 
   async googleLogin(googleToken: string) {
     try {
-      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: {
-          Authorization: `Bearer ${googleToken}`,
+      const response = await fetch(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: {
+            Authorization: `Bearer ${googleToken}`,
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new UnauthorizedException('Token de Google inválido');
       }
 
       const googleUser = await response.json();
-      const { sub: googleId, email, given_name: nombre, family_name: apellidos, picture } = googleUser;
+      const {
+        sub: googleId,
+        email,
+        given_name: nombre,
+        family_name: apellidos,
+        picture,
+      } = googleUser;
 
       let usuario = await this.userRepository.findOne({
         where: [{ googleId }, { email }],
@@ -183,10 +213,10 @@ export class AuthService {
         await this.userRepository.save(usuario);
       }
 
-      const payload = { 
-        email: usuario.email, 
-        sub: usuario.id, 
-        role: usuario.role
+      const payload = {
+        email: usuario.email,
+        sub: usuario.id,
+        role: usuario.role,
       };
 
       const access_token = this.jwtService.sign(payload);

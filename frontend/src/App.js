@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 import Login from "./components/Login/Login"; 
 import Register from "./components/Register/Register";
 import Servicios from "./pages/Servicios";
@@ -21,17 +22,24 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import NotificationBell from './components/NotificationBell';
 import ResenasPage from './pages/ResenasPage';
+import PaymentStep from './components/PaymentStep';
+import PaymentConfirmation from './components/PaymentConfirmation';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const [userRole, setUserRole] = useState("admin");
   const [view, setView] = useState("landing");
+  const [routePath, setRoutePath] = useState(window.location.pathname || '/');
   const [toasts, setToasts] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [overdueAlerts, setOverdueAlerts] = useState([]);
+  const processedTimeoutsRef = useRef(new Set());
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -44,6 +52,31 @@ function App() {
       if (view === "panel_empleado" || view === "users") setView("dashboard");
     }
   }, [view, userRole, isLoggedIn]);
+
+  useEffect(() => {
+    const onPop = () => setRoutePath(window.location.pathname || '/');
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    if (routePath.startsWith('/appointments/') && view !== 'citas') {
+      try {
+        window.history.pushState({}, '', '/');
+        setRoutePath('/');
+      } catch {}
+    }
+  }, [view, isLoggedIn, routePath]);
+
+  const navigate = (path, state) => {
+    try {
+      window.history.pushState(state || {}, '', path);
+      setRoutePath(path);
+      return;
+    } catch {}
+    window.location.assign(path);
+  };
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -68,6 +101,7 @@ function App() {
     setIsLoggedIn(false);
     setUserRole(null);
     setView("landing");
+    setRoutePath('/');
     setToasts([]);
     setUnreadNotifications(0);
     setNotifications([]);
@@ -98,6 +132,168 @@ function App() {
   };
 
   const isStandardUser = userRole === "user" || userRole === "cliente" || userRole === "usuario";
+
+  const addOverdueAlert = (payload) => {
+    if (!payload?.appointmentId) return;
+    setOverdueAlerts((prev) => {
+      if (prev.some((a) => a.appointmentId === payload.appointmentId)) return prev;
+      return [payload, ...prev];
+    });
+
+    try {
+      window.dispatchEvent(
+        new CustomEvent('motoexpert:appointment_overdue', { detail: payload }),
+      );
+    } catch {}
+  };
+
+  const dismissOverdueAlert = (appointmentId) => {
+    setOverdueAlerts((prev) => prev.filter((a) => a.appointmentId !== appointmentId));
+  };
+
+  const handleOpenChat = (payload) => {
+    showToast('Chat no disponible todavía.', 'info');
+  };
+
+  const handleViewAppointment = (appointmentId) => {
+    if (!appointmentId) return;
+    localStorage.setItem('focusCitaId', String(appointmentId));
+    setView('citas');
+  };
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const socket = io(API_BASE_URL, {
+      auth: { token },
+      transports: ['websocket'],
+    });
+
+    const onOverdue = (payload) => {
+      if (!payload?.appointmentId) return;
+      if (processedTimeoutsRef.current.has(payload.appointmentId)) return;
+      processedTimeoutsRef.current.add(payload.appointmentId);
+      addOverdueAlert(payload);
+    };
+
+    socket.on('appointment_overdue', onOverdue);
+    socket.on('appointment_timeout', onOverdue);
+
+    const onResolved = (payload) => {
+      const appointmentId = payload?.appointmentId;
+      if (!appointmentId) return;
+      dismissOverdueAlert(appointmentId);
+      try {
+        window.dispatchEvent(
+          new CustomEvent('motoexpert:appointment_resolved', { detail: { appointmentId } }),
+        );
+      } catch {}
+    };
+    socket.on('appointment_resolved', onResolved);
+
+    return () => {
+      socket.off('appointment_resolved', onResolved);
+      socket.disconnect();
+    };
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const activeStates = new Set(['pendiente', 'en_proceso']);
+    let stopped = false;
+
+    const computeExpectedEndTime = (cita) => {
+      if (cita?.expected_end_time) {
+        const d = new Date(cita.expected_end_time);
+        return Number.isFinite(d.getTime()) ? d : null;
+      }
+
+      const fecha = cita?.fecha;
+      const hora = cita?.hora_inicio;
+      if (!fecha || !hora) return null;
+
+      const start = new Date(`${fecha}T${hora}`);
+      if (!Number.isFinite(start.getTime())) return null;
+
+      const minutesRaw =
+        cita?.servicio?.duration_minutes ??
+        cita?.servicio?.duracion ??
+        cita?.service_duration_minutes ??
+        60;
+      const minutes = Number(minutesRaw);
+      if (!Number.isFinite(minutes) || minutes <= 0) return null;
+
+      return new Date(start.getTime() + minutes * 60_000);
+    };
+
+    const normalizeEstado = (estado) =>
+      (estado || '')
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '_');
+
+    const run = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/citas`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!Array.isArray(data)) return;
+
+        const now = new Date();
+        for (const cita of data) {
+          const estado = normalizeEstado(cita?.estado);
+          if (!activeStates.has(estado)) continue;
+
+          const expectedEnd = computeExpectedEndTime(cita);
+          if (!expectedEnd) continue;
+          if (now <= expectedEnd) continue;
+
+          if (processedTimeoutsRef.current.has(cita.id)) continue;
+          processedTimeoutsRef.current.add(cita.id);
+
+          await fetch(`${API_BASE_URL}/citas/${cita.id}/estado`, {
+            method: 'PATCH',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ estado: 'tiempo_excedido' }),
+          });
+
+          const minutesOverdue = Math.max(
+            0,
+            Math.floor((now.getTime() - expectedEnd.getTime()) / 60_000),
+          );
+          addOverdueAlert({
+            appointmentId: cita.id,
+            clientName: cita?.usuario?.nombre || localStorage.getItem('userName') || '—',
+            vehiclePlate: cita?.vehiculo?.placa || '—',
+            serviceName: cita?.servicio?.nombre || 'Servicio',
+            expectedEndTime: expectedEnd.toISOString(),
+            minutesOverdue,
+          });
+        }
+      } catch {}
+    };
+
+    run();
+    const interval = setInterval(() => {
+      if (!stopped) run();
+    }, 5 * 60 * 1000);
+
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [isLoggedIn]);
 
   return (
     <AuthProvider>
@@ -163,16 +359,64 @@ function App() {
           ))}
 
           <main className={`pt-20 ${isStandardUser ? "md:pt-24" : "md:pt-8 md:pl-72"} p-6 md:p-8`}>
-            {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} unreadNotifications={unreadNotifications} />}
-            {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard showToast={showToast} />}
-            {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
-            {view === "servicios" && <Servicios setView={setView} />}
-            {view === "users" && <UsersList />}
-            {view === "vehiculos" && <Vehiculos setView={setView} showToast={showToast} />}
-            {view === "citas" && <Citas setView={setView} showToast={showToast} />}
-            {view === "resenas" && <ResenasPage />}
-            {view === "cuenta" && <MiCuenta />}
-            {view === "panel_empleado" && <PanelEmpleado showToast={showToast} />}
+            {routePath === '/appointments/payment' && (
+              isStandardUser ? (
+                <PaymentStep onNavigate={navigate} />
+              ) : (
+                <div className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 text-center space-y-3">
+                  <div className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wide">
+                    No autorizado
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
+                    Esta ruta es solo para usuarios.
+                  </div>
+                </div>
+              )
+            )}
+
+            {routePath === '/appointments/confirmation' && (
+              isStandardUser ? (
+                <PaymentConfirmation
+                  onExit={() => {
+                    navigate('/', {});
+                    setView('citas');
+                  }}
+                />
+              ) : (
+                <div className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 text-center space-y-3">
+                  <div className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wide">
+                    No autorizado
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
+                    Esta ruta es solo para usuarios.
+                  </div>
+                </div>
+              )
+            )}
+
+            {routePath.startsWith('/appointments/') ? null : (
+              <>
+                {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} unreadNotifications={unreadNotifications} />}
+                {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard showToast={showToast} />}
+                {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
+                {view === "servicios" && <Servicios setView={setView} />}
+                {view === "users" && <UsersList />}
+                {view === "vehiculos" && <Vehiculos setView={setView} showToast={showToast} />}
+                {view === "citas" && (
+                  <Citas
+                    setView={setView}
+                    showToast={showToast}
+                    overdueAlerts={overdueAlerts}
+                    onDismissOverdueAlert={dismissOverdueAlert}
+                    onOpenOverdueChat={handleOpenChat}
+                    onViewOverdueAppointment={handleViewAppointment}
+                  />
+                )}
+                {view === "resenas" && <ResenasPage />}
+                {view === "cuenta" && <MiCuenta />}
+                {view === "panel_empleado" && <PanelEmpleado showToast={showToast} />}
+              </>
+            )}
 
             {userRole === 'admin' && view !== 'users' && (
               <div className="fixed bottom-8 right-8">

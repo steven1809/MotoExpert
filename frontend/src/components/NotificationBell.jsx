@@ -25,6 +25,10 @@ const NotificationBell = () => {
   };
 
   const markAsRead = async (id) => {
+    if (typeof id === 'string') {
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, leida: true } : n));
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/notificaciones/${id}/marcar-leida`, {
@@ -81,8 +85,38 @@ const NotificationBell = () => {
       }
     };
 
+    const handleOverdue = (e) => {
+      const payload = e?.detail;
+      if (!payload?.appointmentId) return;
+      const appointmentId = payload.appointmentId;
+      const serviceName = (payload.serviceName || 'Servicio').toUpperCase();
+      const plate = (payload.vehiclePlate || '—').toUpperCase();
+      const minutes = Number(payload.minutesOverdue || 0);
+      const id = `appointment_overdue:${appointmentId}`;
+
+      setNotifications(prev => {
+        if (prev.some(n => n.id === id)) return prev;
+        const createdAt = new Date().toISOString();
+        return [
+          {
+            id,
+            tipo: 'appointment_overdue',
+            titulo: 'Appointment Overdue',
+            mensaje: `${serviceName} — ${plate} is ${minutes} minutes overdue`,
+            createdAt,
+            leida: false,
+          },
+          ...prev,
+        ];
+      });
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('motoexpert:appointment_overdue', handleOverdue);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('motoexpert:appointment_overdue', handleOverdue);
+    };
   }, []);
 
   const unreadCount = notifications.filter(n => !n.leida).length;
@@ -113,6 +147,15 @@ const NotificationBell = () => {
           icon: (
             <svg className="w-5 h-5 text-[#EF9F27]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2l1.5 6.5L20 10l-6.5 1.5L12 18l-1.5-6.5L4 10l6.5-1.5L12 2z" />
+            </svg>
+          ),
+          bg: 'bg-[#EF9F27]/10'
+        };
+      case 'appointment_overdue':
+        return {
+          icon: (
+            <svg className="w-5 h-5 text-[#EF9F27]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           ),
           bg: 'bg-[#EF9F27]/10'

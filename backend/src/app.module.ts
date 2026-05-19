@@ -14,6 +14,7 @@ import { OtpModule } from './modules/otp/otp.module';
 import { MailModule } from './modules/mail/mail.module';
 import { NotificacionesModule } from './modules/notificaciones/notificaciones.module';
 import { RatingsModule } from './modules/ratings/ratings.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -22,10 +23,11 @@ import { RatingsModule } from './modules/ratings/ratings.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     // Esto conecta Nest con MotoExpert en pgAdmin
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      inject: [ConfigService], 
+      inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         host: configService.get<string>('DB_HOST'),
@@ -49,7 +51,7 @@ import { RatingsModule } from './modules/ratings/ratings.module';
     NotificacionesModule,
     RatingsModule,
   ],
-  controllers: [AppController], 
+  controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}

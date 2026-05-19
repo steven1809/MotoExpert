@@ -179,22 +179,32 @@ export default function Servicios({ setView }) {
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
-          <div className="text-center md:text-left">
-            <h2 className="text-4xl font-bold mb-4 text-slate-900 dark:text-white italic tracking-tighter uppercase">Servicios <span className="text-blue-500">Especializados</span></h2>
-            <p className="text-slate-500 dark:text-slate-400 max-w-xl font-medium">
-              Soluciones profesionales diseñadas para mantener tus vehículos en óptimas condiciones.
-            </p>
+        <div className="max-w-6xl mx-auto mb-10">
+          <div className="bg-[#0d1117] border border-white/10 rounded-[18px] px-6 py-7">
+            <div className="flex flex-col items-center text-center gap-3">
+              <span className="inline-flex items-center px-4 py-1 rounded-full border border-[#8b7cf6]/50 text-[#8b7cf6] text-[10px] font-black uppercase tracking-[0.3em]">
+                Servicios Premium
+              </span>
+              <h1 className="text-4xl md:text-5xl font-black tracking-tight uppercase leading-none">
+                <span className="text-white">SERVICIOS </span>
+                <span className="text-[#8b7cf6] italic">ESPECIALIZADOS</span>
+              </h1>
+              <p className="text-sm md:text-base text-white/70 italic max-w-3xl">
+                Soluciones profesionales diseñadas para mantener tus vehículos en óptimas condiciones
+              </p>
+
+              {userRole === "admin" && (
+                <div className="pt-3">
+                  <button 
+                    onClick={() => handleOpenModal()}
+                    className="bg-blue-600 hover:bg-blue-700 text-slate-900 dark:text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 transform hover:scale-105 transition-all flex items-center space-x-2"
+                  >
+                    <span>+ Añadir Nuevo Servicio</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          
-          {userRole === "admin" && (
-            <button 
-              onClick={() => handleOpenModal()}
-              className="bg-blue-600 hover:bg-blue-700 text-slate-900 dark:text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 transform hover:scale-105 transition-all flex items-center space-x-2"
-            >
-              <span>+ Añadir Nuevo Servicio</span>
-            </button>
-          )}
         </div>
 
         {/* Buscador de Servicios */}

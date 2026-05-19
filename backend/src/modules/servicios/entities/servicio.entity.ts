@@ -15,7 +15,10 @@ export class Servicio {
   precio: number;
 
   @Column({ nullable: true })
-  duracion: number; 
+  duracion: number;
+
+  @Column({ type: 'int', nullable: true })
+  duration_minutes: number;
 
   @Column({ type: 'text', nullable: true })
   incluye: string;
