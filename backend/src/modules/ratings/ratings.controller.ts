@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Get, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { RatingsService } from './ratings.service';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -9,20 +17,21 @@ export class RatingsController {
 
   @Post()
   create(
-    @Body() body: { 
-      citaId: number; 
-      specialistRating: number; 
-      serviceRating: number; 
-      comment?: string; 
+    @Body()
+    body: {
+      citaId: number;
+      specialistRating: number;
+      serviceRating: number;
+      comment?: string;
     },
-    @Request() req
+    @Request() req,
   ) {
     return this.service.create(
-      req.user, 
-      body.citaId, 
-      body.specialistRating, 
-      body.serviceRating, 
-      body.comment
+      req.user,
+      body.citaId,
+      body.specialistRating,
+      body.serviceRating,
+      body.comment,
     );
   }
 

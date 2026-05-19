@@ -18,14 +18,14 @@ export class UsuariosService {
   // 🔹 Buscar usuario por email (para login)
   // src/usuarios/usuarios.service.ts
 
-async findByEmail(email: string): Promise<Usuario | null> {
-  const usuario = await this.usuariosRepository.findOne({ 
-    where: { email: email.toLowerCase().trim() } 
-  });
-  
-  console.log("Usuario encontrado en DB:", usuario); 
-  return usuario;
-}
+  async findByEmail(email: string): Promise<Usuario | null> {
+    const usuario = await this.usuariosRepository.findOne({
+      where: { email: email.toLowerCase().trim() },
+    });
+
+    console.log('Usuario encontrado en DB:', usuario);
+    return usuario;
+  }
 
   // 🔹 Crear un nuevo usuario
   async create(usuarioData: Partial<Usuario>): Promise<Usuario> {

@@ -17,7 +17,10 @@ export class EmpleadosService {
   }
 
   findOne(id: number) {
-    return this.repo.findOne({ where: { id }, relations: ['usuario', 'citas'] });
+    return this.repo.findOne({
+      where: { id },
+      relations: ['usuario', 'citas'],
+    });
   }
 
   create(data: CreateEmpleadoDto) {

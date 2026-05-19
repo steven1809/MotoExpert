@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { io } from 'socket.io-client';
 import { useVehicleGuard } from '../hooks/useVehicleGuard';
 import NoVehicleWarning from '../components/NoVehicleWarning';
 import DuplicateBookingWarning from '../components/DuplicateBookingWarning';
@@ -6,7 +7,261 @@ import AppointmentsSearchAndFilter from '../components/AppointmentsSearchAndFilt
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-const Citas = ({ setView }) => {
+const AppointmentChatModal = ({ isOpen, onClose, alert }) => {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [text, setText] = useState('');
+  const [showResolve, setShowResolve] = useState(false);
+  const listRef = useRef(null);
+  const socketRef = useRef(null);
+
+  const appointmentId = alert?.appointmentId;
+  const headerService = (alert?.serviceName || 'Servicio').toUpperCase();
+  const headerPlate = (alert?.vehiclePlate || '—').toUpperCase();
+  const headerMinutes = Number(alert?.minutesOverdue || 0);
+
+  const role = (localStorage.getItem('role') || '').toLowerCase();
+  const senderBadge = useMemo(() => {
+    if (role === 'admin' || role === 'empleado' || role === 'trabajador') return 'STAFF';
+    return 'CLIENT';
+  }, [role]);
+  const isStaff = senderBadge === 'STAFF';
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const token = localStorage.getItem('token');
+    if (!token || !appointmentId) return;
+
+    let mounted = true;
+    setLoading(true);
+    fetch(`${API_BASE_URL}/citas/${appointmentId}/chat`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        if (!mounted) return;
+        setMessages(Array.isArray(data) ? data : []);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [isOpen, appointmentId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const token = localStorage.getItem('token');
+    if (!token || !appointmentId) return;
+
+    const socket = io(API_BASE_URL, {
+      auth: { token },
+      transports: ['websocket'],
+    });
+    socketRef.current = socket;
+
+    socket.emit('join_chat', { appointmentId });
+
+    const handleNewMessage = (payload) => {
+      const pid = payload?.appointmentId ?? payload?.appointment_id ?? payload?.appointmentId;
+      if (Number(pid) !== Number(appointmentId)) return;
+      setMessages((prev) => {
+        const id = payload?.id;
+        if (id && prev.some((m) => m.id === id)) return prev;
+        const msg = {
+          id: payload?.id || `rt:${Date.now()}`,
+          appointment_id: appointmentId,
+          sender_id: payload?.senderId ?? payload?.sender_id,
+          sender_role: payload?.senderRole ?? payload?.sender_role,
+          message: payload?.message,
+          created_at: payload?.createdAt ?? payload?.created_at ?? new Date().toISOString(),
+        };
+        return [...prev, msg];
+      });
+    };
+
+    socket.on('new_message', handleNewMessage);
+
+    const handleResolved = (payload) => {
+      if (Number(payload?.appointmentId) !== Number(appointmentId)) return;
+      if (onClose) onClose();
+    };
+    socket.on('appointment_resolved', handleResolved);
+
+    return () => {
+      socket.off('new_message', handleNewMessage);
+      socket.off('appointment_resolved', handleResolved);
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [isOpen, appointmentId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onGlobalResolved = (e) => {
+      const appointmentIdFromEvent = e?.detail?.appointmentId;
+      if (Number(appointmentIdFromEvent) !== Number(appointmentId)) return;
+      if (onClose) onClose();
+    };
+    window.addEventListener('motoexpert:appointment_resolved', onGlobalResolved);
+    return () => window.removeEventListener('motoexpert:appointment_resolved', onGlobalResolved);
+  }, [isOpen, appointmentId, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onClose && onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!listRef.current) return;
+    listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [messages, isOpen]);
+
+  const send = () => {
+    const socket = socketRef.current;
+    const message = text.trim();
+    if (!socket || !message || !appointmentId) return;
+    socket.emit('send_message', { appointmentId, message });
+    setText('');
+  };
+
+  const resolve = (resolutionType) => {
+    const socket = socketRef.current;
+    if (!socket || !appointmentId) return;
+    socket.emit('resolve_appointment', { appointmentId, resolutionType });
+    setShowResolve(false);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && onClose) onClose();
+      }}
+    >
+      <div className="w-full max-w-[560px] bg-[#0f1117] border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="p-5 border-b border-white/10 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="text-sm font-black text-white">
+              {headerService} — {headerPlate}
+            </div>
+            <div className="text-xs text-[#EF9F27] font-bold mt-1">
+              {headerMinutes} minutes overdue
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {isStaff && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowResolve((v) => !v)}
+                  className="h-10 px-3 rounded-xl bg-[#EF9F27]/10 hover:bg-[#EF9F27]/15 border border-[#EF9F27]/25 text-[#EF9F27] text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                  Mark as Resolved
+                </button>
+                {showResolve && (
+                  <div className="absolute right-0 mt-2 w-44 bg-[#0b1220] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-10">
+                    <button
+                      type="button"
+                      onClick={() => resolve('Completado')}
+                      className="w-full px-4 py-3 text-left text-sm text-white hover:bg-white/5 transition-colors"
+                    >
+                      Completado
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => resolve('Reprogramado')}
+                      className="w-full px-4 py-3 text-left text-sm text-white hover:bg-white/5 transition-colors"
+                    >
+                      Reprogramado
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-10 h-10 rounded-xl border border-white/10 text-white/70 hover:text-white hover:bg-white/5 flex items-center justify-center transition-all"
+              aria-label="Close"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div ref={listRef} className="max-h-[55vh] overflow-y-auto p-5 space-y-3">
+          {loading ? (
+            <div className="text-sm text-white/60">Loading chat…</div>
+          ) : messages.length === 0 ? (
+            <div className="text-sm text-white/60">No messages yet.</div>
+          ) : (
+            messages.map((m) => {
+              const badge = (m.sender_role || '').toUpperCase() === 'STAFF' ? 'STAFF' : 'CLIENT';
+              const badgeClass =
+                badge === 'STAFF'
+                  ? 'bg-[#2563EB]/15 text-[#7b9cff] border-[#2563EB]/25'
+                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+              const ts = m.created_at ? new Date(m.created_at).toLocaleString() : '';
+              return (
+                <div key={m.id} className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${badgeClass}`}>
+                      {badge}
+                    </span>
+                    <span className="text-[11px] text-white/50">{ts}</span>
+                  </div>
+                  <div className="text-sm text-white mt-3 whitespace-pre-wrap break-words">
+                    {m.message}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="p-5 border-t border-white/10 bg-black/20">
+          <div className="flex items-center gap-3">
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') send();
+              }}
+              placeholder={`Message as ${senderBadge}...`}
+              className="flex-1 h-11 px-4 bg-[#0b1220] border border-white/10 rounded-xl text-white placeholder-white/40 outline-none focus:border-[#2563EB]/50"
+            />
+            <button
+              type="button"
+              onClick={send}
+              className="h-11 px-5 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-[#2563EB]/20 transition-all active:scale-95"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Citas = ({
+  setView,
+  overdueAlerts = [],
+  onDismissOverdueAlert,
+  onOpenOverdueChat,
+  onViewOverdueAppointment,
+}) => {
   const { hasVehicles, loading: loadingVehicles } = useVehicleGuard();
   const [citas, setCitas] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
@@ -32,6 +287,8 @@ const Citas = ({ setView }) => {
   const [alertToCancel, setAlertToCancel] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [processedCitas, setProcessedCitas] = useState(new Set());
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatAlert, setChatAlert] = useState(null);
   
   const [formData, setFormData] = useState({
     fecha: '',
@@ -52,6 +309,17 @@ const Citas = ({ setView }) => {
     
     return () => clearInterval(timeInterval);
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const focusCitaId = localStorage.getItem('focusCitaId');
+    if (!focusCitaId) return;
+    const el = document.getElementById(`cita-${focusCitaId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      localStorage.removeItem('focusCitaId');
+    }
+  }, [loading, citas]);
 
   const checkPendingAction = () => {
     const pendingAction = localStorage.getItem('pendingAction');
@@ -307,10 +575,41 @@ const Citas = ({ setView }) => {
       });
 
       if (response.ok) {
+        const created = await response.json().catch(() => null);
+        const appointmentId = created?.id;
+        const selectedVehicle = vehiculos.find(
+          (v) => v.id?.toString() === formData.vehiculoId?.toString(),
+        );
+        const selectedService = servicios.find(
+          (s) => s.id?.toString() === formData.servicioId?.toString(),
+        );
+
         setShowForm(false);
         setFormData({ fecha: '', hora_inicio: '', vehiculoId: '', servicioId: '', empleadoId: '' });
         fetchInitialData();
-        alert('Cita agendada con éxito');
+
+        if (appointmentId) {
+          try {
+            window.history.pushState(
+              {
+                appointmentId,
+                summary: {
+                  fecha: payload.fecha,
+                  hora_inicio: payload.hora_inicio,
+                  servicio: selectedService?.nombre || 'Servicio',
+                  vehiculo: selectedVehicle
+                    ? `${selectedVehicle.placa || ''}${selectedVehicle.modelo ? ` - ${selectedVehicle.modelo}` : ''}`.trim()
+                    : 'Vehículo',
+                },
+              },
+              '',
+              '/appointments/payment',
+            );
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          } catch {
+            window.location.assign('/appointments/payment');
+          }
+        }
       } else {
         const errorData = await response.json();
         alert(errorData.message || 'Error al agendar cita');
@@ -709,6 +1008,82 @@ const Citas = ({ setView }) => {
       </header>
 
       <div className="container mx-auto px-6 space-y-12">
+        <AppointmentChatModal
+          isOpen={chatOpen}
+          alert={chatAlert}
+          onClose={() => {
+            setChatOpen(false);
+            setChatAlert(null);
+          }}
+        />
+
+        {overdueAlerts.length > 0 && (
+          <div className="space-y-3">
+            {overdueAlerts.map((a) => {
+              const serviceName = (a.serviceName || 'Servicio').toUpperCase();
+              const plate = (a.vehiclePlate || '—').toUpperCase();
+              const minutes = Number(a.minutesOverdue || 0);
+              return (
+                <div
+                  key={a.appointmentId}
+                  className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 rounded-2xl bg-[#EF9F27]/10 border border-[#EF9F27]/25"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#EF9F27]/10 border border-[#EF9F27]/25 flex items-center justify-center text-[#EF9F27] flex-shrink-0">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-black text-[#EF9F27]">
+                        {serviceName} — {plate} is {minutes} minutes overdue
+                      </div>
+                      <div className="text-xs text-white/60 mt-1">
+                        Expected end: {a.expectedEndTime ? new Date(a.expectedEndTime).toLocaleString() : '—'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 md:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChatAlert(a);
+                        setChatOpen(true);
+                        if (onOpenOverdueChat) onOpenOverdueChat(a);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-black uppercase tracking-widest transition-all active:scale-95"
+                    >
+                      Open Chat
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onViewOverdueAppointment) onViewOverdueAppointment(a.appointmentId);
+                        const el = document.getElementById(`cita-${a.appointmentId}`);
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                      className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-[#2563EB]/20 transition-all active:scale-95"
+                    >
+                      View Appointment
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDismissOverdueAlert && onDismissOverdueAlert(a.appointmentId)}
+                      className="w-10 h-10 rounded-xl bg-transparent hover:bg-white/5 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all"
+                      aria-label="Dismiss"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div className="flex justify-between items-center">
           <button
             onClick={() => setShowForm(!showForm)}
@@ -995,7 +1370,7 @@ const Citas = ({ setView }) => {
                 const isUnderTwoMinutes = timeInfo.gracePeriodRemainingMs > 0 && timeInfo.gracePeriodRemainingMs < 2 * 60 * 1000;
                 
                 return (
-                <div key={cita.id} className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-8 rounded-[2.5rem] hover:border-[#2563EB]/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
+                <div id={`cita-${cita.id}`} key={cita.id} className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-8 rounded-[2.5rem] hover:border-[#2563EB]/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-6 opacity-10">
                     <span className="text-4xl font-black italic tracking-tighter text-slate-900 dark:text-white">#{cita.id}</span>
                   </div>

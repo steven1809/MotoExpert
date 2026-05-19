@@ -25,7 +25,7 @@ export class Usuario {
   @Column({ nullable: true })
   telefono: string;
 
-  @Column({ default: 'usuario' }) 
+  @Column({ default: 'usuario' })
   role: string;
 
   @OneToMany(() => Vehiculo, (vehiculo) => vehiculo.usuario)

@@ -15,7 +15,7 @@ export class UsuariosService {
   }
   async findByEmail(email: string) {
     return this.usuariosRepository.findOne({
-      where: { email }
+      where: { email },
     });
   }
 
@@ -25,10 +25,10 @@ export class UsuariosService {
 
     // No permitir cambiar el password por aquí por seguridad
     const { password, ...rest } = updateData;
-    
+
     Object.assign(user, rest);
     const updatedUser = await this.usuariosRepository.save(user);
-    
+
     const { password: _p, ...result } = updatedUser;
     return result;
   }

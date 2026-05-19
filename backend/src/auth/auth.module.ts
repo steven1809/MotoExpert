@@ -18,7 +18,7 @@ import { MailModule } from '../modules/mail/mail.module';
     PassportModule,
     TypeOrmModule.forFeature([Usuario]),
     JwtModule.register({
-      secret: 'clave_secreta', 
+      secret: 'clave_secreta',
       signOptions: { expiresIn: '1h' },
     }),
   ],

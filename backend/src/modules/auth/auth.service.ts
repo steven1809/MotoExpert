@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -27,19 +31,19 @@ export class AuthService {
   }
 
   async login(usuario: Usuario) {
-  const payload = { 
-    email: usuario.email, 
-    sub: usuario.id, 
-    role: usuario.role
-  };
-  
-  return {
-    access_token: this.jwtService.sign(payload),
-    role: usuario.role, 
-    nombre: usuario.nombre,
-    userId: usuario.id
-  };
-}
+    const payload = {
+      email: usuario.email,
+      sub: usuario.id,
+      role: usuario.role,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      role: usuario.role,
+      nombre: usuario.nombre,
+      userId: usuario.id,
+    };
+  }
 
   async register(createUserDto: CreateUserDto) {
     const { password, email, ...userData } = createUserDto;
@@ -51,14 +55,13 @@ export class AuthService {
         ...userData,
         email: email.toLowerCase().trim(),
         password: hashedPassword,
-        role: createUserDto.role || 'user'
+        role: createUserDto.role || 'user',
       });
 
       await this.userRepository.save(user);
       const { password: _, ...result } = user;
-      
-      return result;
 
+      return result;
     } catch (error) {
       if (error.code === '23505') {
         throw new BadRequestException('Ese correo ya está registrado');
@@ -69,8 +72,8 @@ export class AuthService {
 
   async findAll() {
     const users = await this.userRepository.find();
-    
-    return users.map(user => {
+
+    return users.map((user) => {
       const { password, ...rest } = user;
       return rest;
     });
@@ -87,17 +90,17 @@ export class AuthService {
       where: [
         { email: identifier.toLowerCase().trim() },
         { telefono: identifier },
-        { documento: identifier }
-      ]
+        { documento: identifier },
+      ],
     });
 
     if (!user) throw new BadRequestException('Usuario no encontrado');
 
     // En un sistema real, aquí se generaría y enviaría un código OTP por email/SMS
     // Por ahora simularemos que se envió con éxito
-    return { 
+    return {
       message: 'Código de recuperación enviado con éxito',
-      identifier // Devolvemos el identificador para usarlo en el siguiente paso
+      identifier, // Devolvemos el identificador para usarlo en el siguiente paso
     };
   }
 
@@ -109,7 +112,8 @@ export class AuthService {
     }
 
     // Simulamos validación de OTP (en producción se validaría contra una tabla de tokens/OTPs)
-    if (otp !== '123456') { // Código de prueba
+    if (otp !== '123456') {
+      // Código de prueba
       throw new BadRequestException('Código OTP inválido');
     }
 
@@ -117,8 +121,8 @@ export class AuthService {
       where: [
         { email: identifier.toLowerCase().trim() },
         { telefono: identifier },
-        { documento: identifier }
-      ]
+        { documento: identifier },
+      ],
     });
 
     if (!user) throw new BadRequestException('Usuario no encontrado');
