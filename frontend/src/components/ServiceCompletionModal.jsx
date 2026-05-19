@@ -111,19 +111,6 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
     }
   };
 
-  const getConditionStyle = (cond) => {
-    switch (cond) {
-      case 'optimal':
-        return 'bg-[#1D9E75]/10 border-[#1D9E75] text-[#1D9E75]';
-      case 'attention':
-        return 'bg-[#BA7517]/10 border-[#BA7517] text-[#BA7517]';
-      case 'urgent':
-        return 'bg-[#E24B4A]/10 border-[#E24B4A] text-[#E24B4A]';
-      default:
-        return 'bg-[#1a1d27] border-[#2a2d3a] text-[#94A3B8]';
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-[#0f1117] border border-[#2a2d3a] p-8 rounded-[2.5rem] shadow-2xl max-w-lg w-full mx-4 animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto">

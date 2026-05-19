@@ -67,6 +67,8 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
       case 'status':
         setStatusFilters([]);
         break;
+      default:
+        break;
     }
   };
 

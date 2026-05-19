@@ -1,13 +1,11 @@
 import React, { Component, useEffect, useMemo, useRef, useState } from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Navigation, Pagination } from 'swiper/modules';
 import premiumImg from "../assets/services/premium.jpg";
+import carHeroImg from "../assets/images/1.png";
+import expressImg from "../assets/services/express.jpeg";
+import interiorImg from "../assets/services/limpiezap.jpeg";
+import motorImg from "../assets/services/motor.jpeg";
+import protectionImg from "../assets/services/proteccionc.jpeg";
 import StarRating from '../components/StarRating';
-
-// Swiper styles
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -647,204 +645,491 @@ class UserDashboard extends Component {
   };
 
   render() {
-    const { servicios, loading, citas, onboardingSeen, activeReportCitaId, ratings } = this.state;
+    const { servicios, loading, citas, misVehiculos, ratings } = this.state;
     const { setView } = this.props;
+    const showReports = process.env.REACT_APP_ENABLE_REPORTS === 'true';
     
-    // Get latest completed citas with reports
-    const completedCitasWithReports = citas
-      .filter(c => c.estado === 'FINALIZADO' && c.report && c.report.workPerformed)
-      .sort((a, b) => new Date(b.completedAt || b.fecha) - new Date(a.completedAt || a.fecha));
+    const userNameRaw = (localStorage.getItem('userName') || '').trim();
+    const userName = userNameRaw || 'Usuario';
+    const firstName = userName.split(' ')[0] || userName;
 
-    const activeReport = activeReportCitaId ? citas.find(c => c.id === activeReportCitaId) : null;
-    const activeRating = activeReport ? ratings.find(r => r?.cita?.id === activeReport.id) : null;
+    const normalizeEstado = (estado) =>
+      (estado || '')
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '_');
+
+    const isActiveAppointment = (cita) => {
+      const estado = normalizeEstado(cita?.estado);
+      return estado !== 'finalizado' && estado !== 'cancelado';
+    };
+
+    const parseAppointmentStart = (cita) => {
+      const fecha = cita?.fecha;
+      const hora = cita?.hora_inicio || cita?.horaInicio || cita?.hora;
+      if (!fecha || !hora) return null;
+      const d = new Date(`${fecha}T${hora}`);
+      return Number.isFinite(d.getTime()) ? d : null;
+    };
+
+    const formatDateLong = (date) => {
+      if (!date) return '—';
+      try {
+        return date.toLocaleDateString('es-ES', {
+          weekday: 'long',
+          day: '2-digit',
+          month: 'long',
+        });
+      } catch {
+        return date.toLocaleDateString();
+      }
+    };
+
+    const formatTime = (timeStr) => {
+      if (!timeStr) return '—';
+      const d = new Date(`1970-01-01T${timeStr}`);
+      if (!Number.isFinite(d.getTime())) return timeStr;
+      try {
+        return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      } catch {
+        return timeStr;
+      }
+    };
+
+    const upcomingCita = (Array.isArray(citas) ? citas : [])
+      .filter(isActiveAppointment)
+      .map((cita) => ({ cita, start: parseAppointmentStart(cita) }))
+      .filter((x) => x.start)
+      .sort((a, b) => a.start - b.start)[0]?.cita;
+
+    const recommendedServices = (Array.isArray(servicios) ? servicios : []).slice(0, 4);
+    const vehiclesPreview = (Array.isArray(misVehiculos) ? misVehiculos : []).slice(0, 2);
+    const latestRatings = (Array.isArray(ratings) ? ratings : [])
+      .slice()
+      .sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0))
+      .slice(0, 2);
+
+    const serviceImageForIndex = [expressImg, premiumImg, interiorImg, motorImg, protectionImg];
+    const getServiceImage = (idx) => serviceImageForIndex[idx % serviceImageForIndex.length];
 
     if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500"></div></div>;
 
     return (
-      <div className="space-y-24 animate-in fade-in duration-700 pb-32 bg-white dark:bg-[#020617]">
-        {/* ENCABEZADO DE BIENVENIDA PREMIUM */}
-        <header className="relative min-h-[34vh] md:min-h-[40vh] flex items-center justify-center overflow-hidden rounded-[3rem] border border-slate-200 dark:border-white/5 mx-6 mt-6">
-          <div className="absolute inset-0 z-0">
-            <img 
-              src="https://images.unsplash.com/photo-1599256621730-535171e28e50?auto=format&fit=crop&q=80&w=1920" 
-              className="w-full h-full object-cover opacity-30"
-              alt="Welcome background"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/20 via-[#020617]/80 to-[#020617]" />
-          </div>
-
-          <div className="relative z-10 text-center space-y-6 px-6">
-            <div className="inline-block px-4 py-1 rounded-full bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] text-[10px] font-black uppercase tracking-[0.3em] animate-in slide-in-from-bottom duration-700">
-              Panel de Control Premium
+      <div className="animate-in fade-in duration-700 pb-24 bg-white dark:bg-[#020617]">
+        <div className="max-w-7xl mx-auto px-6 pt-8 space-y-8">
+          <section className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0b1220]">
+            <div className="absolute inset-0">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#020617] via-[#0b1220] to-[#0b1220]" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(37,99,235,0.22),transparent_55%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(14,165,233,0.16),transparent_55%)]" />
             </div>
-            <h1 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-[#F8FAFC] sans tracking-tighter italic uppercase leading-none">
-              Bienvenido a <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2563EB] to-blue-400">MotoExpert</span>
-            </h1>
-            <p className="text-slate-500 dark:text-[#94A3B8] text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
-              Gestiona tu flota personal y agenda servicios de detailing con el estándar más alto de la industria.
-            </p>
-          </div>
-        </header>
 
-        {/* SERVICIOS PREMIUM CAROUSEL */}
-        <section className="py-20 relative overflow-hidden">
-          <div className="relative px-6">
-            <Swiper
-              modules={[Autoplay, Navigation, Pagination]}
-              spaceBetween={30}
-              slidesPerView={1}
-              autoplay={{ delay: 5000, disableOnInteraction: false }}
-              navigation={{
-                nextEl: '.swiper-button-next-custom',
-                prevEl: '.swiper-button-prev-custom',
-              }}
-              pagination={{ clickable: true, dynamicBullets: true }}
-              breakpoints={{
-                768: { slidesPerView: 2 },
-                1024: { slidesPerView: 3 },
-              }}
-              className="pb-20"
-            >
-              {servicios.map((s, idx) => {
-                const mockImages = [
-                  premiumImg,
-                ];
-                const bgImage = mockImages[idx % mockImages.length];
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 md:p-10">
+              <div className="space-y-4">
+                <div className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                  ¡Hola, {firstName}!
+                </div>
+                <div className="text-slate-600 dark:text-[#94A3B8] text-sm md:text-base">
+                  Bienvenido de vuelta. Tu vehículo merece el mejor cuidado.
+                </div>
+              </div>
 
-                return (
-                  <SwiperSlide key={s.id}>
-                    <div
-                      className="group relative h-[360px] w-full overflow-hidden rounded-[3rem] bg-slate-100 dark:bg-[#111827] shadow-2xl transition-all duration-700 border border-slate-200 dark:border-white/5 hover:border-[#2563EB]/40 bg-cover bg-center"
-                      style={{ backgroundImage: `url(${bgImage})` }}
+              <div className="relative h-40 md:h-56 lg:h-full min-h-[180px]">
+                <div className="absolute inset-0 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                  <div className="absolute inset-0 bg-gradient-to-l from-[#2563EB]/25 via-transparent to-transparent" />
+                  <div className="absolute top-0 right-10 h-full w-[2px] bg-gradient-to-b from-transparent via-[#38BDF8]/60 to-transparent opacity-80" />
+                  <div className="absolute top-0 right-20 h-full w-[2px] bg-gradient-to-b from-transparent via-[#2563EB]/50 to-transparent opacity-70" />
+                  <img
+                    src={carHeroImg}
+                    alt="Vehículo"
+                    className="absolute right-0 bottom-0 h-full w-auto object-contain opacity-95 drop-shadow-[0_20px_40px_rgba(37,99,235,0.25)]"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-8 space-y-6">
+              <section className="space-y-3">
+                <div className="text-sm font-black text-slate-900 dark:text-white">Accesos rápidos</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setView('citas')}
+                    className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <div className="h-10 w-10 rounded-2xl bg-[#2563EB]/15 text-[#60A5FA] flex items-center justify-center border border-[#2563EB]/20">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3a.75.75 0 011.5 0v1.5h.75A2.25 2.25 0 0121 6.75v12A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-12A2.25 2.25 0 015.25 4.5H6V3a.75.75 0 01.75-.75zM4.5 9.75h15V6.75a.75.75 0 00-.75-.75H5.25a.75.75 0 00-.75.75v3z" />
+                      </svg>
+                    </div>
+                    <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Agendar cita</div>
+                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Nueva cita</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setView('vehiculos')}
+                    className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path fillRule="evenodd" d="M6.75 4.5A3 3 0 003.77 7.14l-1.5 9A3 3 0 005.23 19.5h.52a3 3 0 005.5 0h1.5a3 3 0 005.5 0h.52a3 3 0 002.96-3.36l-1.5-9A3 3 0 0017.25 4.5H6.75zm3.75 12a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zm9 0a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Mis vehículos</div>
+                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Ver y gestionar</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setView('citas')}
+                    className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path fillRule="evenodd" d="M7.5 2.25A.75.75 0 018.25 3v1.5h7.5V3a.75.75 0 011.5 0v1.5h.75A2.25 2.25 0 0121 6.75v12A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-12A2.25 2.25 0 015.25 4.5H6V3a.75.75 0 011.5 0v1.5zM4.5 9.75h15V6.75a.75.75 0 00-.75-.75H5.25a.75.75 0 00-.75.75v3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Mis citas</div>
+                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Ver historial</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setView('resenas')}
+                    className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path d="M12 2.25c5.385 0 9.75 4.03 9.75 9 0 1.79-.57 3.46-1.56 4.86l.6 4.21a.75.75 0 01-1.09.78l-4.02-2.06A10.6 10.6 0 0112 20.25c-5.385 0-9.75-4.03-9.75-9s4.365-9 9.75-9z" />
+                      </svg>
+                    </div>
+                    <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Mis reseñas</div>
+                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Deja tu opinión</div>
+                  </button>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+                <div className="px-5 pt-5 flex items-center justify-between">
+                  <div className="text-sm font-black text-slate-900 dark:text-white">Próxima cita</div>
+                  <div className="text-xs text-[#60A5FA] cursor-pointer" onClick={() => setView('citas')} role="button" tabIndex={0}>
+                    ...
+                  </div>
+                </div>
+
+                <div className="p-5 pt-4">
+                  {upcomingCita ? (
+                    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0b1220]">
+                      <div className="absolute inset-0">
+                        <img src={premiumImg} alt="" className="w-full h-full object-cover opacity-20" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#0b1220] via-[#0b1220]/90 to-transparent" />
+                      </div>
+                      <div className="relative z-10 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center">
+                            <div className="text-[10px] text-[#94A3B8] font-black uppercase">
+                              {parseAppointmentStart(upcomingCita)?.toLocaleDateString('es-ES', { month: 'short' })}
+                            </div>
+                            <div className="text-lg text-white font-black">
+                              {parseAppointmentStart(upcomingCita)?.toLocaleDateString('es-ES', { day: '2-digit' })}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-sm font-black text-white">
+                              {formatDateLong(parseAppointmentStart(upcomingCita))}
+                            </div>
+                            <div className="text-xs text-[#94A3B8]">
+                              {formatTime(upcomingCita?.hora_inicio)} - {formatTime(upcomingCita?.hora_fin)}
+                            </div>
+                            <div className="mt-2 inline-flex items-center gap-2">
+                              <span className="px-2.5 py-1 rounded-full bg-[#2563EB]/15 text-[#60A5FA] text-[10px] font-black border border-[#2563EB]/20">
+                                {upcomingCita?.estado || 'Confirmada'}
+                              </span>
+                              <span className="text-[10px] text-white/50">
+                                {upcomingCita?.servicio?.nombre || 'Servicio'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setView('citas')}
+                          className="h-10 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black transition-colors"
+                        >
+                          Ver detalles
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-6 text-sm text-slate-600 dark:text-[#94A3B8]">
+                      No tienes citas próximas. Agenda una nueva cuando quieras.
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() => setView('citas')}
+                          className="h-10 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black transition-colors"
+                        >
+                          Agendar cita
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
+                <div className="px-5 pt-5 flex items-center justify-between">
+                  <div className="text-sm font-black text-slate-900 dark:text-white">Mis vehículos</div>
+                  <button
+                    type="button"
+                    onClick={() => setView('vehiculos')}
+                    className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
+                  >
+                    Ver todos
+                  </button>
+                </div>
+
+                <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {vehiclesPreview.map((v, idx) => (
+                    <button
+                      key={v?.id || `${v?.placa || 'veh'}-${idx}`}
+                      type="button"
+                      onClick={() => setView('vehiculos')}
+                      className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#0b1220] text-left"
                     >
-                      <div className="absolute inset-0 z-10 bg-[#020617]/30" />
-                      <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#020617]/85 via-[#020617]/30 to-transparent" />
-                      <div className="absolute inset-0 z-20 p-10 flex flex-col justify-end">
-                        <div className="space-y-6 transform transition-all duration-700 translate-y-4 group-hover:translate-y-0">
-                          <h4 className="text-3xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">{s.nombre}</h4>
-                          <p className="text-slate-500 dark:text-[#94A3B8] text-sm line-clamp-2 leading-relaxed font-medium">{s.descripcion}</p>
-                          
-                          <div className="flex flex-col sm:flex-row gap-4">
-                            <button 
-                              onClick={() => this.handleAgendarServicio(s)}
-                              className="flex-1 py-5 bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-[#2563EB]/20 active:scale-95"
-                            >
-                              Agendar Ahora
-                            </button>
-                            <button 
-                              onClick={() => this.handleSaberMas(s)}
-                              className="flex-1 py-5 bg-slate-200/50 dark:bg-white/5 hover:bg-slate-300 dark:bg-white/10 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl border border-white/10 backdrop-blur-xl transition-all active:scale-95"
-                            >
-                              Saber Más
-                            </button>
+                      <div className="absolute inset-0">
+                        <img src={carHeroImg} alt="" className="w-full h-full object-cover opacity-10" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/80 to-transparent" />
+                      </div>
+                      <div className="relative z-10 p-4 space-y-2">
+                        <div className="text-xs text-white/60">{v?.placa || '—'}</div>
+                        <div className="text-sm font-black text-white">
+                          {(v?.marca || '').trim()} {(v?.modelo || '').trim()} {v?.anio ? String(v.anio) : ''}
+                        </div>
+                        <div className="inline-flex px-2.5 py-1 rounded-full bg-[#2563EB]/15 text-[#60A5FA] text-[10px] font-black border border-[#2563EB]/20">
+                          Principal
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setView('vehiculos')}
+                    className="group flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-6 text-slate-700 dark:text-white/80 hover:bg-white dark:hover:bg-white/10 transition-colors"
+                  >
+                    <div className="h-12 w-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-xl">
+                      +
+                    </div>
+                    <div className="text-xs font-black">Agregar vehículo</div>
+                  </button>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
+                <div className="px-5 pt-5 flex items-center justify-between">
+                  <div className="text-sm font-black text-slate-900 dark:text-white">Servicios recomendados</div>
+                  <button
+                    type="button"
+                    onClick={() => setView('servicios')}
+                    className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
+                  >
+                    Ver todos
+                  </button>
+                </div>
+
+                <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {recommendedServices.map((s, idx) => (
+                    <button
+                      key={s?.id || `svc-${idx}`}
+                      type="button"
+                      onClick={() => this.handleAgendarServicio(s)}
+                      className="group overflow-hidden rounded-2xl border border-white/10 bg-[#0b1220] text-left hover:bg-white/5 transition-colors"
+                    >
+                      <div className="h-24 w-full overflow-hidden">
+                        <img src={getServiceImage(idx)} alt={s?.nombre || 'Servicio'} className="h-full w-full object-cover opacity-90 group-hover:scale-[1.02] transition-transform" />
+                      </div>
+                      <div className="p-4 space-y-2">
+                        <div className="text-sm font-black text-white">{s?.nombre || 'Servicio'}</div>
+                        <div className="flex items-center justify-between text-xs text-[#94A3B8]">
+                          <div>{(s?.duration_minutes ?? s?.duracion) ? `${s.duration_minutes ?? s.duracion} min` : '—'}</div>
+                          <div className="text-[#60A5FA] font-black">
+                            {typeof s?.precio === 'number' ? `$${s.precio}` : s?.precio ? `$${s.precio}` : ''}
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </SwiperSlide>
-                );
-              })}
-            </Swiper>
-            
-            <div className="swiper-button-prev-custom absolute left-10 top-1/2 z-30 -translate-y-1/2 cursor-pointer rounded-2xl bg-white dark:bg-[#020617]/50 p-5 text-white backdrop-blur-xl border border-slate-200 dark:border-white/5 hover:bg-[#2563EB] transition-all hidden lg:flex">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+                    </button>
+                  ))}
+                </div>
+              </section>
             </div>
-            <div className="swiper-button-next-custom absolute right-10 top-1/2 z-30 -translate-y-1/2 cursor-pointer rounded-2xl bg-white dark:bg-[#020617]/50 p-5 text-white backdrop-blur-xl border border-slate-200 dark:border-white/5 hover:bg-[#2563EB] transition-all hidden lg:flex">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+
+            <div className="lg:col-span-4 space-y-6">
+              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA]">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                          <path fillRule="evenodd" d="M12 1.5a.75.75 0 01.75.75v.465c0 .41.29.765.69.84a7.501 7.501 0 016.06 6.06c.075.4.43.69.84.69h.465a.75.75 0 010 1.5h-.465a.855.855 0 00-.84.69 7.501 7.501 0 01-6.06 6.06.855.855 0 00-.69.84v.465a.75.75 0 01-1.5 0v-.465a.855.855 0 00-.69-.84 7.501 7.501 0 01-6.06-6.06.855.855 0 00-.84-.69H2.25a.75.75 0 010-1.5h.465a.855.855 0 00.84-.69 7.501 7.501 0 016.06-6.06.855.855 0 00.69-.84V2.25A.75.75 0 0112 1.5z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                      Cliente Gold
+                    </div>
+                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Nivel 3</div>
+                  </div>
+                  <div className="text-[10px] text-white/60 font-black">
+                    650 / 1000 pts
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-full w-[65%] bg-gradient-to-r from-[#2563EB] to-[#38BDF8]" />
+                  </div>
+                  <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-[#94A3B8]">
+                    Te faltan 350 pts para llegar a Cliente Platinum
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
+                <div className="px-5 pt-5 flex items-center justify-between">
+                  <div className="text-sm font-black text-slate-900 dark:text-white">Notificaciones</div>
+                  <button
+                    type="button"
+                    onClick={() => setView('citas')}
+                    className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
+                  >
+                    Ver todas
+                  </button>
+                </div>
+
+                <div className="p-5 pt-4 space-y-3">
+                  <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="h-10 w-10 rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3a.75.75 0 011.5 0v1.5h.75A2.25 2.25 0 0121 6.75v12A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-12A2.25 2.25 0 015.25 4.5H6V3a.75.75 0 01.75-.75zM4.5 9.75h15V6.75a.75.75 0 00-.75-.75H5.25a.75.75 0 00-.75.75v3z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-black text-white truncate">Tu cita está confirmada</div>
+                      <div className="text-[11px] text-[#94A3B8] truncate">Revisa los detalles en Mis citas</div>
+                    </div>
+                    <div className="text-[10px] text-white/50">2h</div>
+                  </div>
+
+                  <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="h-10 w-10 rounded-2xl bg-white/10 border border-white/10 text-white/70 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path fillRule="evenodd" d="M12 2.25c.31 0 .6.2.7.5l.86 2.63c.1.3.33.53.63.63l2.63.86c.3.1.5.39.5.7s-.2.6-.5.7l-2.63.86c-.3.1-.53.33-.63.63l-.86 2.63c-.1.3-.39.5-.7.5s-.6-.2-.7-.5l-.86-2.63a.87.87 0 00-.63-.63l-2.63-.86a.75.75 0 010-1.4l2.63-.86c.3-.1.53-.33.63-.63l.86-2.63c.1-.3.39-.5.7-.5z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-black text-white truncate">Promoción especial disponible</div>
+                      <div className="text-[11px] text-[#94A3B8] truncate">20% OFF en detailing premium</div>
+                    </div>
+                    <div className="text-[10px] text-white/50">1d</div>
+                  </div>
+
+                  <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="h-10 w-10 rounded-2xl bg-white/10 border border-white/10 text-white/70 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path d="M11.48 3.499a.75.75 0 011.04 0l2.12 1.985c.2.187.46.289.73.289h2.52a.75.75 0 01.72.958l-.8 2.49a.75.75 0 00.15.73l1.99 2.12a.75.75 0 010 1.04l-1.99 2.12a.75.75 0 00-.15.73l.8 2.49a.75.75 0 01-.72.958h-2.52a1.06 1.06 0 00-.73.289l-2.12 1.985a.75.75 0 01-1.04 0l-2.12-1.985a1.06 1.06 0 00-.73-.289H5.19a.75.75 0 01-.72-.958l.8-2.49a.75.75 0 00-.15-.73L3.13 13.5a.75.75 0 010-1.04l1.99-2.12a.75.75 0 00.15-.73l-.8-2.49a.75.75 0 01.72-.958h2.52c.27 0 .53-.102.73-.289l2.12-1.985z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-black text-white truncate">¡Gracias por tu reseña!</div>
+                      <div className="text-[11px] text-[#94A3B8] truncate">Tu opinión nos ayuda a mejorar</div>
+                    </div>
+                    <div className="text-[10px] text-white/50">2d</div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
+                <div className="absolute inset-0">
+                  <img src={premiumImg} alt="" className="w-full h-full object-cover opacity-20" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0b1220] via-[#0b1220]/90 to-transparent" />
+                </div>
+                <div className="relative z-10 p-5 flex items-end justify-between gap-4">
+                  <div>
+                    <div className="text-lg font-black text-[#60A5FA]">20% OFF</div>
+                    <div className="text-sm font-black text-white">en Detailing Premium</div>
+                    <div className="text-xs text-[#94A3B8] mt-1">Válido hasta el 31 de mayo</div>
+                    <button
+                      type="button"
+                      onClick={() => setView('servicios')}
+                      className="mt-4 h-10 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black transition-colors"
+                    >
+                      Reservar ahora
+                    </button>
+                  </div>
+                  <img src={carHeroImg} alt="" className="h-20 w-auto opacity-80" />
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
+                <div className="px-5 pt-5 flex items-center justify-between">
+                  <div className="text-sm font-black text-slate-900 dark:text-white">Reseñas recientes</div>
+                  <button
+                    type="button"
+                    onClick={() => setView('resenas')}
+                    className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
+                  >
+                    Ver todas
+                  </button>
+                </div>
+
+                <div className="p-5 pt-4 space-y-4">
+                  {latestRatings.length > 0 ? (
+                    latestRatings.map((r) => {
+                      const ratingValue = Math.round(((r?.specialistRating || 0) + (r?.serviceRating || 0)) / 2) || 0;
+                      const who = r?.usuario?.nombre || userName;
+                      const createdAt = r?.createdAt ? new Date(r.createdAt) : null;
+                      const timeAgo =
+                        createdAt && Number.isFinite(createdAt.getTime())
+                          ? createdAt.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+                          : '';
+                      return (
+                        <div key={r?.id || `${who}-${timeAgo}`} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                              <div className="text-xs font-black text-white truncate">{who}</div>
+                              <div className="mt-1">
+                                <StarRating value={ratingValue} readOnly size="sm" />
+                              </div>
+                            </div>
+                            <div className="text-[10px] text-white/50">{timeAgo}</div>
+                          </div>
+                          <div className="mt-3 text-xs text-[#94A3B8]">
+                            {r?.comment || 'Excelente servicio, 100% recomendado.'}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-6 text-xs text-slate-600 dark:text-[#94A3B8]">
+                      Aún no hay reseñas. Cuando califiques un servicio aparecerán aquí.
+                    </div>
+                  )}
+                </div>
+              </section>
             </div>
           </div>
-        </section>
-
-        {/* LAYOUT DE INSTRUCCIONES PREMIUM OR LATEST SERVICE REPORTS */}
-        <div className="container mx-auto px-6">
-          {!onboardingSeen ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* LADO IZQUIERDO: VEHÍCULOS */}
-              <div className="bg-slate-100 dark:bg-[#111827] p-10 rounded-[2.5rem] transition-all flex flex-col h-full group border border-slate-200 dark:border-white/5 hover:border-purple-500/20 shadow-2xl">
-                <div className="flex items-center space-x-4 mb-8">
-                  <div className="w-12 h-12 bg-purple-600/10 rounded-xl flex items-center justify-center text-xl shadow-inner">1</div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">Mi Flota Personal</h2>
-                </div>
-                <ul className="space-y-4 mb-10 flex-grow text-slate-500 dark:text-[#94A3B8] font-medium">
-                  {[
-                    "Añade un nuevo vehículo a tu perfil.",
-                    "Especifica placa, marca y modelo.",
-                    "Sincroniza el historial de servicios.",
-                    "Administra múltiples vehículos."
-                  ].map((step, i) => (
-                    <li key={i} className="flex items-start space-x-4">
-                      <span className="flex-shrink-0 w-6 h-6 bg-purple-600/10 text-purple-500 rounded-full flex items-center justify-center text-[10px] font-black">{i+1}</span>
-                      <span className="text-sm">{step}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button 
-                  onClick={() => this.props.setView('vehiculos')}
-                  className="w-full py-5 bg-slate-200 dark:bg-[#1e293b] hover:bg-slate-800 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl border border-slate-200 dark:border-white/5 shadow-2xl transition-all active:scale-95"
-                >
-                  Mis Vehículos
-                </button>
-              </div>
-              {/* LADO DERECHO: CITAS */}
-              <div className="bg-slate-100 dark:bg-[#111827] p-10 rounded-[2.5rem] transition-all flex flex-col h-full group border border-slate-200 dark:border-white/5 hover:border-[#2563EB]/20 shadow-2xl">
-                <div className="flex items-center space-x-4 mb-8">
-                  <div className="w-12 h-12 bg-[#2563EB]/10 rounded-xl flex items-center justify-center text-xl shadow-inner">2</div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">Gestión de Citas</h2>
-                </div>
-                <ul className="space-y-4 mb-10 flex-grow text-slate-500 dark:text-[#94A3B8] font-medium">
-                  {[
-                    "Selecciona tu vehículo registrado.",
-                    "Elige el servicio premium deseado.",
-                    "Define fecha y hora en tiempo real.",
-                    "Confirma y recibe tu código VIP."
-                  ].map((step, i) => (
-                    <li key={i} className="flex items-start space-x-4">
-                      <span className="flex-shrink-0 w-6 h-6 bg-[#2563EB]/10 text-[#2563EB] rounded-full flex items-center justify-center text-[10px] font-black">{i+1}</span>
-                      <span className="text-sm">{step}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button 
-                  onClick={() => this.props.setView('citas')}
-                  className="w-full py-5 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#2563EB]/20 transition-all active:scale-95"
-                >
-                  Agendar Cita
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* LATEST SERVICE REPORTS SECTION */
-            <div className="space-y-8">
-              <div className="flex items-center space-x-4">
-                <div className="w-2 h-2 bg-[#2563EB] rounded-full animate-pulse" />
-                <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">
-                  Latest Service Reports
-                </h2>
-              </div>
-
-              {completedCitasWithReports.length > 0 ? (
-                <ServiceReportsPanel
-                  items={completedCitasWithReports}
-                  onOpenReport={this.handleOpenReport}
-                />
-              ) : (
-                <div className="bg-slate-100 dark:bg-[#111827] p-12 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-white/5 text-center">
-                  <div className="text-4xl mb-4 opacity-30">📋</div>
-                  <p className="text-slate-500 dark:text-[#94A3B8] italic font-medium">
-                    No service reports yet. Your completed services will appear here.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
-        <ServiceReportModal
-          report={activeReport}
-          rating={activeRating}
-          onClose={this.handleCloseReport}
-          onSubmitRating={this.submitRating}
-        />
+        {showReports && (
+          <div className="hidden">
+            <ServiceReportsPanel items={[]} onOpenReport={() => {}} />
+            <ServiceReportModal report={null} rating={null} onClose={() => {}} onSubmitRating={() => {}} />
+          </div>
+        )}
       </div>
     );
   }

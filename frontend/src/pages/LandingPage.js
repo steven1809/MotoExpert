@@ -372,15 +372,15 @@ class LandingPage extends Component {
 
                     <div className="flex gap-8 text-slate-400 text-sm">
 
-                      <a href="#" className="hover:text-white transition-colors">
+                      <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
                         Instagram
                       </a>
 
-                      <a href="#" className="hover:text-white transition-colors">
+                      <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
                         Facebook
                       </a>
 
-                      <a href="#" className="hover:text-white transition-colors">
+                      <a href="https://wa.me/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
                         WhatsApp
                       </a>
                     </div>

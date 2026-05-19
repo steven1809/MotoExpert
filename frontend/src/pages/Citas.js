@@ -150,7 +150,7 @@ const AppointmentChatModal = ({ isOpen, onClose, alert }) => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [isOpen, appointmentId]);
+  }, [isOpen, appointmentId, onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -338,7 +338,6 @@ const Citas = ({
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(7);
-  const [alertToCancel, setAlertToCancel] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [processedCitas, setProcessedCitas] = useState(new Set());
   const [chatOpen, setChatOpen] = useState(false);
@@ -450,7 +449,7 @@ const Citas = ({
     }
   };
 
-  const getCitaTimeInfo = (cita) => {
+  const getCitaTimeInfo = useCallback((cita) => {
     const citaDateStr = cita.fecha;
     const citaTimeStr = cita.hora_inicio?.substring(0, 5); // HH:MM
     const citaDateTimeStr = `${citaDateStr}T${citaTimeStr}`;
@@ -470,7 +469,7 @@ const Citas = ({
       isPastGracePeriod: timePastStartMs > gracePeriodMs && cita.estado === 'PENDIENTE',
       gracePeriodRemainingMs: gracePeriodMs - timePastStartMs,
     };
-  };
+  }, [currentTime]);
 
   const formatCountdown = (ms) => {
     const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -479,7 +478,7 @@ const Citas = ({
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   };
 
-  const cancelCita = async (citaId) => {
+  const cancelCita = useCallback(async (citaId) => {
     if (processedCitas.has(citaId)) return;
     
     try {
@@ -502,7 +501,7 @@ const Citas = ({
     } catch (err) {
       console.error('Error canceling cita:', err);
     }
-  };
+  }, [processedCitas]);
 
   useEffect(() => {
     // Check for overdue appointments
@@ -514,7 +513,7 @@ const Citas = ({
         cancelCita(cita.id);
       }
     });
-  }, [currentTime, citas, processedCitas]);
+  }, [currentTime, citas, processedCitas, cancelCita, getCitaTimeInfo]);
 
   const handleDateChange = (e) => {
     const fecha = e.target.value;
@@ -535,15 +534,6 @@ const Citas = ({
     if (formData.fecha && formData.servicioId) {
       fetchDisponibilidad(formData.fecha, formData.servicioId, empleadoId);
     }
-  };
-
-  const formatTimeAMPM = (timeStr) => {
-    if (!timeStr) return '';
-    const [hours, minutes] = timeStr.split(':');
-    const h = parseInt(hours, 10);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return `${h12}:${minutes} ${ampm}`;
   };
 
   const getFilteredSlots = () => {
@@ -782,8 +772,9 @@ const Citas = ({
       return filtered;
     }, [filters]);
 
-    const citasPendientes = citas.filter(
-      cita => cita.estado === "PENDIENTE" || cita.estado === "EN PROCESO"
+    const citasPendientes = useMemo(
+      () => citas.filter((cita) => cita.estado === "PENDIENTE" || cita.estado === "EN PROCESO"),
+      [citas],
     );
 
     const citasPendientesKey = useMemo(
@@ -822,7 +813,7 @@ const Citas = ({
       return () => {
         cancelled = true;
       };
-    }, [citasPendientesKey]);
+    }, [citasPendientes, citasPendientesKey]);
 
     const allHistorialServicios = citas.filter(
       cita => cita.estado === "FINALIZADO" || cita.estado === "CANCELADO"
@@ -943,7 +934,6 @@ const Citas = ({
 
         if (response.ok) {
           fetchInitialData();
-          setAlertToCancel(null);
         }
       } catch (err) {
         console.error('Error canceling appointment:', err);
@@ -1103,6 +1093,11 @@ const Citas = ({
       </header>
 
       <div className="container mx-auto px-6 space-y-12">
+        {error && (
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200">
+            {error}
+          </div>
+        )}
         <AppointmentChatModal
           isOpen={chatOpen}
           alert={chatAlert}
