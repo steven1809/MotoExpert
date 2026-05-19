@@ -222,8 +222,6 @@ class Vehiculos extends Component {
       }
 
       const dataToSend = {
-        documentType: formData.documentType,
-        documentNumber: formData.documentNumber,
         placa: formData.placa,
         tipo: formData.tipo === 'motorcycle' ? 'Moto' : 'Auto',
         marca: formData.brand,

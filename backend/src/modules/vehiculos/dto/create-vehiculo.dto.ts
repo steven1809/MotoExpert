@@ -6,6 +6,8 @@ import {
   Min,
 } from 'class-validator';
 
+import { Type } from 'class-transformer';
+
 export class CreateVehiculoDto {
   @IsNotEmpty({ message: 'La placa es requerida' })
   @IsString({ message: 'La placa debe ser un texto' })
@@ -24,6 +26,7 @@ export class CreateVehiculoDto {
   tipo?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber({}, { message: 'El año debe ser un número' })
   @Min(1900, { message: 'El año debe ser mayor a 1900' })
   anio?: number;
@@ -33,6 +36,7 @@ export class CreateVehiculoDto {
   color?: string;
 
   @IsNotEmpty({ message: 'El ID del usuario es requerido' })
+  @Type(() => Number)
   @IsNumber({}, { message: 'El ID del usuario debe ser un número' })
   usuarioId: number;
 }
