@@ -4,8 +4,62 @@ import { useVehicleGuard } from '../hooks/useVehicleGuard';
 import NoVehicleWarning from '../components/NoVehicleWarning';
 import DuplicateBookingWarning from '../components/DuplicateBookingWarning';
 import AppointmentsSearchAndFilter from '../components/AppointmentsSearchAndFilter';
+import { QRCodeCanvas } from 'qrcode.react';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+const TokenCodeModal = ({ isOpen, onClose, tokenCode }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-[#0f1117] border border-[#2a2d3a] p-8 rounded-[2.5rem] shadow-2xl max-w-md w-full mx-4 animate-in zoom-in duration-300">
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">
+              Código de entrega
+            </h2>
+            <p className="text-[#94A3B8] text-sm font-medium mt-1">
+              Muestra este código al empleado cuando retires tu vehículo
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-xl bg-[#1a1d27] border border-[#2a2d3a] text-[#94A3B8] hover:text-white hover:border-white/20 transition-all"
+            aria-label="Cerrar"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="space-y-5 text-center">
+          <div className="px-6 py-4 rounded-2xl bg-[#1a1d27] border border-[#2a2d3a]">
+            <div className="text-4xl font-black tracking-[0.25em] text-[#F8FAFC] font-mono">
+              {tokenCode || '------'}
+            </div>
+          </div>
+
+          {tokenCode ? (
+            <div className="flex justify-center">
+              <div className="p-4 rounded-2xl border border-white/10 bg-[#0b0d12]">
+                <QRCodeCanvas
+                  value={tokenCode}
+                  size={176}
+                  includeMargin
+                  fgColor="#FFFFFF"
+                  bgColor="#0b0d12"
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const AppointmentChatModal = ({ isOpen, onClose, alert }) => {
   const [messages, setMessages] = useState([]);
@@ -289,6 +343,9 @@ const Citas = ({
   const [processedCitas, setProcessedCitas] = useState(new Set());
   const [chatOpen, setChatOpen] = useState(false);
   const [chatAlert, setChatAlert] = useState(null);
+  const [tokenModalOpen, setTokenModalOpen] = useState(false);
+  const [tokenModalCode, setTokenModalCode] = useState('');
+  const [paymentByAppointment, setPaymentByAppointment] = useState({});
   
   const [formData, setFormData] = useState({
     fecha: '',
@@ -729,6 +786,44 @@ const Citas = ({
       cita => cita.estado === "PENDIENTE" || cita.estado === "EN PROCESO"
     );
 
+    const citasPendientesKey = useMemo(
+      () => citasPendientes.map((c) => c.id).join(','),
+      [citasPendientes],
+    );
+
+    useEffect(() => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      if (!citasPendientes.length) return;
+
+      let cancelled = false;
+      Promise.all(
+        citasPendientes.map(async (cita) => {
+          try {
+            const res = await fetch(
+              `${API_BASE_URL}/payments/appointment/${cita.id}`,
+              { headers: { Authorization: `Bearer ${token}` } },
+            );
+            if (!res.ok) return [cita.id, null];
+            const data = await res.json().catch(() => null);
+            return [cita.id, data?.payment ?? null];
+          } catch {
+            return [cita.id, null];
+          }
+        }),
+      ).then((entries) => {
+        if (cancelled) return;
+        setPaymentByAppointment((prev) => ({
+          ...prev,
+          ...Object.fromEntries(entries),
+        }));
+      });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [citasPendientesKey]);
+
     const allHistorialServicios = citas.filter(
       cita => cita.estado === "FINALIZADO" || cita.estado === "CANCELADO"
     );
@@ -1014,6 +1109,15 @@ const Citas = ({
           onClose={() => {
             setChatOpen(false);
             setChatAlert(null);
+          }}
+        />
+
+        <TokenCodeModal
+          isOpen={tokenModalOpen}
+          tokenCode={tokenModalCode}
+          onClose={() => {
+            setTokenModalOpen(false);
+            setTokenModalCode('');
           }}
         />
 
@@ -1368,6 +1472,14 @@ const Citas = ({
                 const timeInfo = getCitaTimeInfo(cita);
                 const countdown = formatCountdown(timeInfo.gracePeriodRemainingMs);
                 const isUnderTwoMinutes = timeInfo.gracePeriodRemainingMs > 0 && timeInfo.gracePeriodRemainingMs < 2 * 60 * 1000;
+                const payment = paymentByAppointment?.[cita.id] ?? cita.payment ?? null;
+                const tokenCode = payment?.tokenCode || '';
+                const tokenUsed = Boolean(payment?.tokenUsed);
+                const tokenExpiresAt = payment?.tokenExpiresAt;
+                const tokenExpired = tokenExpiresAt
+                  ? new Date(tokenExpiresAt).getTime() <= Date.now()
+                  : true;
+                const canViewToken = Boolean(tokenCode) && !tokenUsed && !tokenExpired;
                 
                 return (
                 <div id={`cita-${cita.id}`} key={cita.id} className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-8 rounded-[2.5rem] hover:border-[#2563EB]/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
@@ -1407,14 +1519,33 @@ const Citas = ({
                     }`}>
                       {cita.estado === 'PENDIENTE' && timeInfo.isInGracePeriod ? 'TARDÍO' : cita.estado}
                     </span>
-                    <button
-                      onClick={() => handleDelete(cita.id)}
-                      className="p-2 bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-slate-900 dark:text-white transition-all opacity-0 group-hover:opacity-100 shadow-lg relative z-20"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                    <div className="flex items-center gap-2 relative z-20">
+                      <button
+                        type="button"
+                        disabled={!canViewToken}
+                        onClick={() => {
+                          if (!canViewToken) return;
+                          setTokenModalCode(tokenCode);
+                          setTokenModalOpen(true);
+                        }}
+                        className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all opacity-0 group-hover:opacity-100 ${
+                          canViewToken
+                            ? 'bg-[#2563EB]/10 text-[#2563EB] border-[#2563EB]/25 hover:bg-[#2563EB] hover:text-slate-900 dark:hover:text-white shadow-lg shadow-[#2563EB]/10'
+                            : 'bg-slate-900/10 dark:bg-white/5 text-slate-400 dark:text-[#94A3B8] border-slate-300/30 dark:border-white/10 cursor-not-allowed'
+                        }`}
+                      >
+                        Ver código
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(cita.id)}
+                        className="p-2 bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-slate-900 dark:text-white transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-2 relative z-10">
                     <h4 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] uppercase italic tracking-tighter">{cita.servicio?.nombre}</h4>
