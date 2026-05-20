@@ -727,11 +727,11 @@ class UserDashboard extends Component {
 
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 md:p-10">
               <div className="space-y-4">
-                <div className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-                  ¡Hola, {firstName}!
+                <div className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white">
+                  ¡ Bienvenido, {firstName} !
                 </div>
                 <div className="text-slate-600 dark:text-[#94A3B8] text-sm md:text-base">
-                  Bienvenido de vuelta. Tu vehículo merece el mejor cuidado.
+                  Bienvenido de vuelta. Al mejor sistema de automatizacion de citas.
                 </div>
               </div>
 
@@ -815,7 +815,7 @@ class UserDashboard extends Component {
 
               <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
                 <div className="px-5 pt-5 flex items-center justify-between">
-                  <div className="text-sm font-black text-slate-900 dark:text-white">Próxima cita</div>
+                  <div className="text-sm font-black text-slate-900 text-white">Próxima cita</div>
                   <div className="text-xs text-[#60A5FA] cursor-pointer" onClick={() => setView('citas')} role="button" tabIndex={0}>
                     ...
                   </div>

@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-
+import { FaWhatsapp, FaInstagram, FaFacebook, FaTwitter } from 'react-icons/fa';
 import Car3D from '../components/Car3D';
 import premiumImg from '../assets/services/premium.jpg';
 import expressImg from '../assets/services/express.jpeg';
@@ -324,7 +324,7 @@ class LandingPage extends Component {
                 </h1>
 
                 <p className="text-[11px] text-white/70">
-                  Detailing & Car Care
+                  Lo mejor para tu vehiculo
                 </p>
               </div>
             </div>
@@ -365,7 +365,7 @@ class LandingPage extends Component {
 
               <button
                 onClick={this.props.onEnterRegister}
-                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 transition-all duration-300 shadow-lg shadow-blue-600/30"
+                className="px-6 py-3 rounded-xl bg-transparent-600 border border-white hover:border-blue-600 hover:text-blue-600 transition-all duration-300 shadow-lg"
               >
                 Registrarse
               </button>
@@ -411,16 +411,8 @@ class LandingPage extends Component {
 
                 <div className="container mx-auto px-6 relative z-20 text-center">
 
-                  <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-blue-500/20 bg-blue-500/10 mb-8">
-                    <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-
-                    <span className="text-sm text-blue-300">
-                      Servicio premium para tu vehículo
-                    </span>
-                  </div>
-
                   <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-8">
-                    Lavado y detailing
+                    Lavado y Mantenimiento
 
                     <span className="block mt-3 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
                       con nivel profesional
@@ -435,7 +427,7 @@ class LandingPage extends Component {
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
 
                     <button
-                      onClick={() => this.setActiveView('servicios')}
+                      onClick={() => this.setActiveView('Login')}
                       className="px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 transition-all duration-300 shadow-xl shadow-blue-600/30"
                     >
                       Agendar cita
