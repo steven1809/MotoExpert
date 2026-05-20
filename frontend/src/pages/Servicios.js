@@ -263,28 +263,6 @@ export default function Servicios({ setView }) {
               )}
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {serviciosFiltrados.map((servicio) => {
-              const slug = normalizeSlug(servicio.nombre);
-              const isAutoExpand = window.location.hash === `#${slug}`;
-
-              return (
-                <div key={servicio.id} id={slug} className="scroll-mt-32">
-                  <CardServicio 
-                    servicio={servicio} 
-                    isAdmin={userRole === "admin"}
-                    onEdit={() => handleOpenModal(servicio)}
-                    onDelete={() => handleDelete(servicio.id)}
-                    autoExpand={isAutoExpand}
-                    setView={setView}
-                    isFeatured={featuredServiceId === servicio.id}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
           <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-6 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="text-sm font-black text-slate-900 dark:text-white">
@@ -310,39 +288,62 @@ export default function Servicios({ setView }) {
             </div>
           </div>
 
-        {loading && (
-          <div className="text-center text-slate-500 dark:text-slate-400 mt-10 flex flex-col items-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-4"></div>
-            Cargando servicios...
-          </div>
-        )}
+          {loading && (
+            <div className="text-center text-slate-500 dark:text-slate-400 mt-10 flex flex-col items-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-4"></div>
+              Cargando servicios...
+            </div>
+          )}
 
-        {!loading && error && (
-          <div className="text-center text-red-300 mt-10">
-            {error}
-          </div>
-        )}
+          {!loading && error && (
+            <div className="text-center text-red-300 mt-10">
+              {error}
+            </div>
+          )}
 
-        {!loading && !error && servicios.length > 0 && serviciosFiltrados.length === 0 && (
-          <div className="text-center py-16 bg-slate-100 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 mt-10">
-            <div className="text-4xl mb-4">🔍</div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No se encontraron servicios</h3>
-            <p className="text-slate-500 dark:text-slate-400">No se encontraron servicios que coincidan con tu búsqueda: <span className="text-blue-500 font-bold">"{filtroBusqueda}"</span></p>
-            <button 
-              onClick={() => setFiltroBusqueda("")}
-              className="mt-6 text-sm text-blue-400 hover:text-blue-300 font-medium underline"
-            >
-              Limpiar búsqueda
-            </button>
-          </div>
-        )}
+          {!loading && !error && servicios.length > 0 && serviciosFiltrados.length === 0 && (
+            <div className="text-center py-16 bg-slate-100 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 mt-10">
+              <div className="text-4xl mb-4">🔍</div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No se encontraron servicios</h3>
+              <p className="text-slate-500 dark:text-slate-400">No se encontraron servicios que coincidan con tu búsqueda: <span className="text-blue-500 font-bold">"{filtroBusqueda}"</span></p>
+              <button
+                onClick={() => setFiltroBusqueda("")}
+                className="mt-6 text-sm text-blue-400 hover:text-blue-300 font-medium underline"
+              >
+                Limpiar búsqueda
+              </button>
+            </div>
+          )}
 
-        {!loading && !error && servicios.length === 0 && (
-          <div className="text-center text-slate-500 dark:text-slate-400 mt-10">
-            No hay servicios registrados todavía.
-          </div>
-        )}
-      </div>
+          {!loading && !error && serviciosFiltrados.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {serviciosFiltrados.map((servicio) => {
+                const slug = normalizeSlug(servicio.nombre);
+                const isAutoExpand = window.location.hash === `#${slug}`;
+
+                return (
+                  <div key={servicio.id} id={slug} className="scroll-mt-32">
+                    <CardServicio
+                      servicio={servicio}
+                      isAdmin={userRole === "admin"}
+                      onEdit={() => handleOpenModal(servicio)}
+                      onDelete={() => handleDelete(servicio.id)}
+                      autoExpand={isAutoExpand}
+                      setView={setView}
+                      isFeatured={featuredServiceId === servicio.id}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {!loading && !error && servicios.length === 0 && (
+            <div className="text-center text-slate-500 dark:text-slate-400 mt-10">
+              No hay servicios registrados todavía.
+            </div>
+          )}
+        </div>
       </div>
   );
 }
