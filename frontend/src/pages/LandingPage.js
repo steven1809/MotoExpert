@@ -2,12 +2,7 @@ import React, { Component } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import {
-  FaInstagram,
-  FaFacebook,
-  FaWhatsapp,
-  FaTwitter,
-} from 'react-icons/fa';
+
 import Car3D from '../components/Car3D';
 import premiumImg from '../assets/services/premium.jpg';
 import expressImg from '../assets/services/express.jpeg';
@@ -25,6 +20,34 @@ L.Icon.Default.mergeOptions({
   iconUrl: require('leaflet/dist/images/marker-icon.png'),
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
+
+const IconWhatsapp = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M20 12a8 8 0 0 1-11.5 7.2L4 20l.9-3.7A8 8 0 1 1 20 12Z" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M9.5 10.2c.3-.6.6-.7 1-.7h.7c.2 0 .5.1.6.4l.8 1.7c.1.3.1.5 0 .7l-.5.7c-.1.2-.1.4 0 .6.5.9 1.3 1.7 2.2 2.2.2.1.4.1.6 0l.7-.5c.2-.1.4-.1.7 0l1.7.8c.3.1.4.4.4.6v.7c0 .4-.1.7-.7 1-1 .6-2.2.5-3.3.1-2.2-.8-4.3-2.9-5.1-5.1-.4-1.1-.5-2.3.1-3.2Z" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const IconInstagram = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <rect x="3" y="3" width="18" height="18" rx="5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="12" cy="12" r="4" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="17" cy="7" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+const IconFacebook = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M14 8h2V5h-2c-1.66 0-3 1.34-3 3v2H9v3h2v6h3v-6h2.5l.5-3H14V8c0-.55.45-1 1-1Z" />
+  </svg>
+);
+
+const IconTwitterX = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M5 4l14 16" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M19 4L5 20" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 class LandingPage extends Component {
   state = {
@@ -1042,24 +1065,28 @@ class LandingPage extends Component {
                               name: 'WhatsApp',
                               href: 'https://wa.me/573000000000',
                               icon: <FaWhatsapp className="w-6 h-6 text-white" />,
+                              icon: <IconWhatsapp className="w-6 h-6 text-white" />,
                               style: { backgroundColor: '#25D366' },
                             },
                             {
                               name: 'Instagram',
                               href: 'https://www.instagram.com/',
                               icon: <FaInstagram className="w-6 h-6 text-white" />,
+                              icon: <IconInstagram className="w-6 h-6 text-white" />,
                               style: { background: 'linear-gradient(135deg, #E1306C 0%, #833AB4 100%)' },
                             },
                             {
                               name: 'Facebook',
                               href: 'https://www.facebook.com/',
                               icon: <FaFacebook className="w-6 h-6 text-white" />,
+                              icon: <IconFacebook className="w-6 h-6 text-white" />,
                               style: { backgroundColor: '#1877F2' },
                             },
                             {
                               name: 'X (Twitter)',
                               href: 'https://twitter.com/',
                               icon: <FaTwitter className="w-6 h-6 text-white" />,
+                              icon: <IconTwitterX className="w-6 h-6 text-white" />,
                               style: { backgroundColor: '#1DA1F2' },
                             },
                           ].map((social) => (
@@ -1092,6 +1119,18 @@ class LandingPage extends Component {
                       <p className="text-slate-500 mt-2">
                         Detailing & Car Care
                       </p>
+                    </div>
+
+                    <div className="flex gap-8 text-slate-400 text-sm">
+                      <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+                        Instagram
+                      </a>
+                      <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+                        Facebook
+                      </a>
+                      <a href="https://wa.me/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+                        WhatsApp
+                      </a>
                     </div>
                   </div>
                   <div className="border-t border-white/5 mt-10 pt-8 text-center text-slate-500 text-sm">

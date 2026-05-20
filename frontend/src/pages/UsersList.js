@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -22,6 +25,72 @@ const UsersList = () => {
   const [citasGenerales, setCitasGenerales] = useState([]);
   const [filtroEstadoCita, setFiltroEstadoCita] = useState('TODAS');
 
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [userToEditRole, setUserToEditRole] = useState(null);
+  const [newRole, setNewRole] = useState('');
+  const [updatingRole, setUpdatingRole] = useState(false);
+
+  const exportUsers = (format) => {
+    const list = filteredUsers;
+    if (!Array.isArray(list) || list.length === 0) {
+      alert('No hay usuarios para exportar con los filtros actuales.');
+      return;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const fileBaseName = `motoexpert_usuarios_${today}`;
+    const headers = [
+      'ID',
+      'Nombre',
+      'Apellidos',
+      'Email',
+      'Teléfono',
+      'Documento',
+      'Rol',
+      'Proveedor',
+      'Google ID',
+    ];
+
+    const body = list.map((u) => [
+      u.id ?? '',
+      u.nombre ?? '',
+      u.apellidos ?? '',
+      u.email ?? '',
+      u.telefono ?? '',
+      u.documento ?? '',
+      u.role ?? '',
+      u.provider ?? '',
+      u.googleId ?? '',
+    ]);
+
+    if (format === 'excel') {
+      const worksheet = XLSX.utils.aoa_to_sheet([headers, ...body]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuarios');
+      XLSX.writeFile(workbook, `${fileBaseName}.xlsx`);
+      return;
+    }
+
+    if (format === 'pdf') {
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      doc.setFontSize(14);
+      doc.text('MotoExpert - Usuarios', 40, 40);
+      doc.setFontSize(10);
+      doc.text(`Exportado: ${today}`, 40, 58);
+
+      autoTable(doc, {
+        startY: 76,
+        head: [headers],
+        body,
+        styles: { fontSize: 8, cellPadding: 4 },
+        headStyles: { fillColor: [37, 99, 235] },
+        alternateRowStyles: { fillColor: [245, 247, 255] },
+        margin: { left: 40, right: 40 },
+      });
+
+      doc.save(`${fileBaseName}.pdf`);
+    }
+  };
   useEffect(() => {
     const role = localStorage.getItem('role');
     const token = localStorage.getItem('token');
@@ -166,6 +235,43 @@ const UsersList = () => {
     }
   };
 
+  const handleOpenRoleModal = (user) => {
+    setUserToEditRole(user);
+    setNewRole(user.role);
+    setShowRoleModal(true);
+  };
+
+  const handleUpdateRole = async () => {
+    if (!userToEditRole || !newRole) return;
+    
+    setUpdatingRole(true);
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`${API_BASE_URL}/usuarios/${userToEditRole.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      if (response.ok) {
+        // Actualizar estado local
+        setUsers(prev => prev.map(u => u.id === userToEditRole.id ? { ...u, role: newRole } : u));
+        setShowRoleModal(false);
+        alert('Rol actualizado con éxito');
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.message || 'No se pudo actualizar el rol'}`);
+      }
+    } catch (err) {
+      alert('Error de conexión al intentar actualizar el rol');
+    } finally {
+      setUpdatingRole(false);
+    }
+  };
+
   if (!loading && !isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-20 bg-slate-950">
@@ -204,7 +310,73 @@ const UsersList = () => {
 
   return (
     <div className="p-6 relative">
-      {/* Modal de Detalles */}
+      {/* Modal para Editar Rol */}
+      {showRoleModal && userToEditRole && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowRoleModal(false)} />
+          <div className="relative bg-[#050507] border border-white/[0.08] rounded-[2.5rem] w-full max-w-md p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-blue-600" />
+            
+            <h3 className="text-2xl font-black text-white mb-2 tracking-tighter">EDITAR ROL</h3>
+            <p className="text-slate-400 text-sm mb-8">Cambiando el rol de <span className="text-white font-bold">{userToEditRole.nombre}</span></p>
+
+            <div className="space-y-4 mb-8">
+              <label className="block text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 ml-1">Seleccionar Nivel de Acceso</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={() => setNewRole('admin')}
+                  className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
+                    newRole === 'admin' 
+                      ? 'bg-purple-600/20 border-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.2)]' 
+                      : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/10'
+                  }`}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 2.944V12m0 0l4.5 4.5M12 12l-4.5 4.5" />
+                  </svg>
+                  <span className="font-mono text-[10px] uppercase tracking-widest font-bold">Administrador</span>
+                </button>
+
+                <button 
+                  onClick={() => setNewRole('empleado')}
+                  className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
+                    newRole === 'empleado' 
+                      ? 'bg-blue-600/20 border-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.2)]' 
+                      : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/10'
+                  }`}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span className="font-mono text-[10px] uppercase tracking-widest font-bold">Empleado</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setShowRoleModal(false)}
+                className="flex-1 py-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] text-slate-400 font-mono text-[10px] uppercase tracking-[0.2em] hover:bg-white/[0.05] transition-all"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleUpdateRole}
+                disabled={updatingRole || newRole === userToEditRole.role}
+                className={`flex-1 py-4 rounded-2xl font-mono text-[10px] uppercase tracking-[0.2em] transition-all ${
+                  updatingRole || newRole === userToEditRole.role
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
+                    : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg hover:scale-[1.02] active:scale-[0.98]'
+                }`}
+              >
+                {updatingRole ? 'Actualizando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Detalles */}
       {showModal && selectedUser && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -411,17 +583,36 @@ const UsersList = () => {
 
         {/* Barra de Búsqueda Dinámica (Solo visible en Usuarios) */}
         {activeTab === 'usuarios' && (
-          <div className="relative w-full md:w-96 group">
-            <input 
-              type="text" 
-              placeholder="Buscar por nombre, email o ID..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-purple-600 outline-none transition-all group-hover:border-purple-500/50"
-            />
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+          <div className="w-full md:w-auto flex flex-col items-stretch md:items-end gap-3">
+            <div className="relative w-full md:w-96 group">
+              <input 
+                type="text" 
+                placeholder="Buscar por nombre, email o ID..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-purple-600 outline-none transition-all group-hover:border-purple-500/50"
+              />
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => exportUsers('excel')}
+                className="h-10 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] text-slate-300 hover:bg-white/[0.05] transition-all text-[10px] font-mono uppercase tracking-[0.2em]"
+              >
+                Exportar Excel
+              </button>
+              <button
+                type="button"
+                onClick={() => exportUsers('pdf')}
+                className="h-10 px-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] font-mono uppercase tracking-[0.2em]"
+              >
+                Exportar PDF
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -474,6 +665,17 @@ const UsersList = () => {
                     </td>
                     <td className="p-5">
                       <div className="flex space-x-3 justify-center">
+                        {isAdmin && (
+                          <button 
+                            onClick={() => handleOpenRoleModal(user)}
+                            title="Editar rol de usuario"
+                            className="p-2 bg-purple-600/10 hover:bg-purple-600 text-purple-400 hover:text-white rounded-2xl transition-all border border-purple-500/20 shadow-lg"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 2.944V12m0 0l4.5 4.5M12 12l-4.5 4.5" />
+                            </svg>
+                          </button>
+                        )}
                         <button 
                           onClick={() => handleOpenDetails(user)}
                           title="Ver detalles completos"
