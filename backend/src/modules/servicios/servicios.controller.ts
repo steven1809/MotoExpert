@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { ServiciosService } from './servicios.service';
 import { CreateServicioDto } from './dto/create-servicio.dto';
@@ -17,8 +18,11 @@ export class ServiciosController {
   constructor(private readonly service: ServiciosService) {}
 
   @Get()
-  getAll() {
-    return this.service.findAll();
+  async getAll(@Query() filtros: any) {
+    console.log('Filtros recibidos:', filtros);
+    const servicios = await this.service.findAll(filtros);
+    console.log('Servicios encontrados:', servicios.length);
+    return servicios;
   }
 
   @Get(':id')
