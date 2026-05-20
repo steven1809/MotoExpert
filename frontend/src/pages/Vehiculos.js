@@ -18,7 +18,6 @@ class Vehiculos extends Component {
         modelo: '',
         anio: '',
         color: '',
-        kilometraje: '',
         imagen: null,
       },
       formErrors: {},
@@ -151,7 +150,7 @@ class Vehiculos extends Component {
     // Process input values
     if (name === 'placa') {
       value = value.toUpperCase(); // Force uppercase
-    } else if (name === 'anio' || name === 'kilometraje') {
+    } else if (name === 'anio') {
       value = value.replace(/\D/g, ''); // Only numbers
     }
 
@@ -245,7 +244,6 @@ class Vehiculos extends Component {
             modelo: '',
             anio: '',
             color: '',
-            kilometraje: '',
             imagen: null,
           },
           formErrors: {},
@@ -485,19 +483,6 @@ class Vehiculos extends Component {
                           value={this.state.formData.color}
                           onChange={this.handleInputChange}
                           placeholder="Ej. Gris oscuro"
-                          className="w-full h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[#2563EB]/50 transition-colors"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
-                          Kilometraje (opcional)
-                        </label>
-                        <input
-                          name="kilometraje"
-                          value={this.state.formData.kilometraje}
-                          onChange={this.handleInputChange}
-                          placeholder="Ej. 25,000"
                           className="w-full h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[#2563EB]/50 transition-colors"
                         />
                       </div>
