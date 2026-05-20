@@ -51,24 +51,24 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
   };
 
   const removeFilter = (filterType) => {
-    switch (filterType) {
-      case 'fromDate':
-        setFromDate('');
-        break;
-      case 'toDate':
-        setToDate('');
-        break;
-      case 'service':
-        setServiceFilter('');
-        break;
-      case 'vehicleType':
-        setVehicleTypeFilter('');
-        break;
-      case 'status':
-        setStatusFilters([]);
-        break;
-      default:
-        break;
+    if (filterType === 'fromDate') {
+      setFromDate('');
+      return;
+    }
+    if (filterType === 'toDate') {
+      setToDate('');
+      return;
+    }
+    if (filterType === 'service') {
+      setServiceFilter('');
+      return;
+    }
+    if (filterType === 'vehicleType') {
+      setVehicleTypeFilter('');
+      return;
+    }
+    if (filterType === 'status') {
+      setStatusFilters([]);
     }
   };
 

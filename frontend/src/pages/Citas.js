@@ -5,6 +5,7 @@ import NoVehicleWarning from '../components/NoVehicleWarning';
 import DuplicateBookingWarning from '../components/DuplicateBookingWarning';
 import AppointmentsSearchAndFilter from '../components/AppointmentsSearchAndFilter';
 import { QRCodeCanvas } from 'qrcode.react';
+import carHeroImg from '../assets/images/1.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -345,6 +346,10 @@ const Citas = ({
   const [tokenModalOpen, setTokenModalOpen] = useState(false);
   const [tokenModalCode, setTokenModalCode] = useState('');
   const [paymentByAppointment, setPaymentByAppointment] = useState({});
+  const [notes, setNotes] = useState('');
+  const formSectionRef = useRef(null);
+  const pendingSectionRef = useRef(null);
+  const historySectionRef = useRef(null);
   
   const [formData, setFormData] = useState({
     fecha: '',
@@ -428,7 +433,7 @@ const Citas = ({
     }
   };
 
-  const fetchDisponibilidad = async (fecha, servicioId, empleadoId = null) => {
+  const fetchDisponibilidad = useCallback(async (fecha, servicioId, empleadoId = null) => {
     if (!fecha || !servicioId) return;
     setLoadingSlots(true);
     try {
@@ -447,7 +452,13 @@ const Citas = ({
     } finally {
       setLoadingSlots(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!showForm) return;
+    if (!formData.fecha || !formData.servicioId || !formData.empleadoId) return;
+    fetchDisponibilidad(formData.fecha, formData.servicioId, formData.empleadoId);
+  }, [fetchDisponibilidad, formData.empleadoId, formData.fecha, formData.servicioId, showForm]);
 
   const getCitaTimeInfo = useCallback((cita) => {
     const citaDateStr = cita.fecha;
@@ -470,13 +481,6 @@ const Citas = ({
       gracePeriodRemainingMs: gracePeriodMs - timePastStartMs,
     };
   }, [currentTime]);
-
-  const formatCountdown = (ms) => {
-    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  };
 
   const cancelCita = useCallback(async (citaId) => {
     if (processedCitas.has(citaId)) return;
@@ -527,36 +531,6 @@ const Citas = ({
     setDisponibilidad([]);
   };
 
-  const handleEmpleadoSelect = (empleadoId) => {
-    const newEmpleadoId = empleadoId.toString();
-    setFormData(prev => ({ ...prev, empleadoId: newEmpleadoId, hora_inicio: '' }));
-    setDisponibilidad([]);
-    if (formData.fecha && formData.servicioId) {
-      fetchDisponibilidad(formData.fecha, formData.servicioId, empleadoId);
-    }
-  };
-
-  const getFilteredSlots = () => {
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const selectedDate = formData.fecha;
-    const isToday = selectedDate === today;
-
-    let availableSlots = disponibilidad.filter(slot => slot.disponible);
-
-    if (isToday) {
-      availableSlots = availableSlots.filter(slot => {
-        const [hours, minutes] = slot.hora.split(':').map(Number);
-        const slotDate = new Date();
-        slotDate.setHours(hours, minutes, 0, 0);
-        const minTime = new Date(now.getTime() + 30 * 60 * 1000);
-        return slotDate >= minTime;
-      });
-    }
-
-    return availableSlots;
-  };
-
   const checkForDuplicateBooking = () => {
     // Find selected vehicle and service from state
     const selectedVehicle = vehiculos.find(v => v.id.toString() === formData.vehiculoId);
@@ -589,28 +563,31 @@ const Citas = ({
       alert('Por favor selecciona un horario disponible');
       return;
     }
-    if (!formData.empleadoId) {
-      alert('Por favor selecciona tu especialista');
-      return;
-    }
 
     try {
       const token = localStorage.getItem('token');
       const userId = localStorage.getItem('userId');
       
-      // Calculamos hora_fin (sumando 1 hora por defecto para simplificar)
-      const [h, m, s] = formData.hora_inicio.split(':');
-      const horaFin = `${(parseInt(h) + 1).toString().padStart(2, '0')}:${m}:${s}`;
+      const [hRaw, mRaw] = (formData.hora_inicio || '').split(':');
+      const h = Number(hRaw);
+      const m = (mRaw ?? '00').toString().padStart(2, '0');
+      const horaInicio =
+        formData.hora_inicio.length === 5 ? `${formData.hora_inicio}:00` : formData.hora_inicio;
+      const horaFin = Number.isFinite(h)
+        ? `${String((h + 1) % 24).padStart(2, '0')}:${m}:00`
+        : horaInicio;
 
       const payload = {
         fecha: formData.fecha,
-        hora_inicio: formData.hora_inicio,
+        hora_inicio: horaInicio,
         hora_fin: horaFin,
         vehiculoId: parseInt(formData.vehiculoId, 10),
         servicioId: parseInt(formData.servicioId, 10),
         usuarioId: parseInt(userId, 10),
-        empleadoId: parseInt(formData.empleadoId, 10)
       };
+      if (formData.empleadoId) {
+        payload.empleadoId = parseInt(formData.empleadoId, 10);
+      }
 
       const response = await fetch(`${API_BASE_URL}/citas`, {
         method: 'POST',
@@ -1056,6 +1033,38 @@ const Citas = ({
       filters.vehicleTypeFilter ||
       filters.statusFilters.length > 0;
 
+    const filteredPendientes = getFilteredCitas(citasPendientes);
+    const completedCitas = citas.filter((cita) => cita.estado === 'FINALIZADO');
+
+    const nextCita = [...citasPendientes]
+      .map((cita) => {
+        const fecha = cita?.fecha;
+        const hora = cita?.hora_inicio;
+        const d = fecha && hora ? new Date(`${fecha}T${hora}`) : null;
+        return { cita, d };
+      })
+      .filter((x) => x.d && Number.isFinite(x.d.getTime()))
+      .sort((a, b) => a.d - b.d)[0]?.cita;
+
+    const totalSpent = completedCitas.reduce((sum, cita) => {
+      const raw = cita?.servicio?.precio;
+      const n = typeof raw === 'number' ? raw : raw ? Number(raw) : 0;
+      return sum + (Number.isFinite(n) ? n : 0);
+    }, 0);
+
+    const selectedServicio = servicios.find((s) => String(s.id) === String(formData.servicioId)) || null;
+    const selectedEmpleado = empleados.find((e) => String(e.id) === String(formData.empleadoId)) || null;
+    const currentStepIndex = !formData.vehiculoId
+      ? 0
+      : !formData.servicioId
+        ? 1
+        : !formData.empleadoId
+          ? 2
+          : !formData.hora_inicio
+            ? 3
+            : 4;
+    const canContinue = Boolean(formData.vehiculoId && formData.servicioId && formData.empleadoId && formData.fecha && formData.hora_inicio);
+
   if (loading || loadingVehicles) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white dark:bg-slate-950">
@@ -1080,725 +1089,1089 @@ const Citas = ({
           }}
         />
       )}
-    <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-white dark:bg-[#020617]">
-      <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-slate-200 dark:border-white/5 mx-6 mt-6 bg-slate-100 dark:bg-[#111827]">
-        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-[#2563EB]/10 rounded-full blur-[100px]" />
-        <div className="relative z-10 text-center space-y-4">
-          <div className="inline-block px-4 py-1 rounded-full bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] text-[10px] font-black uppercase tracking-[0.3em]">Reserva Online</div>
-          <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
-            Agenda tu <span className="text-[#2563EB]">Cita</span>
-          </h1>
-          <p className="text-slate-500 dark:text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Selecciona el tratamiento premium para tu vehículo.</p>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-6 space-y-12">
-        {error && (
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200">
-            {error}
+      <div className="min-h-screen bg-white dark:bg-[#020617] pb-24 animate-in fade-in duration-700">
+        <div className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
+          <div>
+            <div className="text-sm font-black text-slate-900 dark:text-white">Citas</div>
+            <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
+              Gestiona tus citas, agenda nuevos servicios y revisa tu historial.
+            </div>
           </div>
-        )}
-        <AppointmentChatModal
-          isOpen={chatOpen}
-          alert={chatAlert}
-          onClose={() => {
-            setChatOpen(false);
-            setChatAlert(null);
-          }}
-        />
 
-        <TokenCodeModal
-          isOpen={tokenModalOpen}
-          tokenCode={tokenModalCode}
-          onClose={() => {
-            setTokenModalOpen(false);
-            setTokenModalCode('');
-          }}
-        />
+          <AppointmentChatModal
+            isOpen={chatOpen}
+            alert={chatAlert}
+            onClose={() => {
+              setChatOpen(false);
+              setChatAlert(null);
+            }}
+          />
 
-        {overdueAlerts.length > 0 && (
-          <div className="space-y-3">
-            {overdueAlerts.map((a) => {
-              const serviceName = (a.serviceName || 'Servicio').toUpperCase();
-              const plate = (a.vehiclePlate || '—').toUpperCase();
-              const minutes = Number(a.minutesOverdue || 0);
-              return (
-                <div
-                  key={a.appointmentId}
-                  className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 rounded-2xl bg-[#EF9F27]/10 border border-[#EF9F27]/25"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#EF9F27]/10 border border-[#EF9F27]/25 flex items-center justify-center text-[#EF9F27] flex-shrink-0">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-black text-[#EF9F27]">
-                        {serviceName} — {plate} is {minutes} minutes overdue
+          <TokenCodeModal
+            isOpen={tokenModalOpen}
+            tokenCode={tokenModalCode}
+            onClose={() => {
+              setTokenModalOpen(false);
+              setTokenModalCode('');
+            }}
+          />
+
+          {error && (
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200">
+              {error}
+            </div>
+          )}
+
+          {overdueAlerts.length > 0 && (
+            <div className="space-y-3">
+              {overdueAlerts.map((a) => {
+                const serviceName = (a.serviceName || 'Servicio').toUpperCase();
+                const plate = (a.vehiclePlate || '—').toUpperCase();
+                const minutes = Number(a.minutesOverdue || 0);
+                return (
+                  <div
+                    key={a.appointmentId}
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 rounded-2xl bg-[#EF9F27]/10 border border-[#EF9F27]/25"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#EF9F27]/10 border border-[#EF9F27]/25 flex items-center justify-center text-[#EF9F27] flex-shrink-0">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
                       </div>
-                      <div className="text-xs text-white/60 mt-1">
-                        Expected end: {a.expectedEndTime ? new Date(a.expectedEndTime).toLocaleString() : '—'}
+                      <div className="min-w-0">
+                        <div className="text-sm font-black text-[#EF9F27]">
+                          {serviceName} — {plate} ({minutes} min)
+                        </div>
+                        <div className="text-xs text-white/60 mt-1">
+                          Expected end: {a.expectedEndTime ? new Date(a.expectedEndTime).toLocaleString() : '—'}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 md:justify-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setChatAlert(a);
-                        setChatOpen(true);
-                        if (onOpenOverdueChat) onOpenOverdueChat(a);
-                      }}
-                      className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-black uppercase tracking-widest transition-all active:scale-95"
-                    >
-                      Open Chat
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (onViewOverdueAppointment) onViewOverdueAppointment(a.appointmentId);
-                        const el = document.getElementById(`cita-${a.appointmentId}`);
-                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }}
-                      className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-[#2563EB]/20 transition-all active:scale-95"
-                    >
-                      View Appointment
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDismissOverdueAlert && onDismissOverdueAlert(a.appointmentId)}
-                      className="w-10 h-10 rounded-xl bg-transparent hover:bg-white/5 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all"
-                      aria-label="Dismiss"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="flex justify-between items-center">
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-8 py-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-slate-900 dark:text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-[#2563EB]/20 transition-all active:scale-95"
-          >
-            {showForm ? 'Cerrar Formulario' : 'Nueva Cita Premium'}
-          </button>
-        </div>
-
-        {/* Alerts Section */}
-        {getAlerts().length > 0 && (
-          <div className="space-y-2 mb-6">
-            {getAlerts().map(alert => {
-              const style = getAlertStyle(alert.type);
-              return (
-                <div
-                  key={alert.id}
-                  className={`flex items-center gap-4 p-4 rounded-2xl border ${style.bg} ${style.border}`}
-                >
-                  {/* Icon */}
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${style.iconBg}`} style={{ color: style.color }}>
-                    {getAlertIcon(alert.type)}
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="flex-1">
-                    <div className="text-sm font-medium" style={{ color: style.color }}>
-                      {getAlertTitle(alert.type, alert.cita)}
-                    </div>
-                    <div className="text-xs text-[#9ca3af] mt-1">
-                      {getAlertMessage(alert.type, alert.cita)}
-                    </div>
-                  </div>
-                  
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {alert.type === 'in-progress' ? null : alert.type === 'expired' ? (
-                      <>
-                        <button
-                          onClick={() => handleReschedule(alert.cita)}
-                          className="px-3 py-1.5 text-xs font-bold border rounded-xl transition-all hover:bg-[#2563EB]/10"
-                          style={{ borderColor: style.color, color: style.color }}
-                        >
-                          Reschedule →
-                        </button>
-                        <button
-                          onClick={() => handleCancelAppointment(alert.cita)}
-                          className="px-3 py-1.5 text-xs font-bold border rounded-xl transition-all hover:bg-[#E24B4A]/10"
-                          style={{ borderColor: '#E24B4A', color: '#E24B4A' }}
-                        >
-                          Cancel appointment
-                        </button>
-                      </>
-                    ) : (
+                    <div className="flex items-center gap-2 md:justify-end">
                       <button
-                        onClick={() => handleViewAppointment(alert.cita)}
-                        className="px-3 py-1.5 text-xs font-bold border rounded-xl transition-all hover:bg-[#2563EB]/10"
-                        style={{ borderColor: style.color, color: style.color }}
+                        type="button"
+                        onClick={() => {
+                          setChatAlert(a);
+                          setChatOpen(true);
+                          if (onOpenOverdueChat) onOpenOverdueChat(a);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-black uppercase tracking-widest transition-all active:scale-95"
                       >
-                        {alert.type === 'today' ? 'View details →' : 'View appointment →'}
+                        Chat
                       </button>
-                    )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onViewOverdueAppointment) onViewOverdueAppointment(a.appointmentId);
+                          const el = document.getElementById(`cita-${a.appointmentId}`);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                        className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-[#2563EB]/20 transition-all active:scale-95"
+                      >
+                        Ver cita
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDismissOverdueAlert && onDismissOverdueAlert(a.appointmentId)}
+                        className="w-10 h-10 rounded-xl bg-transparent hover:bg-white/5 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all"
+                        aria-label="Cerrar"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0b1220] overflow-hidden">
+            <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                      <path d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3a.75.75 0 011.5 0v1.5h.75A2.25 2.25 0 0121 6.75v12A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-12A2.25 2.25 0 015.25 4.5H6V3a.75.75 0 01.75-.75zM4.5 9.75h15V6.75a.75.75 0 00-.75-.75H5.25a.75.75 0 00-.75.75v3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-lg font-black text-slate-900 dark:text-white">Mis citas</div>
+                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">
+                      Control y programación de servicios.
+                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
 
-        {/* Formulario Estilo Tesla */}
-        {showForm && (
-          <div className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-10 rounded-[2.5rem] shadow-2xl animate-in slide-in-from-top duration-500">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-                    Servicio Detailing
-                  </label>
-                  <select
-                    name="servicioId"
-                    value={formData.servicioId}
-                    onChange={handleServicioChange}
-                    className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
-                    required
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <div className="relative w-full sm:w-[280px]">
+                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={filters.searchTerm}
+                      onChange={(e) => setFilters((prev) => ({ ...prev, searchTerm: e.target.value }))}
+                      placeholder="Buscar cita..."
+                      className="w-full h-11 pl-12 pr-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#2563EB]/50 transition-colors"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    className="w-full sm:w-auto h-11 px-4 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-xs font-black uppercase tracking-widest transition-colors"
                   >
-                    <option value="">Seleccione el tratamiento...</option>
-                    {servicios.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-                  </select>
-                  
-                  {formData.servicioId && (() => {
-                    const servicioSeleccionado = servicios.find(s => s.id.toString() === formData.servicioId.toString());
-                    return servicioSeleccionado ? (
-                      <div className="mt-3 p-4 bg-[#2563EB]/5 border border-[#2563EB]/20 rounded-2xl animate-in fade-in duration-300 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#2563EB] text-sm">✦</span>
-                          <span className="text-[10px] font-black text-[#2563EB] uppercase tracking-widest">
-                            ¿Qué incluye?
-                          </span>
-                        </div>
+                    Filtros{hasActiveFilters ? ' •' : ''}
+                  </button>
 
-                        {/* Descripción del servicio */}
-                        {servicioSeleccionado.descripcion && (
-                          <p className="text-slate-500 dark:text-[#94A3B8] text-xs font-medium italic leading-relaxed">
-                            {servicioSeleccionado.descripcion}
-                          </p>
-                        )}
-
-                        {/* Precio y duración si los tienes en el objeto */}
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {servicioSeleccionado.precio && (
-                            <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                              💰 ${servicioSeleccionado.precio.toLocaleString()}
-                            </span>
-                          )}
-                          {servicioSeleccionado.duracion && (
-                            <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
-                              ⏱ {servicioSeleccionado.duracion} min
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ) : null;
-                  })()}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Unidad a Tratar</label>
-                  <select
-                    name="vehiculoId"
-                    value={formData.vehiculoId}
-                    onChange={(e) => setFormData({...formData, vehiculoId: e.target.value})}
-                    className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
-                    required
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForm(true);
+                      setTimeout(() => formSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+                    }}
+                    className="w-full sm:w-auto h-11 px-5 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black uppercase tracking-widest transition-colors"
                   >
-                    <option value="">Placa...</option>
-                    {vehiculos.map(v => <option key={v.id} value={v.id}>{v.placa} - {v.modelo}</option>)}
-                  </select>
+                    + Agendar cita
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Fecha de Ingreso</label>
-                  <input
-                    type="date"
-                    name="fecha"
-                    min={new Date().toISOString().split('T')[0]}
-                    value={formData.fecha}
-                    onChange={handleDateChange}
-                    className="w-full p-4 bg-white dark:bg-[#020617] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-900 dark:text-[#F8FAFC] font-bold focus:border-[#2563EB]/50 transition-all"
-                    required
-                  />
+              </div>
+            </div>
+
+            <div className="px-6 py-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <button
+                  type="button"
+                  onClick={() => pendingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-white/40">
+                      Citas pendientes
+                    </div>
+                    <div className="h-9 w-9 rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3a.75.75 0 011.5 0v1.5h.75A2.25 2.25 0 0121 6.75v12A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-12A2.25 2.25 0 015.25 4.5H6V3a.75.75 0 01.75-.75z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-3xl font-black text-slate-900 dark:text-white">
+                    {filteredPendientes.length}
+                  </div>
+                  <div className="mt-2 text-xs text-slate-600 dark:text-[#94A3B8]">Ver todas →</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-white/40">
+                      Servicios realizados
+                    </div>
+                    <div className="h-9 w-9 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path fillRule="evenodd" d="M2.25 12a9.75 9.75 0 1119.5 0 9.75 9.75 0 01-19.5 0zm13.36-1.47a.75.75 0 10-1.22-.9l-3.2 4.33-1.6-1.6a.75.75 0 10-1.06 1.06l2.25 2.25a.75.75 0 001.14-.08l3.69-4.96z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-3xl font-black text-slate-900 dark:text-white">
+                    {completedCitas.length}
+                  </div>
+                  <div className="mt-2 text-xs text-slate-600 dark:text-[#94A3B8]">Ver historial →</div>
+                </button>
+
+                <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-white/40">
+                      Próxima cita
+                    </div>
+                    <div className="h-9 w-9 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-300 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path d="M12 8.25a.75.75 0 01.75.75v3.69l2.28 1.32a.75.75 0 11-.76 1.3l-2.65-1.54a.75.75 0 01-.37-.65V9a.75.75 0 01.75-.75z" />
+                        <path fillRule="evenodd" d="M12 2.25c5.385 0 9.75 4.365 9.75 9.75S17.385 21.75 12 21.75 2.25 17.385 2.25 12 6.615 2.25 12 2.25zm0 1.5A8.25 8.25 0 1012 20.25 8.25 8.25 0 0012 3.75z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-sm font-black text-slate-900 dark:text-white">
+                    {nextCita?.fecha ? new Date(nextCita.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '—'}
+                    {nextCita?.hora_inicio ? `, ${nextCita.hora_inicio.substring(0, 5)}` : ''}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-600 dark:text-[#94A3B8] truncate">
+                    {nextCita?.servicio?.nombre || '—'}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1 text-[#2563EB]">Slots Disponibles</label>
-                  <div className="flex flex-wrap gap-3 max-h-32 overflow-y-auto p-4 bg-white dark:bg-[#020617] rounded-2xl border border-slate-200 dark:border-white/5">
-                    {loadingSlots ? (
-                      <div className="w-full text-center py-2 text-slate-500 dark:text-[#94A3B8] text-xs italic">Consultando disponibilidad...</div>
-                    ) : (() => {
-                      const filteredSlots = getFilteredSlots();
-                      const now = new Date();
-                      const today = now.toISOString().split('T')[0];
-                      const isToday = formData.fecha === today;
 
-                      if (filteredSlots.length === 0 && isToday && formData.empleadoId) {
-                        return (
-                          <div className="w-full p-4 text-center bg-[rgba(234,75,74,0.08)] border border-[#E24B4A] rounded-xl">
-                            <p className="text-[#E24B4A] text-sm font-bold italic">
-                              No available time slots for today. Please select another date.
-                            </p>
-                          </div>
-                        );
+                <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-white/40">
+                      Total gastado
+                    </div>
+                    <div className="h-9 w-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path fillRule="evenodd" d="M12 2.25c5.385 0 9.75 4.365 9.75 9.75S17.385 21.75 12 21.75 2.25 17.385 2.25 12 6.615 2.25 12 2.25zm0 1.5A8.25 8.25 0 1012 20.25 8.25 8.25 0 0012 3.75zm.75 4.5a.75.75 0 00-1.5 0v.44c-.95.22-1.75.93-1.75 2.06 0 1.21.8 1.82 1.75 2.13l.43.14c.84.28 1.07.47 1.07.93 0 .52-.44.86-1.14.86-.73 0-1.18-.32-1.45-.57a.75.75 0 00-1.02 1.1c.34.31.86.64 1.61.83v.47a.75.75 0 001.5 0v-.41c1.14-.2 2-.97 2-2.28 0-1.33-.92-1.9-1.97-2.25l-.44-.14c-.78-.26-.84-.47-.84-.79 0-.4.34-.68.93-.68.6 0 .98.24 1.2.43a.75.75 0 10.98-1.13 3.1 3.1 0 00-1.4-.66v-.5z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-sm font-black text-slate-900 dark:text-white">
+                    {(() => {
+                      try {
+                        return new Intl.NumberFormat('es-CO', {
+                          style: 'currency',
+                          currency: 'COP',
+                          maximumFractionDigits: 0,
+                        }).format(totalSpent);
+                      } catch {
+                        return `$${totalSpent.toLocaleString()}`;
                       }
-
-                      if (filteredSlots.length > 0) {
-                        return filteredSlots.map(slot => (
-                          <button
-                            key={slot.hora}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, hora_inicio: slot.hora })}
-                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                              formData.hora_inicio === slot.hora 
-                                ? 'bg-[#2563EB] border-[#2563EB] text-slate-900 dark:text-white' 
-                                : 'bg-slate-100 dark:bg-[#111827] border-slate-200 dark:border-white/5 text-slate-500 dark:text-[#94A3B8] hover:border-white/20'
-                            }`}
-                          >
-                            {slot.hora.substring(0, 5)}
-                          </button>
-                        ));
-                      }
-
-                      return (
-                        <div className="w-full text-center py-2 text-slate-500 dark:text-[#94A3B8] text-xs italic">
-                          {!formData.empleadoId 
-                            ? 'Selecciona un especialista para ver horarios' 
-                            : 'No hay horarios disponibles para este especialista'}
-                        </div>
-                      );
                     })()}
                   </div>
+                  <div className="mt-1 text-xs text-slate-600 dark:text-[#94A3B8]">Ver detalle →</div>
                 </div>
               </div>
 
-              {/* Selector de Especialista Premium */}
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">Selecciona tu Especialista</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {empleados.map(empleado => {
-                    const isSelected = formData.empleadoId === empleado.id.toString();
-                    const isLoading = isSelected && loadingSlots && formData.fecha && formData.servicioId;
-                    
+              {getAlerts().length > 0 && (
+                <div className="space-y-2">
+                  {getAlerts().map((alert) => {
+                    const style = getAlertStyle(alert.type);
                     return (
-                      <div
-                        key={empleado.id}
-                        onClick={() => handleEmpleadoSelect(empleado.id)}
-                        className={`cursor-pointer p-6 rounded-2xl border-2 transition-all duration-300 group ${
-                          isSelected
-                            ? 'bg-[#2563EB]/10 border-[#2563EB] shadow-2xl shadow-[#2563EB]/20'
-                            : 'bg-slate-100 dark:bg-[#111827] border-white/10 hover:border-[#2563EB]/40 hover:shadow-xl'
-                        }`}
-                      >
-                        <div className="flex items-center gap-4 mb-3">
-                          <div className="w-12 h-12 rounded-full bg-[#2563EB]/20 flex items-center justify-center text-2xl border border-[#2563EB]/30 group-hover:scale-110 transition-transform">
-                            {isLoading ? (
-                              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#2563EB]"></div>
-                            ) : (
-                              '👤'
-                            )}
+                      <div key={alert.id} className={`flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 rounded-2xl border ${style.bg} ${style.border}`}>
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${style.iconBg}`} style={{ color: style.color }}>
+                            {getAlertIcon(alert.type)}
                           </div>
-                          <div>
-                            <h4 className="text-lg font-black text-slate-900 dark:text-white">{empleado.nombre || 'Especialista'}</h4>
-                            <span className="text-xs font-black text-[#2563EB] uppercase tracking-widest">
-                              {empleado.estado === 'activo' ? 'Disponible' : 'No disponible'}
-                            </span>
+                          <div className="min-w-0">
+                            <div className="text-sm font-black" style={{ color: style.color }}>
+                              {getAlertTitle(alert.type, alert.cita)}
+                            </div>
+                            <div className="text-xs text-slate-600 dark:text-[#94A3B8] mt-1">
+                              {getAlertMessage(alert.type, alert.cita)}
+                            </div>
                           </div>
                         </div>
-                        {empleado.cargo && (
-                          <p className="text-sm text-slate-500 dark:text-[#94A3B8] font-medium italic">
-                            {empleado.cargo}
-                          </p>
-                        )}
-                        {empleado.especialidad && (
-                          <div className="mt-2">
-                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                              {empleado.especialidad}
-                            </span>
-                          </div>
-                        )}
-                        {isSelected && !isLoading && (
-                          <div className="mt-3 flex items-center gap-2 text-[#2563EB] text-xs font-black uppercase tracking-widest">
-                            <span className="animate-pulse">✓</span> Seleccionado
-                          </div>
-                        )}
+
+                        <div className="flex items-center gap-2 md:justify-end">
+                          {alert.type === 'in-progress' ? null : alert.type === 'expired' ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleReschedule(alert.cita)}
+                                className="h-10 px-4 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                              >
+                                Reprogramar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCancelAppointment(alert.cita)}
+                                className="h-10 px-4 rounded-2xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 text-[11px] font-black uppercase tracking-widest transition-colors"
+                              >
+                                Cancelar
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleViewAppointment(alert.cita)}
+                              className="h-10 px-4 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                            >
+                              Ver detalles
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-              </div>
-              <button
-                type="submit"
-                disabled={!formData.hora_inicio}
-                className={`w-full py-5 font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all ${
-                  formData.hora_inicio 
-                    ? 'bg-[#2563EB] hover:bg-[#1d4ed8] text-slate-900 dark:text-white shadow-2xl shadow-[#2563EB]/20' 
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                Confirmar Reserva Premium
-              </button>
-            </form>
-          </div>
-        )}
+              )}
 
-        {/* Sección Citas Pendientes */}
-        <div className="space-y-6 citas-pendientes-section">
-          <div className="flex items-center space-x-4">
-            <span className="w-2 h-2 bg-[#2563EB] rounded-full animate-pulse" />
-            <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">
-              Citas Pendientes
-            </h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {citasPendientes.length > 0 ? (
-              citasPendientes.map(cita => {
-                const timeInfo = getCitaTimeInfo(cita);
-                const countdown = formatCountdown(timeInfo.gracePeriodRemainingMs);
-                const isUnderTwoMinutes = timeInfo.gracePeriodRemainingMs > 0 && timeInfo.gracePeriodRemainingMs < 2 * 60 * 1000;
-                const payment = paymentByAppointment?.[cita.id] ?? cita.payment ?? null;
-                const tokenCode = payment?.tokenCode || '';
-                const tokenUsed = Boolean(payment?.tokenUsed);
-                const tokenExpiresAt = payment?.tokenExpiresAt;
-                const tokenExpired = tokenExpiresAt
-                  ? new Date(tokenExpiresAt).getTime() <= Date.now()
-                  : true;
-                const canViewToken = Boolean(tokenCode) && !tokenUsed && !tokenExpired;
-                
-                return (
-                <div id={`cita-${cita.id}`} key={cita.id} className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 p-8 rounded-[2.5rem] hover:border-[#2563EB]/30 transition-all duration-500 space-y-6 shadow-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-6 opacity-10">
-                    <span className="text-4xl font-black italic tracking-tighter text-slate-900 dark:text-white">#{cita.id}</span>
-                  </div>
-                  
-                  {/* Overdue Warning Banner */}
-                  {timeInfo.isOverdue && cita.estado === 'PENDIENTE' && (
-                    <div className="relative z-10 p-4 rounded-2xl bg-[#EF9F27]/10 border border-[#EF9F27]/25 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-[#EF9F27]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <div className="flex-1">
-                          <div className="text-sm font-bold text-[#EF9F27]">
-                            ⚠️ Your appointment was scheduled for {cita.hora_inicio.substring(0, 5)}.
+              <div ref={formSectionRef} />
+
+              {showForm && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-8">
+                    <div className="rounded-3xl border border-white/10 bg-[#0b1220] overflow-hidden">
+                      <div className="px-5 py-4 flex flex-col gap-4 border-b border-white/10">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <div className="text-sm font-black text-white">Agendar nueva cita</div>
+                            <div className="text-xs text-[#94A3B8]">Completa la información para agendar tu servicio.</div>
                           </div>
-                          <div className="text-xs text-[#9ca3af]">
-                            You have {countdown} to start the service or it will be automatically cancelled.
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowForm(false);
+                              setNotes('');
+                            }}
+                            className="h-10 px-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                          >
+                            Cerrar formulario
+                          </button>
                         </div>
-                        <div className={`text-2xl font-black ${isUnderTwoMinutes ? 'text-[#E24B4A]' : 'text-[#EF9F27]'}`}>
-                          {countdown}
+
+                        <div className="grid grid-cols-5 gap-2">
+                          {[
+                            { label: 'Vehículo' },
+                            { label: 'Servicio' },
+                            { label: 'Trabajador' },
+                            { label: 'Horario' },
+                            { label: 'Confirmación' },
+                          ].map((s, idx) => {
+                            const isActive = idx === currentStepIndex;
+                            const isDone = idx < currentStepIndex;
+                            return (
+                              <div key={s.label} className="flex items-center gap-2">
+                                <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-black border ${
+                                  isDone
+                                    ? 'bg-[#2563EB] border-[#2563EB] text-white'
+                                    : isActive
+                                      ? 'bg-[#2563EB]/10 border-[#2563EB]/40 text-[#60A5FA]'
+                                      : 'bg-white/5 border-white/10 text-white/40'
+                                }`}>
+                                  {idx + 1}
+                                </div>
+                                <div className={`text-[10px] font-black uppercase tracking-widest ${
+                                  isActive || isDone ? 'text-white' : 'text-white/40'
+                                }`}>
+                                  {s.label}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex justify-between items-start relative z-10">
-                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                      cita.estado === 'PENDIENTE' 
-                        ? timeInfo.isInGracePeriod 
-                          ? 'bg-[#EF9F27]/10 text-[#EF9F27] border-[#EF9F27]/20' 
-                          : 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
-                        : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                    }`}>
-                      {cita.estado === 'PENDIENTE' && timeInfo.isInGracePeriod ? 'TARDÍO' : cita.estado}
-                    </span>
-                    <div className="flex items-center gap-2 relative z-20">
-                      <button
-                        type="button"
-                        disabled={!canViewToken}
-                        onClick={() => {
-                          if (!canViewToken) return;
-                          setTokenModalCode(tokenCode);
-                          setTokenModalOpen(true);
-                        }}
-                        className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all opacity-0 group-hover:opacity-100 ${
-                          canViewToken
-                            ? 'bg-[#2563EB]/10 text-[#2563EB] border-[#2563EB]/25 hover:bg-[#2563EB] hover:text-slate-900 dark:hover:text-white shadow-lg shadow-[#2563EB]/10'
-                            : 'bg-slate-900/10 dark:bg-white/5 text-slate-400 dark:text-[#94A3B8] border-slate-300/30 dark:border-white/10 cursor-not-allowed'
-                        }`}
-                      >
-                        Ver código
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(cita.id)}
-                        className="p-2 bg-red-900/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-slate-900 dark:text-white transition-all opacity-0 group-hover:opacity-100 shadow-lg"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+
+                      <form onSubmit={handleSubmit} className="px-5 py-5 space-y-5">
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                            Vehículo
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {vehiculos.slice(0, 3).map((v) => {
+                              const isSelected = String(v.id) === String(formData.vehiculoId);
+                              return (
+                                <button
+                                  key={v.id}
+                                  type="button"
+                                  onClick={() => setFormData((prev) => ({ ...prev, vehiculoId: String(v.id) }))}
+                                  className={`rounded-2xl border transition-colors overflow-hidden text-left ${
+                                    isSelected
+                                      ? 'border-[#2563EB]/50 bg-[#2563EB]/10'
+                                      : 'border-white/10 bg-white/5 hover:bg-white/10'
+                                  }`}
+                                >
+                                  <div className="relative h-20 bg-[#0b1220]">
+                                    <img src={carHeroImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-15" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/80 to-transparent" />
+                                    {isSelected && (
+                                      <div className="absolute top-2 right-2 h-7 w-7 rounded-2xl bg-[#2563EB] text-white flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                          <path fillRule="evenodd" d="M20.03 6.28a.75.75 0 01.19 1.05l-9 12a.75.75 0 01-1.09.12l-5-4.5a.75.75 0 111-1.12l4.39 3.95 8.5-11.33a.75.75 0 011.05-.17z" clipRule="evenodd" />
+                                        </svg>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="p-4">
+                                    <div className="text-xs font-black text-white truncate">
+                                      {(v.marca || '').trim()} {(v.modelo || '').trim()} {v.anio ? String(v.anio) : ''}
+                                    </div>
+                                    <div className="text-[11px] text-white/50 truncate">{v.placa || '—'}</div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+
+                            <button
+                              type="button"
+                              onClick={() => setView('vehiculos')}
+                              className="rounded-2xl border border-dashed border-white/10 bg-white/5 hover:bg-white/10 transition-colors p-4 flex flex-col items-center justify-center text-center"
+                            >
+                              <div className="h-12 w-12 rounded-3xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center text-2xl">
+                                +
+                              </div>
+                              <div className="mt-3 text-xs font-black text-white">Agregar vehículo</div>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                            Servicio
+                          </div>
+                          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                            <div className="lg:col-span-10">
+                              <select
+                                name="servicioId"
+                                value={formData.servicioId}
+                                onChange={handleServicioChange}
+                                className="w-full h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#2563EB]/50 transition-colors"
+                                required
+                              >
+                                <option value="">Selecciona el servicio</option>
+                                {servicios.map((s) => (
+                                  <option key={s.id} value={s.id}>{s.nombre}</option>
+                                ))}
+                              </select>
+                              {selectedServicio?.descripcion && (
+                                <div className="mt-2 text-xs text-white/50">
+                                  {selectedServicio.descripcion}
+                                </div>
+                              )}
+                            </div>
+                            <div className="lg:col-span-2 flex items-center justify-between lg:justify-end">
+                              <div className="text-sm font-black text-white">
+                                {selectedServicio?.precio ? `$${Number(selectedServicio.precio).toLocaleString()}` : ''}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                            Trabajador
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {empleados.slice(0, 4).map((e) => {
+                              const isSelected = String(e.id) === String(formData.empleadoId);
+                              const isAvailable = String(e.estado || '').toLowerCase() === 'activo';
+                              return (
+                                <button
+                                  key={e.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData((prev) => ({ ...prev, empleadoId: String(e.id), hora_inicio: '' }));
+                                    setDisponibilidad([]);
+                                  }}
+                                  className={`rounded-2xl border p-4 text-left transition-colors ${
+                                    isSelected
+                                      ? 'border-[#2563EB]/50 bg-[#2563EB]/10'
+                                      : 'border-white/10 bg-white/5 hover:bg-white/10'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-11 w-11 rounded-2xl bg-white/10 border border-white/10 text-white flex items-center justify-center font-black">
+                                      {(e.nombre || 'E').trim().slice(0, 1).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-black text-white truncate">{e.nombre || 'Especialista'}</div>
+                                      <div className="text-[11px] text-white/50 truncate">{e.cargo || e.especialidad || 'Especialista'}</div>
+                                    </div>
+                                  </div>
+                                  <div className="mt-3">
+                                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black border ${
+                                      isAvailable
+                                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                                        : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                                    }`}>
+                                      <span className={`h-2 w-2 rounded-full ${isAvailable ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                                      {isAvailable ? 'Disponible hoy' : 'Disponible'}
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                              Horario
+                            </div>
+                            <div className="text-xs text-white/50 truncate">
+                              {selectedEmpleado?.nombre ? `Horarios disponibles con ${selectedEmpleado.nombre}` : ''}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                                Fecha
+                              </div>
+                              <input
+                                type="date"
+                                name="fecha"
+                                min={new Date().toISOString().split('T')[0]}
+                                value={formData.fecha}
+                                onChange={handleDateChange}
+                                className="w-full h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#2563EB]/50 transition-colors"
+                                required
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                                Sede
+                              </div>
+                              <input
+                                value="AutoClean Center"
+                                readOnly
+                                className="w-full h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-white/80 focus:outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                            {(() => {
+                              if (!formData.fecha || !formData.servicioId || !formData.empleadoId) {
+                                return (
+                                  <div className="col-span-full rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/50">
+                                    Selecciona fecha, servicio y trabajador para ver horarios.
+                                  </div>
+                                );
+                              }
+                              if (loadingSlots) {
+                                return (
+                                  <div className="col-span-full rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/50">
+                                    Consultando disponibilidad...
+                                  </div>
+                                );
+                              }
+                              const now = new Date();
+                              const today = now.toISOString().split('T')[0];
+                              const isToday = formData.fecha === today;
+                              const nowMinutes = now.getHours() * 60 + now.getMinutes();
+                              const slots = (disponibilidad || [])
+                                .filter((slot) => {
+                                  if (!isToday) return true;
+                                  const t = String(slot?.hora || '').substring(0, 5);
+                                  const [hh, mm] = t.split(':');
+                                  const mins = (Number(hh) * 60) + Number(mm);
+                                  return Number.isFinite(mins) ? mins >= nowMinutes : true;
+                                });
+                              if (slots.length === 0) {
+                                return (
+                                  <div className="col-span-full rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/50">
+                                    No hay horarios disponibles para la selección actual.
+                                  </div>
+                                );
+                              }
+                              return slots.map((slot) => {
+                                const timeLabel = String(slot.hora || '').substring(0, 5);
+                                const isSelected = String(formData.hora_inicio).substring(0, 5) === timeLabel;
+                                const isAvailable = Boolean(slot.disponible);
+                                return (
+                                  <button
+                                    key={slot.hora}
+                                    type="button"
+                                    disabled={!isAvailable}
+                                    onClick={() => setFormData((prev) => ({ ...prev, hora_inicio: slot.hora }))}
+                                    className={`h-10 rounded-2xl border text-[11px] font-black transition-colors ${
+                                      isSelected
+                                        ? 'bg-[#2563EB] border-[#2563EB] text-white'
+                                        : isAvailable
+                                          ? 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                                          : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed'
+                                    }`}
+                                  >
+                                    {timeLabel}
+                                  </button>
+                                );
+                              });
+                            })()}
+                          </div>
+
+                          <div className="flex flex-wrap gap-4 text-xs text-white/50">
+                            <div className="inline-flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                              Disponible
+                            </div>
+                            <div className="inline-flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-white/30" />
+                              Ocupado
+                            </div>
+                            <div className="inline-flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-[#60A5FA]" />
+                              Seleccionado
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                            Notas adicionales (opcional)
+                          </div>
+                          <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            rows={2}
+                            placeholder="Ej. Peticiones especiales, enfoque en detalles específicos, etc."
+                            className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[#2563EB]/50 transition-colors resize-none"
+                          />
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row justify-between gap-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowForm(false);
+                              setNotes('');
+                            }}
+                            className="h-11 px-6 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={!canContinue}
+                            className="h-11 px-6 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] disabled:bg-white/10 disabled:text-white/40 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest transition-colors inline-flex items-center justify-center gap-2"
+                          >
+                            Continuar a confirmación
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                              <path fillRule="evenodd" d="M13.28 4.22a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06L19.47 12l-6.19-6.72a.75.75 0 010-1.06z" clipRule="evenodd" />
+                              <path fillRule="evenodd" d="M3 12a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 12z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
+                      </form>
                     </div>
                   </div>
-                  <div className="space-y-2 relative z-10">
-                    <h4 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] uppercase italic tracking-tighter">{cita.servicio?.nombre}</h4>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs font-black text-[#2563EB] uppercase tracking-widest bg-[#2563EB]/5 px-2 py-0.5 rounded border border-[#2563EB]/10">{cita.vehiculo?.placa}</span>
-                      <span className="text-slate-500 dark:text-[#94A3B8] text-xs font-bold uppercase tracking-widest italic">{cita.vehiculo?.modelo}</span>
+
+                  <div className="lg:col-span-4 space-y-6">
+                    <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+                      <div className="px-5 py-4 flex items-center justify-between border-b border-slate-200 dark:border-white/10">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-black text-slate-900 dark:text-white">Próximas citas</div>
+                          <span className="px-2 py-0.5 rounded-full bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] text-[10px] font-black">
+                            {filteredPendientes.slice(0, 2).length}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => pendingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                          className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
+                        >
+                          Ver calendario
+                        </button>
+                      </div>
+                      <div className="p-5 space-y-4">
+                        {filteredPendientes.slice(0, 2).length > 0 ? (
+                          filteredPendientes.slice(0, 2).map((cita) => {
+                            const dateObj = cita?.fecha ? new Date(cita.fecha) : null;
+                            const day = dateObj && Number.isFinite(dateObj.getTime()) ? dateObj.getDate() : null;
+                            const month = dateObj && Number.isFinite(dateObj.getTime())
+                              ? dateObj.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase()
+                              : '—';
+                            const time = cita?.hora_inicio ? cita.hora_inicio.substring(0, 5) : '—';
+                            return (
+                              <div key={cita.id} className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0b1220] overflow-hidden">
+                                <div className="p-4 flex gap-3">
+                                  <div className="h-14 w-14 rounded-3xl bg-[#0b1220] border border-white/10 flex flex-col items-center justify-center">
+                                    <div className="text-[10px] text-white/50 font-black">{month}</div>
+                                    <div className="text-xl text-white font-black">{day ?? '—'}</div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-black text-slate-900 dark:text-white truncate">
+                                      {cita.servicio?.nombre || 'Servicio'}
+                                    </div>
+                                    <div className="text-xs text-slate-600 dark:text-[#94A3B8] truncate">
+                                      {cita.vehiculo?.modelo || '—'} · {cita.vehiculo?.placa || '—'}
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600 dark:text-[#94A3B8]">
+                                      <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
+                                        <span className="text-[#60A5FA]">⏰</span>
+                                        <span className="font-bold">{time}</span>
+                                      </div>
+                                      <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
+                                        <span className="text-[#60A5FA]">📍</span>
+                                        <span className="font-bold">AutoClean Center</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="px-4 pb-4 flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                                    className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                                  >
+                                    Ver detalles
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReschedule(cita)}
+                                    className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                                  >
+                                    Reprogramar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDelete(cita.id)}
+                                    className="flex-1 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 text-[11px] font-black uppercase tracking-widest transition-colors"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="rounded-3xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-8 text-center">
+                            <div className="text-sm text-slate-600 dark:text-[#94A3B8]">No hay próximas citas.</div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="pt-6 border-t border-slate-200 dark:border-white/5 flex justify-between items-center text-xs relative z-10">
-                    <div className="flex items-center text-slate-500 dark:text-[#94A3B8] font-bold italic uppercase tracking-widest">
-                      <span className="mr-2 opacity-50">📅</span>
-                      {new Date(cita.fecha).toLocaleDateString()}
-                    </div>
-                    <div className="flex items-center text-slate-900 dark:text-[#F8FAFC] font-black italic">
-                      <span className="mr-2 opacity-50 text-[#2563EB]">⏰</span>
-                      {cita.hora_inicio.substring(0, 5)}
+
+                    <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+                      <div className="px-5 py-4 flex items-center justify-between border-b border-slate-200 dark:border-white/10">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-black text-slate-900 dark:text-white">Historial de citas</div>
+                          <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-slate-600 dark:text-white/60 text-[10px] font-black">
+                            {historialServicios.slice(0, 5).length}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                          className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
+                        >
+                          Ver todo
+                        </button>
+                      </div>
+
+                      <div className="p-5 space-y-3">
+                        {historialServicios.slice(0, 5).length > 0 ? (
+                          historialServicios.slice(0, 5).map((cita) => {
+                            const priceRaw = cita?.servicio?.precio;
+                            const priceNum = typeof priceRaw === 'number' ? priceRaw : priceRaw ? Number(priceRaw) : 0;
+                            const priceText = Number.isFinite(priceNum) && priceNum > 0 ? `$${priceNum.toLocaleString()}` : '—';
+                            return (
+                              <div key={cita.id} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0b1220] px-4 py-3">
+                                <div className="min-w-0">
+                                  <div className="text-xs font-black text-slate-900 dark:text-white truncate">{cita.servicio?.nombre || 'Servicio'}</div>
+                                  <div className="text-[11px] text-slate-600 dark:text-[#94A3B8] truncate">
+                                    {cita.fecha ? new Date(cita.fecha).toLocaleDateString() : '—'} · {String(cita.hora_inicio || '').substring(0, 5) || '—'}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                    cita.estado === 'FINALIZADO'
+                                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                      : cita.estado === 'CANCELADO'
+                                        ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                  }`}>
+                                    {cita.estado}
+                                  </span>
+                                  <div className="text-xs font-black text-slate-900 dark:text-white">{priceText}</div>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="rounded-3xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-8 text-center">
+                            <div className="text-sm text-slate-600 dark:text-[#94A3B8]">No hay historial.</div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              )})
-            ) : (
-              <div className="col-span-full py-16 text-center bg-slate-100 dark:bg-[#111827]/50 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-white/5">
-                <p className="text-slate-500 dark:text-[#94A3B8] italic font-medium text-sm">No hay citas pendientes actualmente.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Sección Historial de Servicios */}
-        <div className="space-y-6">
-          <div className="flex items-center space-x-4">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full" />
-            <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter">
-              Historial de Servicios
-              {hasActiveFilters && (
-                <span className="ml-3 text-sm font-bold text-[#94A3B8]">
-                  ({historialServicios.length} of {allHistorialServicios.length})
-                </span>
               )}
-            </h2>
+            </div>
           </div>
 
-          {/* Search and Filter Bar for History */}
-          <AppointmentsSearchAndFilter 
-            citas={citas} 
-            onFilterChange={handleFilterChange}
-            searchPlaceholder="Search history by service, vehicle or worker..."
-          />
+          {!showForm && (
+          <>
+          <div ref={pendingSectionRef} className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-black text-slate-900 dark:text-white">
+                Citas pendientes
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(true);
+                  setTimeout(() => formSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+                }}
+                className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
+              >
+                Agendar nueva →
+              </button>
+            </div>
 
-          <div className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl bg-opacity-80">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-white/5 bg-white dark:bg-[#020617]/50">
-                    {["ID", "SERVICIO", "VEHÍCULO", "FECHA", "HORA", "TRABAJADOR", "ESTADO"].map((head) => (
-                      <th key={head} className="px-6 py-5 text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-[0.2em]">
-                        {head}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {getPaginatedHistory().length > 0 ? (
-                    getPaginatedHistory().map((cita) => (
-                      <tr key={cita.id} className="hover:bg-[#2563EB]/5 transition-all duration-300 group">
-                        <td className="px-6 py-5">
-                          <span className="text-sm font-black text-slate-500 dark:text-[#94A3B8] group-hover:text-[#2563EB] transition-colors">#{cita.id}</span>
-                        </td>
-                        <td className="px-6 py-5">
-                          <span className="text-sm font-black text-slate-900 dark:text-[#F8FAFC] uppercase italic tracking-tighter">{cita.servicio?.nombre}</span>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-[10px] font-black text-[#2563EB] bg-[#2563EB]/10 px-2 py-0.5 rounded border border-[#2563EB]/20">{cita.vehiculo?.placa}</span>
-                            <span className="text-[10px] font-bold text-slate-500 dark:text-[#94A3B8] uppercase italic">{cita.vehiculo?.modelo}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredPendientes.length > 0 ? (
+                filteredPendientes.map((cita) => {
+                  const payment = paymentByAppointment?.[cita.id] ?? cita.payment ?? null;
+                  const tokenCode = payment?.tokenCode || '';
+                  const tokenUsed = Boolean(payment?.tokenUsed);
+                  const tokenExpiresAt = payment?.tokenExpiresAt;
+                  const tokenExpired = tokenExpiresAt ? new Date(tokenExpiresAt).getTime() <= Date.now() : true;
+                  const canViewToken = Boolean(tokenCode) && !tokenUsed && !tokenExpired;
+                  const dateObj = cita?.fecha ? new Date(cita.fecha) : null;
+                  const day = dateObj && Number.isFinite(dateObj.getTime()) ? dateObj.getDate() : null;
+                  const month = dateObj && Number.isFinite(dateObj.getTime())
+                    ? dateObj.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase()
+                    : '—';
+                  const time = cita?.hora_inicio ? cita.hora_inicio.substring(0, 5) : '—';
+
+                  return (
+                    <div
+                      id={`cita-${cita.id}`}
+                      key={cita.id}
+                      className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden"
+                    >
+                      <div className="p-5 flex gap-4">
+                        <div className="h-16 w-16 rounded-3xl bg-[#0b1220] border border-white/10 flex flex-col items-center justify-center">
+                          <div className="text-[10px] text-white/50 font-black">{month}</div>
+                          <div className="text-2xl text-white font-black">{day ?? '—'}</div>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="text-sm font-black text-slate-900 dark:text-white truncate">
+                                {cita.servicio?.nombre || 'Servicio'}
+                              </div>
+                              <div className="text-xs text-slate-600 dark:text-[#94A3B8] truncate">
+                                {cita.vehiculo?.modelo || '—'} · {cita.vehiculo?.placa || '—'}
+                              </div>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                              cita.estado === 'EN PROCESO'
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                            }`}>
+                              {cita.estado}
+                            </span>
                           </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="flex items-center text-slate-500 dark:text-[#94A3B8] text-[11px] font-bold italic uppercase tracking-wider">
-                            <span className="mr-2 opacity-50">📅</span>
-                            {new Date(cita.fecha).toLocaleDateString()}
+
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600 dark:text-[#94A3B8]">
+                            <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
+                              <span className="text-[#60A5FA]">⏰</span>
+                              <span className="font-bold">{time}</span>
+                            </div>
+                            <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
+                              <span className="text-[#60A5FA]">📍</span>
+                              <span className="font-bold">AutoClean Center</span>
+                            </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="flex items-center text-slate-900 dark:text-[#F8FAFC] text-[11px] font-black italic">
-                            <span className="mr-2 opacity-50 text-[#2563EB]">⏰</span>
-                            {cita.hora_inicio.substring(0, 5)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-6 h-6 rounded-full bg-[#2563EB]/10 flex items-center justify-center text-[10px]">👤</div>
-                            <span className="text-sm font-bold text-slate-900 dark:text-[#F8FAFC]">{cita.empleado?.nombre || 'Por asignar'}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all duration-300 ${
-                            cita.estado === 'FINALIZADO' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-slate-900 dark:text-white' :
-                            cita.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 group-hover:bg-amber-500 group-hover:text-slate-900 dark:text-white' :
-                            'bg-red-500/10 text-red-500 border-red-500/20 group-hover:bg-red-500 group-hover:text-slate-900 dark:text-white'
-                          }`}>
-                            {cita.estado}
-                          </span>
+                        </div>
+                      </div>
+
+                      <div className="px-5 pb-5">
+                        <div className="relative h-28 rounded-2xl overflow-hidden border border-white/10 bg-[#0b1220]">
+                          <img src={carHeroImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-15" />
+                          <div className="absolute inset-0 bg-gradient-to-r from-[#0b1220] via-[#0b1220]/85 to-transparent" />
+                        </div>
+
+                        <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                          <button
+                            type="button"
+                            onClick={() => historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                            className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                          >
+                            Ver detalles
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReschedule(cita)}
+                            className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                          >
+                            Reprogramar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(cita.id)}
+                            className="flex-1 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 text-[11px] font-black uppercase tracking-widest transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={!canViewToken}
+                          onClick={() => {
+                            if (!canViewToken) return;
+                            setTokenModalCode(tokenCode);
+                            setTokenModalOpen(true);
+                          }}
+                          className="mt-3 w-full h-10 rounded-2xl bg-[#2563EB]/10 hover:bg-[#2563EB]/15 disabled:bg-white/5 disabled:text-white/40 disabled:cursor-not-allowed border border-[#2563EB]/20 text-[#60A5FA] text-[11px] font-black uppercase tracking-widest transition-colors"
+                        >
+                          Ver código de entrega
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full rounded-3xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-10 text-center">
+                  <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
+                    No hay citas pendientes actualmente.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div ref={historySectionRef} className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-black text-slate-900 dark:text-white">
+                Historial de citas
+              </div>
+              <div className="text-xs text-slate-600 dark:text-[#94A3B8]">
+                {hasActiveFilters ? `${historialServicios.length} / ${allHistorialServicios.length}` : ''}
+              </div>
+            </div>
+
+            <AppointmentsSearchAndFilter 
+              citas={citas} 
+              onFilterChange={handleFilterChange}
+              searchPlaceholder="Buscar en historial por servicio, vehículo o especialista..."
+            />
+
+            <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0b1220]">
+                      {["Fecha", "Vehículo", "Servicio", "Sede", "Estado", "Precio", "Acciones"].map((head) => (
+                        <th key={head} className="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-[0.2em]">
+                          {head}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+                    {getPaginatedHistory().length > 0 ? (
+                      getPaginatedHistory().map((cita) => {
+                        const priceRaw = cita?.servicio?.precio;
+                        const priceNum = typeof priceRaw === 'number' ? priceRaw : priceRaw ? Number(priceRaw) : 0;
+                        const priceText = Number.isFinite(priceNum) && priceNum > 0 ? `$${priceNum.toLocaleString()}` : '—';
+                        return (
+                          <tr key={cita.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                            <td className="px-6 py-4 text-sm text-slate-900 dark:text-white">
+                              {cita.fecha ? new Date(cita.fecha).toLocaleDateString() : '—'}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-black text-slate-900 dark:text-white">
+                                {cita.vehiculo?.modelo || '—'}
+                              </div>
+                              <div className="text-xs text-slate-600 dark:text-[#94A3B8]">
+                                {cita.vehiculo?.placa || '—'}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-black text-slate-900 dark:text-white">
+                              {cita.servicio?.nombre || '—'}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-[#94A3B8]">
+                              AutoClean Center
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                cita.estado === 'FINALIZADO'
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                  : cita.estado === 'CANCELADO'
+                                    ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                              }`}>
+                                {cita.estado}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-black text-slate-900 dark:text-white">
+                              {priceText}
+                            </td>
+                            <td className="px-6 py-4">
+                              <button
+                                type="button"
+                                onClick={() => setView('citas')}
+                                className="h-9 px-4 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                              >
+                                Ver detalle
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-16 text-center text-slate-600 dark:text-[#94A3B8] text-sm">
+                          {hasActiveFilters ? 'No hay resultados para los filtros seleccionados.' : 'No hay servicios en el historial.'}
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="7" className="px-6 py-16 text-center text-slate-500 dark:text-[#94A3B8] italic font-medium text-sm space-y-3">
-                        <p>
-                          {hasActiveFilters ? "No history items match the selected filters." : "No hay servicios finalizados en el historial."}
-                        </p>
-                        {hasActiveFilters && (
-                          <button
-                            onClick={() => setFilters({
-                              searchTerm: '',
-                              fromDate: '',
-                              toDate: '',
-                              serviceFilter: '',
-                              vehicleTypeFilter: '',
-                              statusFilters: []
-                            })}
-                            className="text-[#2563EB] text-sm font-bold hover:text-[#1d4ed8] transition-colors"
-                          >
-                            Clear filters
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            
-            {/* Pagination Controls */}
-            {historialServicios.length > 0 && (
-              <div className="px-6 py-3 border-t border-[#2a2d3a] flex items-center justify-between">
-                {/* Left: Showing x-y of z results */}
-                <div className="text-[#94A3B8] text-sm">
-                  Showing {((currentPage - 1) * rowsPerPage) + 1}–
-                  {Math.min(currentPage * rowsPerPage, historialServicios.length)} of {historialServicios.length} results
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  {/* Rows per page selector */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#94A3B8] text-sm">Rows per page:</span>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {historialServicios.length > 0 && (
+                <div className="px-6 py-3 border-t border-slate-200 dark:border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div className="text-xs text-slate-600 dark:text-[#94A3B8]">
+                    Mostrando {((currentPage - 1) * rowsPerPage) + 1}–{Math.min(currentPage * rowsPerPage, historialServicios.length)} de {historialServicios.length}
+                  </div>
+
+                  <div className="flex items-center gap-3 justify-end">
                     <select
                       value={rowsPerPage}
                       onChange={handleRowsPerPageChange}
-                      className="h-8 px-2 bg-[#1a1d27] border border-[#2a2d3a] rounded-xl text-[#F8FAFC] text-sm focus:outline-none focus:border-[#2563EB]/50"
+                      className="h-9 px-3 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-xs font-black"
                     >
                       <option value={5}>5</option>
                       <option value={7}>7</option>
                       <option value={10}>10</option>
                       <option value={20}>20</option>
                     </select>
-                  </div>
-                  
-                  {/* Page buttons */}
-                  <div className="flex items-center gap-1">
-                    {/* Previous button */}
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${
-                        currentPage === 1
-                          ? 'opacity-35 cursor-not-allowed'
-                          : 'text-[#94A3B8] hover:bg-[#1a1d27] hover:border border-[#2a2d3a]'
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    
-                    {/* Page numbers */}
-                    {(() => {
-                      const totalPages = Math.ceil(historialServicios.length / rowsPerPage);
-                      const pageNumbers = getPageNumbers();
-                      const firstPage = 1;
-                      const lastPage = totalPages;
-                      
-                      return (
-                        <>
-                          {/* Show first page and ellipsis if needed */}
-                          {pageNumbers[0] > firstPage && (
-                            <>
-                              <button
-                                onClick={() => setCurrentPage(firstPage)}
-                                className="w-8 h-8 flex items-center justify-center rounded-xl text-[#94A3B8] hover:bg-[#1a1d27] hover:border border-[#2a2d3a] transition-all"
-                              >
-                                {firstPage}
-                              </button>
-                              {pageNumbers[0] > firstPage + 1 && (
-                                <span className="text-[#94A3B8] px-1">...</span>
-                              )}
-                            </>
-                          )}
-                          
-                          {/* Show visible page numbers */}
-                          {pageNumbers.map(page => (
-                            <button
-                              key={page}
-                              onClick={() => setCurrentPage(page)}
-                              className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${
-                                page === currentPage
-                                  ? 'bg-[#2563EB] text-white'
-                                  : 'text-[#94A3B8] hover:bg-[#1a1d27] hover:border border-[#2a2d3a]'
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          ))}
-                          
-                          {/* Show last page and ellipsis if needed */}
-                          {pageNumbers[pageNumbers.length - 1] < lastPage && (
-                            <>
-                              {pageNumbers[pageNumbers.length - 1] < lastPage - 1 && (
-                                <span className="text-[#94A3B8] px-1">...</span>
-                              )}
-                              <button
-                                onClick={() => setCurrentPage(lastPage)}
-                                className="w-8 h-8 flex items-center justify-center rounded-xl text-[#94A3B8] hover:bg-[#1a1d27] hover:border border-[#2a2d3a] transition-all"
-                              >
-                                {lastPage}
-                              </button>
-                            </>
-                          )}
-                        </>
-                      );
-                    })()}
-                    
-                    {/* Next button */}
-                    <button
-                      onClick={() => setCurrentPage(prev => {
-                        const totalPages = Math.ceil(historialServicios.length / rowsPerPage);
-                        return Math.min(totalPages, prev + 1);
-                      })}
-                      disabled={currentPage === Math.ceil(historialServicios.length / rowsPerPage)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${
-                        currentPage === Math.ceil(historialServicios.length / rowsPerPage)
-                          ? 'opacity-35 cursor-not-allowed'
-                          : 'text-[#94A3B8] hover:bg-[#1a1d27] hover:border border-[#2a2d3a]'
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="h-9 w-9 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Anterior"
+                      >
+                        <svg className="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+
+                      {getPageNumbers().map((page) => (
+                        <button
+                          key={page}
+                          type="button"
+                          onClick={() => setCurrentPage(page)}
+                          className={`h-9 w-9 rounded-2xl border text-xs font-black transition-colors ${
+                            page === currentPage
+                              ? 'bg-[#2563EB] border-[#2563EB] text-white'
+                              : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-white/10'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((prev) => {
+                          const totalPages = Math.ceil(historialServicios.length / rowsPerPage);
+                          return Math.min(totalPages, prev + 1);
+                        })}
+                        disabled={currentPage === Math.ceil(historialServicios.length / rowsPerPage)}
+                        className="h-9 w-9 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Siguiente"
+                      >
+                        <svg className="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
+          </>
+          )}
         </div>
       </div>
-    </div>
     </>
   );
 };
