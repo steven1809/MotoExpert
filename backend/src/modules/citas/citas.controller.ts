@@ -84,8 +84,10 @@ export class CitasController {
   updateEstado(
     @Param('id') id: string,
     @Body() body: { estado: string; report?: any },
+    @Request() req,
   ) {
-    return this.service.updateEstado(+id, body.estado, body.report);
+    const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+    return this.service.updateEstado(+id, body.estado, body.report, userRole);
   }
 
   @Get(':id/chat')
