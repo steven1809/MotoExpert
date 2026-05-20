@@ -12,35 +12,13 @@ import {
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-const REVIEWS_DATA = [
-  { id: 1, user: 'Carlos M.', date: '2026-05-10', rating: 5, text: 'Excellent service! The detailing was perfect and my bike looks brand new. The specialist was very professional.', verified: true, helpful: 24, specialistId: 'sp1' },
-  { id: 2, user: 'Ana R.', date: '2026-05-08', rating: 4, text: 'Great work overall. The service was thorough but took a bit longer than expected.', verified: true, helpful: 15, specialistId: 'sp1' },
-  { id: 3, user: 'Diego F.', date: '2026-05-05', rating: 5, text: 'Best maintenance service I\'ve had for my motorcycle. Highly recommend!', verified: true, helpful: 31, specialistId: 'sp2' },
-  { id: 4, user: 'Sofia L.', date: '2026-04-28', rating: 3, text: 'Service was okay. Nothing extraordinary, but they did what was asked.', verified: false, helpful: 8, specialistId: 'sp3' },
-  { id: 5, user: 'Pedro V.', date: '2026-04-20', rating: 5, text: 'Outstanding experience! The team is very knowledgeable and friendly.', verified: true, helpful: 18, specialistId: 'sp2' }
-];
-
-const RATINGS_HISTORY = [
-  { month: 'Sep', score: 4.1, reviews: 12 },
-  { month: 'Oct', score: 4.0, reviews: 15 },
-  { month: 'Nov', score: 4.2, reviews: 18 },
-  { month: 'Dec', score: 4.3, reviews: 20 },
-  { month: 'Jan', score: 4.4, reviews: 14 },
-  { month: 'Feb', score: 4.3, reviews: 16 },
-  { month: 'Mar', score: 4.5, reviews: 19 },
-  { month: 'Apr', score: 4.7, reviews: 22 }
-];
-
-const CURRENT_USER = {
-  name: 'Javier',
-  completedServices: true
-};
-
 const getInitials = (name) => {
+  if (!name) return 'U';
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 };
 
 const getColorForUser = (name) => {
+  if (!name) return '#7b9cff';
   const colors = [
     '#7b9cff', '#1D9E75', '#EF9F27', '#7C3AED', '#E24B4A',
     '#378ADD', '#10B981', '#F59E0B', '#8B5CF6', '#DC2626'
@@ -55,22 +33,93 @@ const formatDate = (dateStr) => {
 };
 
 const ResenasPage = () => {
-  const [reviews, setReviews] = useState(REVIEWS_DATA);
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [helpfulMap, setHelpfulMap] = useState(
-    REVIEWS_DATA.reduce((acc, r) => ({ ...acc, [r.id]: false }), {})
-  );
-  const [formRating, setFormRating] = useState(0);
-  const [formText, setFormText] = useState('');
-  const [formSpecialistId, setFormSpecialistId] = useState('');
-  const [showFormSuccess, setShowFormSuccess] = useState(false);
+  // Estados para datos del API
+  const [reviews, setReviews] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [ratingsHistory, setRatingsHistory] = useState([]);
+  const [pendingAppointments, setPendingAppointments] = useState([]);
+  
+  // Estados para el formulario
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [helpfulMap, setHelpfulMap] = useState({});
+  const [formRating, setFormRating] = useState(0);
+  const [formServiceRating, setFormServiceRating] = useState(0);
+  const [formText, setFormText] = useState('');
+  const [formCitaId, setFormCitaId] = useState('');
+  const [showFormSuccess, setShowFormSuccess] = useState(false);
+  
+  // Estados de carga y error
+  const [loading, setLoading] = useState(true);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
+  const [loadingPending, setLoadingPending] = useState(false);
+  const [error, setError] = useState(null);
   const [employeesError, setEmployeesError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
+  // Obtener usuario actual
+  const userId = localStorage.getItem('userId');
+  const token = localStorage.getItem('token');
+
+  // Fetch de reseñas
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/ratings`);
+        if (response.ok) {
+          const data = await response.json();
+          setReviews(data);
+          // Inicializar helpfulMap
+          const helpMap = {};
+          data.forEach(review => {
+            helpMap[review.id] = false;
+          });
+          setHelpfulMap(helpMap);
+        } else {
+          throw new Error('Error al cargar las reseñas');
+        }
+      } catch (err) {
+        setError(err.message || 'Error al conectar con el servidor');
+        console.error('Error fetching reviews:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, []);
+
+  // Fetch de citas pendientes de calificar
+  useEffect(() => {
+    if (!userId || !token) return;
+
+    const fetchPending = async () => {
+      try {
+        setLoadingPending(true);
+        const response = await fetch(`${API_BASE_URL}/citas`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          // Filtrar citas FINALIZADAS y no calificadas
+          const pending = data.filter(c => c.estado === 'FINALIZADO' && !c.rated);
+          setPendingAppointments(pending);
+        }
+      } catch (err) {
+        console.error('Error fetching pending appointments:', err);
+      } finally {
+        setLoadingPending(false);
+      }
+    };
+
+    fetchPending();
+  }, [userId, token]);
+
+  // Fetch de empleados
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
+        setLoadingEmployees(true);
         const response = await fetch(`${API_BASE_URL}/empleados`);
         if (response.ok) {
           const data = await response.json();
@@ -81,6 +130,7 @@ const ResenasPage = () => {
         }
       } catch (err) {
         setEmployeesError(err.message || 'Error al conectar con el servidor');
+        console.error('Error fetching employees:', err);
       } finally {
         setLoadingEmployees(false);
       }
@@ -89,82 +139,172 @@ const ResenasPage = () => {
     fetchEmployees();
   }, []);
 
+  // Generar historial de ratings dinámicamente
+  useEffect(() => {
+    if (reviews.length > 0) {
+      const history = generateRatingsHistory(reviews);
+      setRatingsHistory(history);
+    }
+  }, [reviews]);
+
+  // Función para generar historial de ratings basado en las reseñas
+  const generateRatingsHistory = (reviewsData) => {
+    const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'];
+    const historyMap = {};
+
+    // Inicializar meses
+    months.forEach(month => {
+      historyMap[month] = { reviews: [], score: 0 };
+    });
+
+    // Agrupar reseñas por mes
+    reviewsData.forEach(review => {
+      const date = new Date(review.createdAt);
+      const monthIndex = date.getMonth();
+      const month = months[monthIndex] || months[0];
+      
+      if (historyMap[month]) {
+        historyMap[month].reviews.push(review.specialistRating);
+      }
+    });
+
+    // Calcular promedio por mes
+    return months.map(month => {
+      const data = historyMap[month];
+      const avgScore = data.reviews.length > 0
+        ? data.reviews.reduce((a, b) => a + b, 0) / data.reviews.length
+        : 0;
+
+      return {
+        month,
+        score: parseFloat(avgScore.toFixed(1)),
+        reviews: data.reviews.length
+      };
+    });
+  };
+
+  // Calcular estadísticas de especialistas
   const specialistStats = employees.map(emp => {
-    const specialistId = String(emp.id);
-    const specialistReviews = reviews.filter(r => r.specialistId === specialistId);
+    const specialistId = emp.id;
+    const specialistReviews = reviews.filter(r => r.empleado?.id === specialistId);
     const totalReviews = specialistReviews.length;
-    const avgRating = totalReviews > 0 
-      ? specialistReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews 
+    const avgRating = totalReviews > 0
+      ? specialistReviews.reduce((sum, r) => sum + r.specialistRating, 0) / totalReviews
       : 0;
     const completedServices = emp.citas?.filter(c => c.estado === 'FINALIZADO').length || 0;
     const fullName = `${emp.usuario?.nombre || ''} ${emp.usuario?.apellidos || ''}`.trim();
-    
+
     return {
-      id: specialistId,
+      id: String(specialistId),
       name: fullName || 'Empleado',
       role: emp.cargo || 'Técnico Especialista',
       avatar: fullName ? fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'E',
       completedServices,
-      avgRating,
+      avgRating: isNaN(avgRating) ? 0 : avgRating,
       totalReviews
     };
-  }).sort((a, b) => b.avgRating - a.avgRating);
+  }).sort((a, b) => b.avgRating - a.avgRating).slice(0, 3);
 
+  // Cálculos de estadísticas generales
   const totalReviews = reviews.length;
-  const averageScore = reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
-  const trend = 0.4;
-  const recommendationPercent = 92;
+  const averageScore = totalReviews > 0
+    ? reviews.reduce((sum, r) => sum + r.specialistRating, 0) / totalReviews
+    : 0;
+
+  const trend = calculateTrend();
+  const recommendationPercent = calculateRecommendationPercent();
+
+  function calculateTrend() {
+    if (ratingsHistory.length < 2) return 0;
+    const lastMonth = ratingsHistory[ratingsHistory.length - 1];
+    const previousMonth = ratingsHistory[ratingsHistory.length - 2];
+    return parseFloat((lastMonth.score - previousMonth.score).toFixed(1));
+  }
+
+  function calculateRecommendationPercent() {
+    if (totalReviews === 0) return 0;
+    const recommendedCount = reviews.filter(r => r.specialistRating >= 4).length;
+    return Math.round((recommendedCount / totalReviews) * 100);
+  }
 
   const starDistribution = [5, 4, 3, 2, 1].map(star => ({
     star,
-    count: reviews.filter(r => r.rating === star).length
+    count: reviews.filter(r => r.specialistRating === star).length
   }));
 
   const filteredReviews = reviews.filter(review => {
+    const rating = review.specialistRating;
     if (activeFilter === 'all') return true;
-    if (activeFilter === '5') return review.rating === 5;
-    if (activeFilter === '4') return review.rating === 4;
-    if (activeFilter === '3-less') return review.rating <= 3;
-    if (activeFilter === 'verified') return review.verified;
+    if (activeFilter === '5') return rating === 5;
+    if (activeFilter === '4') return rating === 4;
+    if (activeFilter === '3-less') return rating <= 3;
+    if (activeFilter === 'verified') return true; // Todas las reseñas son de servicios verificados en este sistema
     return true;
   });
 
-  const handleHelpful = (id) => {
+  const handleHelpful = async (id) => {
+    // Lógica local simplificada ya que no hay endpoint de helpful en el backend real
     setHelpfulMap(prev => ({ ...prev, [id]: !prev[id] }));
-    setReviews(prev =>
-      prev.map(r =>
-        r.id === id ? { ...r, helpful: prev[id] ? r.helpful - 1 : r.helpful + 1 } : r
-      )
-    );
   };
 
-  const handleSubmitReview = (e) => {
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
-    if (!formRating || !formText.trim() || !formSpecialistId) return;
+    if (!formRating || !formServiceRating || !formText.trim() || !formCitaId || !token) return;
 
-    const newReview = {
-      id: Date.now(),
-      user: CURRENT_USER.name,
-      date: new Date().toISOString().split('T')[0],
-      rating: formRating,
-      text: formText,
-      verified: CURRENT_USER.completedServices,
-      helpful: 0,
-      specialistId: formSpecialistId
-    };
+    setSubmitting(true);
 
-    setReviews([newReview, ...reviews]);
-    setFormRating(0);
-    setFormText('');
-    setFormSpecialistId('');
-    setShowFormSuccess(true);
-    setTimeout(() => setShowFormSuccess(false), 3000);
+    try {
+      const payload = {
+        citaId: parseInt(formCitaId),
+        specialistRating: formRating,
+        serviceRating: formServiceRating,
+        comment: formText
+      };
+
+      const response = await fetch(`${API_BASE_URL}/ratings`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        const createdReview = await response.json();
+        // Recargar reseñas para ver la nueva
+        const refreshRes = await fetch(`${API_BASE_URL}/ratings`);
+        if (refreshRes.ok) {
+          const newData = await refreshRes.json();
+          setReviews(newData);
+        }
+        
+        // Actualizar citas pendientes
+        setPendingAppointments(prev => prev.filter(c => c.id !== parseInt(formCitaId)));
+        
+        // Limpiar formulario
+        setFormRating(0);
+        setFormServiceRating(0);
+        setFormText('');
+        setFormCitaId('');
+        setShowFormSuccess(true);
+        setTimeout(() => setShowFormSuccess(false), 3000);
+      } else {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Error al publicar la reseña');
+      }
+    } catch (err) {
+      console.error('Error submitting review:', err);
+      alert('Error al publicar la reseña: ' + err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const StarRating = ({ rating, onChange, size = 'md' }) => {
     const starSize = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
     const isInteractive = !!onChange;
-    
+
     return (
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map(star => (
@@ -184,6 +324,17 @@ const ResenasPage = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#020617] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 rounded-full border-4 border-[#7b9cff]/20 border-t-[#7b9cff] animate-spin mx-auto"></div>
+          <p className="text-slate-500 dark:text-[#94A3B8]">Cargando reseñas...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#020617] py-8 px-4">
       <div className="max-w-6xl mx-auto space-y-10">
@@ -202,6 +353,12 @@ const ResenasPage = () => {
           </div>
         </header>
 
+        {error && (
+          <div className="p-6 bg-red-900/10 border border-red-500/20 rounded-3xl text-red-400">
+            {error}
+          </div>
+        )}
+
         {/* Summary Header */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8">
           {/* Large Score */}
@@ -212,7 +369,7 @@ const ResenasPage = () => {
             <div className="text-sm text-slate-500 dark:text-[#94A3B8]">/ 5</div>
             <StarRating rating={Math.round(averageScore)} size="md" />
             <div className="text-slate-500 dark:text-[#94A3B8] text-sm mt-2">
-              {totalReviews} reseñas
+              {totalReviews} {totalReviews === 1 ? 'reseña' : 'reseñas'}
             </div>
           </div>
 
@@ -222,7 +379,7 @@ const ResenasPage = () => {
               Distribución de Estrellas
             </div>
             {starDistribution.map(({ star, count }) => {
-              const percentage = (count / totalReviews) * 100;
+              const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
               return (
                 <div key={star} className="flex items-center gap-3">
                   <div className="w-8 text-right text-sm text-slate-600 dark:text-[#94A3B8]">
@@ -281,7 +438,7 @@ const ResenasPage = () => {
           <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter">
             Top Especialistas
           </h2>
-          
+
           {loadingEmployees ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[1, 2, 3].map(i => (
@@ -308,24 +465,24 @@ const ResenasPage = () => {
                 const rank = index + 1;
                 const rankColor = rank === 1 ? '#F59E0B' : rank === 2 ? '#94A3B8' : '#B45309';
                 const isTop1 = rank === 1;
-                
+
                 return (
                   <div
                     key={sp.id}
                     className={`relative bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-6 transition-all ${
-                      isTop1 
-                        ? 'scale-105 border-[#7b9cff]/30 shadow-[0_0_20px_rgba(245,158,11,0.3)]' 
+                      isTop1
+                        ? 'scale-105 border-[#7b9cff]/30 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
                         : 'hover:border-[#7b9cff]/30 hover:shadow-[0_0_12px_rgba(59,130,246,0.25)]'
                     }`}
                   >
                     {/* Rank Badge */}
-                    <div 
+                    <div
                       className="absolute top-4 left-4 w-8 h-8 rounded-full flex items-center justify-center font-black text-white text-lg"
                       style={{ backgroundColor: rankColor }}
                     >
                       #{rank}
                     </div>
-                    
+
                     <div className="flex flex-col items-center pt-6 space-y-3">
                       {/* Avatar */}
                       <div
@@ -335,7 +492,7 @@ const ResenasPage = () => {
                       >
                         {sp.avatar}
                       </div>
-                      
+
                       {/* Name */}
                       <div className="text-center">
                         <div className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
@@ -345,7 +502,7 @@ const ResenasPage = () => {
                           {sp.role}
                         </div>
                       </div>
-                      
+
                       {/* Rating */}
                       <div className="flex items-center gap-2">
                         {sp.totalReviews > 0 ? (
@@ -361,7 +518,7 @@ const ResenasPage = () => {
                           </span>
                         )}
                       </div>
-                      
+
                       {/* Stats */}
                       <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-[#94A3B8]">
                         <div>
@@ -372,7 +529,7 @@ const ResenasPage = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Bottom Glow for Top 1 */}
                     {isTop1 && (
                       <div className="mt-4 h-0.5 bg-gradient-to-r from-transparent via-[#7b9cff] to-transparent" />
@@ -406,7 +563,13 @@ const ResenasPage = () => {
         </div>
 
         {/* Leave a Review Form */}
-        {CURRENT_USER.completedServices ? (
+        {!userId ? (
+          <div className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8 text-center">
+            <p className="text-slate-500 dark:text-[#94A3B8] font-medium">
+              Inicia sesión para calificar tus servicios completados.
+            </p>
+          </div>
+        ) : pendingAppointments.length > 0 ? (
           <div className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8 space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center">
@@ -426,30 +589,35 @@ const ResenasPage = () => {
             <form onSubmit={handleSubmitReview} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
-                  Especialista
+                  Selecciona tu servicio completado
                 </label>
                 <select
-                  value={formSpecialistId}
-                  onChange={(e) => setFormSpecialistId(e.target.value)}
+                  value={formCitaId}
+                  onChange={(e) => setFormCitaId(e.target.value)}
                   className="w-full p-4 bg-white dark:bg-[#020617] border border-white/[0.05] rounded-2xl text-slate-900 dark:text-[#F8FAFC] focus:border-[#7b9cff]/50 focus:outline-none transition-all"
                   required
                 >
-                  <option value="">Selecciona un especialista...</option>
-                  {employees.map(emp => {
-                    const fullName = `${emp.usuario?.nombre || ''} ${emp.usuario?.apellidos || ''}`.trim();
-                    return (
-                      <option key={emp.id} value={String(emp.id)}>
-                        {fullName || 'Empleado'} — {emp.cargo || 'Técnico Especialista'}
-                      </option>
-                    );
-                  })}
+                  <option value="">Selecciona un servicio...</option>
+                  {pendingAppointments.map(cita => (
+                    <option key={cita.id} value={String(cita.id)}>
+                      {cita.servicio?.nombre || 'Servicio'} - {formatDate(cita.fecha)} {cita.hora}
+                    </option>
+                  ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
-                  Calificación
-                </label>
-                <StarRating rating={formRating} onChange={setFormRating} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
+                    Calificación del Especialista
+                  </label>
+                  <StarRating rating={formRating} onChange={setFormRating} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
+                    Calificación del Servicio
+                  </label>
+                  <StarRating rating={formServiceRating} onChange={setFormServiceRating} />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
@@ -467,14 +635,14 @@ const ResenasPage = () => {
               <div className="flex items-center gap-4">
                 <button
                   type="submit"
-                  disabled={!formRating || !formText.trim() || !formSpecialistId}
+                  disabled={!formRating || !formServiceRating || !formText.trim() || !formCitaId || submitting}
                   className={`px-6 py-3 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all ${
-                    formRating && formText.trim() && formSpecialistId
+                    formRating && formServiceRating && formText.trim() && formCitaId && !submitting
                       ? 'bg-[#7b9cff] text-slate-900 hover:bg-[#6a8be0] shadow-lg shadow-[#7b9cff]/20'
                       : 'bg-[#111827] text-slate-600 cursor-not-allowed'
                   }`}
                 >
-                  Publicar opinión
+                  {submitting ? 'Publicando...' : 'Publicar opinión'}
                 </button>
                 {showFormSuccess && (
                   <span className="text-[#1D9E75] font-bold text-sm">
@@ -487,180 +655,192 @@ const ResenasPage = () => {
         ) : (
           <div className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8 text-center">
             <p className="text-slate-500 dark:text-[#94A3B8] font-medium">
-              Completa un servicio para dejar tu opinión
+              No tienes servicios pendientes por calificar.
             </p>
           </div>
         )}
 
         {/* Review Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredReviews.map(review => (
-            <div
-              key={review.id}
-              className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-6 space-y-4 hover:border-[#7b9cff]/30 transition-all"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                    style={{ backgroundColor: getColorForUser(review.user) }}
-                  >
-                    {getInitials(review.user)}
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-[#F8FAFC]">
-                      {review.user}
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-[#94A3B8]">
-                      {formatDate(review.date)}
-                    </div>
-                  </div>
-                </div>
-                <StarRating rating={review.rating} size="sm" />
-              </div>
-
-              <div className="text-sm text-slate-700 dark:text-[#F8FAFC] leading-relaxed">
-                {review.text}
-              </div>
-
-              <div className="flex items-center justify-between">
-                {review.verified && (
-                  <span className="inline-flex items-center gap-1 text-[#1D9E75] text-xs font-bold uppercase tracking-wider">
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    Servicio verificado
-                  </span>
-                )}
-                <button
-                  onClick={() => handleHelpful(review.id)}
-                  className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-all ${
-                    helpfulMap[review.id]
-                      ? 'text-[#7b9cff]'
-                      : 'text-slate-500 dark:text-[#94A3B8] hover:text-[#F8FAFC]'
-                  }`}
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                  </svg>
-                  Útil ({review.helpful})
-                </button>
-              </div>
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter mb-4">
+            Todas las Reseñas
+          </h2>
+          {filteredReviews.length === 0 ? (
+            <div className="text-center p-8 bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl">
+              <p className="text-slate-500 dark:text-[#94A3B8]">No hay reseñas para mostrar</p>
             </div>
-          ))}
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredReviews.map(review => {
+                const userName = review.usuario ? `${review.usuario.nombre} ${review.usuario.apellidos || ''}` : 'Usuario';
+                const serviceName = review.cita?.servicio?.nombre || 'Servicio';
+                
+                return (
+                  <div
+                    key={review.id}
+                    className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-6 space-y-4 hover:border-[#7b9cff]/30 transition-all"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                          style={{ backgroundColor: getColorForUser(userName) }}
+                        >
+                          {getInitials(userName)}
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-slate-900 dark:text-[#F8FAFC]">
+                            {userName}
+                          </div>
+                          <div className="text-xs text-slate-500 dark:text-[#94A3B8]">
+                            {formatDate(review.createdAt)} • {serviceName}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <StarRating rating={review.specialistRating} size="sm" />
+                        <span className="text-[10px] text-slate-500 dark:text-[#94A3B8] uppercase">
+                          Especialista
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-slate-700 dark:text-[#F8FAFC] leading-relaxed">
+                      {review.comment}
+                    </div>
+
+                    <div className="flex items-center justify-between border-t border-white/[0.05] pt-4">
+                      <span className="inline-flex items-center gap-1 text-[#1D9E75] text-xs font-bold uppercase tracking-wider">
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        Servicio verificado
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-500 dark:text-[#94A3B8] uppercase">Servicio:</span>
+                        <StarRating rating={review.serviceRating} size="sm" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Ratings History */}
-        <div className="space-y-6 bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8">
-          <div className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
-            Historial de Calificaciones
-          </div>
+        {ratingsHistory.length > 0 && (
+          <div className="space-y-6 bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8">
+            <div className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
+              Historial de Calificaciones
+            </div>
 
-          {/* Chart */}
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={RATINGS_HISTORY}>
-                <defs>
-                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#7b9cff" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#7b9cff" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  stroke="#94A3B8"
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="#94A3B8"
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                  domain={[3, 5]}
-                  tickCount={3}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#050507',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: '8px'
-                  }}
-                  labelStyle={{ color: '#94A3B8' }}
-                  itemStyle={{ color: '#7b9cff' }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="score"
-                  stroke="#7b9cff"
-                  strokeWidth={3}
-                  fill="url(#colorScore)"
-                  activeDot={{ r: 6 }}
-                >
-                  {RATINGS_HISTORY.map((entry, index) => (
-                    <Dot key={`dot-${index}`} r={4} fill="#7b9cff" />
-                  ))}
-                </Area>
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+            {/* Chart */}
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={ratingsHistory}>
+                  <defs>
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#7b9cff" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#7b9cff" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    stroke="#94A3B8"
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="#94A3B8"
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={[3, 5]}
+                    tickCount={3}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#050507',
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      borderRadius: '8px'
+                    }}
+                    labelStyle={{ color: '#94A3B8' }}
+                    itemStyle={{ color: '#7b9cff' }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="score"
+                    stroke="#7b9cff"
+                    strokeWidth={3}
+                    fill="url(#colorScore)"
+                    activeDot={{ r: 6 }}
+                  >
+                    {ratingsHistory.map((entry, index) => (
+                      <Dot key={`dot-${index}`} r={4} fill="#7b9cff" />
+                    ))}
+                  </Area>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
 
-          {/* History Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-white/[0.05]">
-                  <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest">
-                    Mes
-                  </th>
-                  <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
-                    Calificación Promedio
-                  </th>
-                  <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
-                    # de Reseñas
-                  </th>
-                  <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
-                    Cambio
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.05]">
-                {RATINGS_HISTORY.map((item, index) => {
-                  const prev = index > 0 ? RATINGS_HISTORY[index - 1] : null;
-                  const delta = prev ? item.score - prev.score : 0;
-                  const deltaColor = delta > 0 ? 'text-[#1D9E75]' : delta < 0 ? 'text-[#E24B4A]' : 'text-[#94A3B8]';
-                  const deltaIcon = delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
+            {/* History Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-white/[0.05]">
+                    <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest">
+                      Mes
+                    </th>
+                    <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
+                      Calificación Promedio
+                    </th>
+                    <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
+                      # de Reseñas
+                    </th>
+                    <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
+                      Cambio
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.05]">
+                  {ratingsHistory.map((item, index) => {
+                    const prev = index > 0 ? ratingsHistory[index - 1] : null;
+                    const delta = prev ? item.score - prev.score : 0;
+                    const deltaColor = delta > 0 ? 'text-[#1D9E75]' : delta < 0 ? 'text-[#E24B4A]' : 'text-[#94A3B8]';
+                    const deltaIcon = delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
 
-                  return (
-                    <tr key={item.month} className="hover:bg-[#111827]/50 transition-colors">
-                      <td className="py-3 text-sm text-slate-700 dark:text-[#F8FAFC]">
-                        {item.month} 2026
-                      </td>
-                      <td className="py-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <span className="text-sm font-bold text-[#EF9F27]">
-                            {item.score.toFixed(1)}
+                    return (
+                      <tr key={item.month} className="hover:bg-[#111827]/50 transition-colors">
+                        <td className="py-3 text-sm text-slate-700 dark:text-[#F8FAFC]">
+                          {item.month} 2026
+                        </td>
+                        <td className="py-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="text-sm font-bold text-[#EF9F27]">
+                              {item.score.toFixed(1)}
+                            </span>
+                            <StarRating rating={Math.round(item.score)} size="sm" />
+                          </div>
+                        </td>
+                        <td className="py-3 text-center text-sm text-slate-700 dark:text-[#F8FAFC]">
+                          {item.reviews}
+                        </td>
+                        <td className="py-3 text-center">
+                          <span className={`text-sm font-bold ${deltaColor}`}>
+                            {deltaIcon} {Math.abs(delta).toFixed(1)}
                           </span>
-                          <StarRating rating={Math.round(item.score)} size="sm" />
-                        </div>
-                      </td>
-                      <td className="py-3 text-center text-sm text-slate-700 dark:text-[#F8FAFC]">
-                        {item.reviews}
-                      </td>
-                      <td className="py-3 text-center">
-                        <span className={`text-sm font-bold ${deltaColor}`}>
-                          {deltaIcon} {Math.abs(delta).toFixed(1)}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
