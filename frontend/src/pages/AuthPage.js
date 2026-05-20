@@ -141,7 +141,7 @@ class AuthPage extends Component {
                   onClick={this.toggleMode}
                   className="text-sm text-gray-400 hover:text-white transition-colors"
                 >
-                  ¿Ya tienes cuenta? <span className="text-blue-400">Inicia sesión</span>
+                  ¿Ya tienes cuenta? <span className="text-blue-400">Inicia Sesión</span>
                 </button>
               )}
             </div>
