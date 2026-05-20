@@ -37,6 +37,9 @@ export class Vehiculo {
   @Column({ nullable: true })
   color?: string;
 
+  @Column({ nullable: true })
+  imagen?: string;
+
   @Column({ default: 'ACTIVO' })
   estado: string;
 

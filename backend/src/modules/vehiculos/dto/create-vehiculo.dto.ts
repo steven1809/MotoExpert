@@ -35,6 +35,10 @@ export class CreateVehiculoDto {
   @IsString({ message: 'El color debe ser un texto' })
   color?: string;
 
+  @IsOptional()
+  @IsString({ message: 'La imagen debe ser un texto' })
+  imagen?: string;
+
   @IsNotEmpty({ message: 'El ID del usuario es requerido' })
   @Type(() => Number)
   @IsNumber({}, { message: 'El ID del usuario debe ser un número' })
