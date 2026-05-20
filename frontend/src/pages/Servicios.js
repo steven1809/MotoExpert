@@ -207,7 +207,6 @@ export default function Servicios({ setView }) {
           </div>
         </div>
 
-        {/* Buscador de Servicios */}
         <div className="max-w-md mx-auto mb-12 relative group">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
             <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,6 +274,7 @@ export default function Servicios({ setView }) {
             No hay servicios registrados todavía.
           </div>
         )}
+
       </div>
   );
 }
