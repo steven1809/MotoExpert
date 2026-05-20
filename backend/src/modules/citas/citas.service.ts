@@ -40,20 +40,31 @@ export class CitasService {
   ) {}
 
   async create(dto: CreateCitaDto) {
-    const usuario = await this.usuarioRepo.findOne({
-      where: { id: dto.usuarioId },
-    });
     const vehiculo = await this.vehiculoRepo.findOne({
       where: { id: dto.vehiculoId },
+      relations: ['usuario'],
     });
     const servicio = await this.servicioRepo.findOne({
       where: { id: dto.servicioId },
     });
 
-    if (!usuario || !vehiculo || !servicio) {
+    if (!vehiculo || !servicio) {
       throw new BadRequestException(
-        'Datos inválidos: usuario, vehículo o servicio no encontrado',
+        'Datos inválidos: vehículo o servicio no encontrado',
       );
+    }
+
+    const finalUsuarioId = dto.usuarioId || vehiculo.usuario?.id;
+    if (!finalUsuarioId) {
+      throw new BadRequestException('El vehículo no tiene un propietario asignado');
+    }
+
+    const usuario = await this.usuarioRepo.findOne({
+      where: { id: finalUsuarioId },
+    });
+
+    if (!usuario) {
+      throw new BadRequestException('Usuario no encontrado');
     }
 
     // Aseguramos formato YYYY-MM-DD para la fecha
@@ -156,8 +167,9 @@ export class CitasService {
       observations?: string;
       condition: 'optimal' | 'attention' | 'urgent';
     },
+    userRole?: string,
   ) {
-    if (nuevoEstado === 'FINALIZADO') {
+    if (nuevoEstado === 'FINALIZADO' && userRole !== 'admin') {
       const payment = await this.paymentRepo.findOneBy({ appointmentId: id });
       if (!payment) {
         throw new ForbiddenException('La cita no tiene pago registrado');
@@ -169,7 +181,10 @@ export class CitasService {
       }
     }
 
-    const cita = await this.repo.findOne({ where: { id } });
+    const cita = await this.repo.findOne({ 
+      where: { id },
+      relations: ['usuario', 'vehiculo', 'servicio'] 
+    });
     if (!cita) throw new NotFoundException('Cita no encontrada');
 
     cita.estado = nuevoEstado;
@@ -197,6 +212,13 @@ export class CitasService {
         'service_completed',
         'Your service has been completed',
         `Your ${cita.servicio.nombre} for vehicle ${cita.vehiculo.placa} is done. Tap to view the full service report.`,
+      );
+    } else if (nuevoEstado === 'CANCELADO') {
+      await this.notificacionesService.create(
+        cita.usuario,
+        'service_cancelled',
+        'Your appointment has been cancelled',
+        `Your ${cita.servicio.nombre} for vehicle ${cita.vehiculo.placa} has been cancelled by the administrator.`,
       );
     }
 

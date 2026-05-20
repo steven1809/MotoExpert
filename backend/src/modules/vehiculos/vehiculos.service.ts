@@ -32,10 +32,18 @@ export class VehiculosService {
       tipo: dto.tipo,
       anio: dto.anio,
       color: dto.color,
+      imagen: dto.imagen,
       usuario,
     });
 
     return this.repo.save(vehiculo);
+  }
+
+  async findByPlaca(placa: string) {
+    return this.repo.findOne({
+      where: { placa },
+      relations: ['usuario'],
+    });
   }
 
   findAll(userId?: number) {

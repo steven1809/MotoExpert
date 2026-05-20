@@ -43,7 +43,7 @@ export class UsuariosController {
     }),
   )
   uploadPhoto(@Param('id') id: string, @UploadedFile() file: any) {
-    const photoUrl = `http://localhost:3000/uploads/profiles/${file.filename}`;
+    const photoUrl = `http://localhost:3001/uploads/profiles/${file.filename}`;
     return this.usuariosService.update(+id, { picture: photoUrl });
   }
 }
