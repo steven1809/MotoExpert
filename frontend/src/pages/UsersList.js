@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -29,11 +29,6 @@ const UsersList = () => {
   const [userToEditRole, setUserToEditRole] = useState(null);
   const [newRole, setNewRole] = useState('');
   const [updatingRole, setUpdatingRole] = useState(false);
-
-  const [editingUserId, setEditingUserId] = useState(null);
-  const [editForm, setEditForm] = useState({ nombre: '', email: '' });
-  const [showForceCompleteModal, setShowForceCompleteModal] = useState(false);
-  const [citaToForce, setCitaToForce] = useState(null);
 
   const exportUsers = (format) => {
     const list = filteredUsers;
@@ -96,7 +91,6 @@ const UsersList = () => {
       doc.save(`${fileBaseName}.pdf`);
     }
   };
-
   useEffect(() => {
     const role = localStorage.getItem('role');
     const token = localStorage.getItem('token');
@@ -263,28 +257,8 @@ const UsersList = () => {
       });
 
       if (response.ok) {
-        // Actualizar estado local de usuarios
+        // Actualizar estado local
         setUsers(prev => prev.map(u => u.id === userToEditRole.id ? { ...u, role: newRole } : u));
-        
-        // Sincronizar en tiempo real con la lista de empleados
-        const updatedUser = { ...userToEditRole, role: newRole };
-        if (newRole === 'empleado') {
-          // Si ahora es empleado, lo añadimos a la lista si no está
-          if (!empleados.some(e => e.usuario?.id === updatedUser.id)) {
-            const newEmpleado = {
-              id: Date.now(), // ID temporal o esperar a refetch
-              usuario: updatedUser,
-              estado: 'activo',
-              cargo: 'Técnico Especialista',
-              especialidad: 'Mecánica General'
-            };
-            setEmpleados(prev => [...prev, newEmpleado]);
-          }
-        } else {
-          // Si ya no es empleado, lo quitamos de la lista
-          setEmpleados(prev => prev.filter(e => e.usuario?.id !== updatedUser.id));
-        }
-
         setShowRoleModal(false);
         alert('Rol actualizado con éxito');
       } else {
@@ -295,61 +269,6 @@ const UsersList = () => {
       alert('Error de conexión al intentar actualizar el rol');
     } finally {
       setUpdatingRole(false);
-    }
-  };
-
-  const handleStartEdit = (user) => {
-    setEditingUserId(user.id);
-    setEditForm({ nombre: user.nombre, email: user.email });
-  };
-
-  const handleSaveEdit = async (userId) => {
-    const token = localStorage.getItem('token');
-    try {
-      const response = await fetch(`${API_BASE_URL}/usuarios/${userId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editForm),
-      });
-
-      if (response.ok) {
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...editForm } : u));
-        setEditingUserId(null);
-      } else {
-        alert('Error al actualizar perfil');
-      }
-    } catch (err) {
-      alert('Error de conexión');
-    }
-  };
-
-  const handleForceComplete = async (targetStatus) => {
-    if (!citaToForce) return;
-    const token = localStorage.getItem('token');
-    try {
-      const response = await fetch(`${API_BASE_URL}/citas/${citaToForce.id}/estado`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ estado: targetStatus }),
-      });
-
-      if (response.ok) {
-        setCitasGenerales(prev => prev.map(c => c.id === citaToForce.id ? { ...c, estado: targetStatus } : c));
-        setShowForceCompleteModal(false);
-        setCitaToForce(null);
-      } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.message || 'No se pudo actualizar la cita'}`);
-      }
-    } catch (err) {
-      console.error('Error al forzar actualización:', err);
-      alert('Error de conexión al servidor');
     }
   };
 
@@ -403,7 +322,7 @@ const UsersList = () => {
 
             <div className="space-y-4 mb-8">
               <label className="block text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 ml-1">Seleccionar Nivel de Acceso</label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <button 
                   onClick={() => setNewRole('admin')}
                   className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
@@ -412,10 +331,10 @@ const UsersList = () => {
                       : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/10'
                   }`}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 2.944V12m0 0l4.5 4.5M12 12l-4.5 4.5" />
                   </svg>
-                  <span className="font-mono text-[8px] uppercase tracking-widest font-bold">Admin</span>
+                  <span className="font-mono text-[10px] uppercase tracking-widest font-bold">Administrador</span>
                 </button>
 
                 <button 
@@ -426,24 +345,10 @@ const UsersList = () => {
                       : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/10'
                   }`}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  <span className="font-mono text-[8px] uppercase tracking-widest font-bold">Empleado</span>
-                </button>
-
-                <button 
-                  onClick={() => setNewRole('usuario')}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
-                    newRole === 'usuario' || newRole === 'user' || newRole === 'cliente'
-                      ? 'bg-emerald-600/20 border-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.2)]' 
-                      : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/10'
-                  }`}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span className="font-mono text-[8px] uppercase tracking-widest font-bold">Usuario</span>
+                  <span className="font-mono text-[10px] uppercase tracking-widest font-bold">Empleado</span>
                 </button>
               </div>
             </div>
@@ -678,7 +583,7 @@ const UsersList = () => {
 
         {/* Barra de Búsqueda Dinámica (Solo visible en Usuarios) */}
         {activeTab === 'usuarios' && (
-          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          <div className="w-full md:w-auto flex flex-col items-stretch md:items-end gap-3">
             <div className="relative w-full md:w-96 group">
               <input 
                 type="text" 
@@ -692,21 +597,22 @@ const UsersList = () => {
               </svg>
             </div>
 
-            <button
-              type="button"
-              onClick={() => exportUsers('excel')}
-              className="px-5 py-3 rounded-2xl bg-emerald-600/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/20 hover:border-emerald-500/40 font-bold text-xs uppercase tracking-widest transition-all"
-            >
-              Exportar Excel
-            </button>
-
-            <button
-              type="button"
-              onClick={() => exportUsers('pdf')}
-              className="px-5 py-3 rounded-2xl bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 hover:border-blue-500/40 font-bold text-xs uppercase tracking-widest transition-all"
-            >
-              Exportar PDF
-            </button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => exportUsers('excel')}
+                className="h-10 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] text-slate-300 hover:bg-white/[0.05] transition-all text-[10px] font-mono uppercase tracking-[0.2em]"
+              >
+                Exportar Excel
+              </button>
+              <button
+                type="button"
+                onClick={() => exportUsers('pdf')}
+                className="h-10 px-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] font-mono uppercase tracking-[0.2em]"
+              >
+                Exportar PDF
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -733,61 +639,20 @@ const UsersList = () => {
                     <td className="p-5">
                       <button 
                         onClick={() => handleOpenDetails(user)}
-                        className="flex items-center space-x-4 group/name text-left w-full"
+                        className="flex items-center space-x-4 group/name text-left"
                       >
-                        <div className="w-10 h-10 rounded-2xl bg-blue-600/10 flex items-center justify-center text-blue-500 font-bold text-sm uppercase group-hover/name:bg-blue-600 group-hover/name:text-white transition-all shadow-inner shrink-0">
+                        <div className="w-10 h-10 rounded-2xl bg-blue-600/10 flex items-center justify-center text-blue-500 font-bold text-sm uppercase group-hover/name:bg-blue-600 group-hover/name:text-white transition-all shadow-inner">
                           {user.nombre?.charAt(0) || 'U'}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          {editingUserId === user.id ? (
-                            <div className="flex items-center gap-2">
-                              <input 
-                                type="text"
-                                value={editForm.nombre}
-                                onChange={(e) => setEditForm({...editForm, nombre: e.target.value})}
-                                className="bg-slate-800 border border-blue-500/50 rounded-lg px-2 py-1 text-xs text-white outline-none w-full"
-                                autoFocus
-                              />
-                              <button onClick={(e) => { e.stopPropagation(); handleSaveEdit(user.id); }} className="text-emerald-500 hover:text-emerald-400 p-1">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-                              </button>
-                              <button onClick={(e) => { e.stopPropagation(); setEditingUserId(null); }} className="text-red-500 hover:text-red-400 p-1">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-white group-hover/name:text-blue-400 transition-colors block leading-tight truncate">
-                                {user.nombre} {user.apellidos}
-                              </span>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleStartEdit(user); }}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-blue-400"
-                              >
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                              </button>
-                            </div>
-                          )}
+                        <div>
+                          <span className="text-sm font-bold text-white group-hover/name:text-blue-400 transition-colors block leading-tight">
+                            {user.nombre} {user.apellidos}
+                          </span>
                           <span className="text-[10px] text-slate-600 uppercase font-bold tracking-tighter">Cliente Registrado</span>
                         </div>
                       </button>
                     </td>
-                    <td className="p-5 text-sm text-slate-400">
-                      {editingUserId === user.id ? (
-                        <div className="flex items-center gap-2">
-                          <input 
-                            type="email"
-                            value={editForm.email}
-                            onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                            className="bg-slate-800 border border-blue-500/50 rounded-lg px-2 py-1 text-xs text-white outline-none w-full"
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 group/email">
-                          <span>{user.email}</span>
-                        </div>
-                      )}
-                    </td>
+                    <td className="p-5 text-sm text-slate-400">{user.email}</td>
                     <td className="p-5 text-sm text-slate-400 font-medium">{user.telefono || 'N/A'}</td>
                     <td className="p-5">
                       <span className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase tracking-widest ${
@@ -895,12 +760,12 @@ const UsersList = () => {
 
       {activeTab === 'citas' && (
         <div className="space-y-6">
-            <div className="flex space-x-2 bg-slate-900 p-1 rounded-2xl border border-slate-800 w-fit overflow-x-auto max-w-full">
-            {['TODAS', 'PENDIENTE', 'EN PROCESO', 'FINALIZADO', 'CANCELADO'].map(est => (
+          <div className="flex space-x-2 bg-slate-900 p-1 rounded-2xl border border-slate-800 w-fit">
+            {['TODAS', 'PENDIENTE', 'EN PROCESO', 'FINALIZADO'].map(est => (
               <button 
                 key={est}
                 onClick={() => setFiltroEstadoCita(est)}
-                className={`px-4 py-1.5 rounded-xl text-[10px] font-bold transition-all whitespace-nowrap ${filtroEstadoCita === est ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`px-4 py-1.5 rounded-xl text-[10px] font-bold transition-all ${filtroEstadoCita === est ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
               >
                 {est}
               </button>
@@ -942,88 +807,17 @@ const UsersList = () => {
                         </div>
                       </td>
                       <td className="p-5 text-center">
-                        <div className="flex flex-col items-center gap-2">
-                          <span className={`px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest ${
-                            c.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 
-                            c.estado === 'EN PROCESO' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 
-                            c.estado === 'FINALIZADO' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                            'bg-red-500/10 text-red-500 border border-red-500/20'
-                          }`}>
-                            {c.estado}
-                          </span>
-                          {(c.estado === 'PENDIENTE' || c.estado === 'EN PROCESO') && (
-                            <button
-                              onClick={() => {
-                                setCitaToForce(c);
-                                setShowForceCompleteModal(true);
-                              }}
-                              className="text-[8px] font-bold text-orange-500 hover:text-orange-400 border border-orange-500/30 hover:border-orange-500/50 px-2 py-0.5 rounded uppercase tracking-tighter transition-all"
-                            >
-                              Acción Forzada
-                            </button>
-                          )}
-                        </div>
+                        <span className={`px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest ${
+                          c.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 
+                          c.estado === 'EN PROCESO' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 'bg-green-500/10 text-green-500 border border-green-500/20'
+                        }`}>
+                          {c.estado}
+                        </span>
                       </td>
                     </tr>
                   ))}
               </tbody>
             </table>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Acción Forzada (Finalizar o Cancelar) */}
-      {showForceCompleteModal && citaToForce && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setShowForceCompleteModal(false)} />
-          <div className="relative bg-[#050507] border border-purple-500/20 rounded-[2.5rem] w-full max-w-md p-8 shadow-[0_0_50px_rgba(123,156,255,0.1)] overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-blue-600" />
-            
-            <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-500 mx-auto mb-6 border border-purple-500/20">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-              </svg>
-            </div>
-            
-            <h3 className="text-xl font-black text-white text-center mb-1 tracking-tighter uppercase">¿Qué deseas hacer con esta cita?</h3>
-            <p className="text-slate-400 text-sm text-center mb-8 font-medium italic">
-              {citaToForce.servicio?.nombre} • Cliente: {citaToForce.usuario?.nombre}
-            </p>
-
-            <div className="grid grid-cols-1 gap-4 mb-8">
-              <button 
-                onClick={() => handleForceComplete('FINALIZADO')}
-                className="w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-400 transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-xl group-hover:scale-110 transition-transform">✅</span>
-                  <span className="font-mono text-[11px] uppercase tracking-widest font-bold">Finalizar Cita</span>
-                </div>
-                <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-
-              <button 
-                onClick={() => handleForceComplete('CANCELADO')}
-                className="w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-red-400 transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-xl group-hover:scale-110 transition-transform">❌</span>
-                  <span className="font-mono text-[11px] uppercase tracking-widest font-bold">Cancelar Cita</span>
-                </div>
-                <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-
-            <button 
-              onClick={() => setShowForceCompleteModal(false)}
-              className="w-full py-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] text-slate-500 font-mono text-[10px] uppercase tracking-widest hover:bg-white/[0.05] hover:text-slate-300 transition-all"
-            >
-              Volver atrás
-            </button>
           </div>
         </div>
       )}
