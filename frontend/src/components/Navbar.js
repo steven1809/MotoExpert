@@ -40,29 +40,28 @@ class Navbar extends Component {
 
     if (role === "admin") {
       return [
-        { key: "dashboard", label: "Inicio", view: "dashboard", icon: "grid" },
-        { key: "servicios", label: "Servicios", view: "servicios", icon: "spark" },
-        { key: "users", label: "Usuarios", view: "users", icon: "users" },
-        { key: "cuenta", label: "Cuenta", view: "cuenta", icon: "user" },
+        { key: "dashboard", label: "Inicio", view: "dashboard"},
+        { key: "servicios", label: "Servicios", view: "servicios" },
+        { key: "users", label: "Usuarios", view: "users"},
+        { key: "cuenta", label: "Cuenta", view: "cuenta"},
       ];
     }
 
     if (role === "empleado" || role === "trabajador") {
       return [
-        { key: "dashboard", label: "Dashboard", view: "dashboard", icon: "grid" },
-        { key: "panel_empleado", label: "Panel", view: "panel_empleado", icon: "shield" },
-        { key: "servicios", label: "Servicios", view: "servicios", icon: "spark" },
-        { key: "cuenta", label: "Cuenta", view: "cuenta", icon: "user" },
+        { key: "dashboard", label: "Dashboard", view: "dashboard" },
+        { key: "panel_empleado", label: "Panel", view: "panel_empleado"},
+        { key: "servicios", label: "Servicios", view: "servicios" },
+        { key: "cuenta", label: "Cuenta", view: "cuenta" },
       ];
     }
 
     return [
-      { key: "dashboard", label: "Dashboard", view: "dashboard", icon: "grid" },
-      { key: "servicios", label: "Servicios", view: "servicios", icon: "spark" },
-      { key: "vehiculos", label: "Vehículos", view: "vehiculos", icon: "car" },
-      { key: "citas", label: "Citas", view: "citas", icon: "clock" },
-      { key: "resenas", label: "Reseñas", view: "resenas", icon: "star" },
-      { key: "cuenta", label: "Cuenta", view: "cuenta", icon: "user" },
+      { key: "dashboard", label: "Inicio", view: "dashboard"},
+      { key: "servicios", label: "Servicios", view: "servicios" },
+      { key: "vehiculos", label: "Vehículos", view: "vehiculos" },
+      { key: "citas", label: "Citas", view: "citas" },
+      { key: "resenas", label: "Reseñas", view: "resenas" },
     ];
   };
 
@@ -207,16 +206,6 @@ class Navbar extends Component {
             </nav>
 
             <div className="px-6 pb-8 space-y-6">
-              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-2 h-2 rounded-full bg-[#3ddc84] animate-pulse" />
-                  <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-400">System Status</span>
-                </div>
-                <div className="text-[10px] text-[#3ddc84] font-mono leading-relaxed">
-                  CORE: SECURE<br/>
-                  ENCRYPT: ACTIVE
-                </div>
-              </div>
 
               <div className="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.05]">
                 <button
@@ -360,15 +349,15 @@ class Navbar extends Component {
         <header className="md:hidden fixed top-0 left-0 right-0 z-[60] bg-[#050507]/90 backdrop-blur-lg border-b border-white/[0.05]">
           <div className="h-18 px-5 flex items-center justify-between py-4">
             <button onClick={() => setView("dashboard")} className="text-left flex items-center gap-3">
-  <img 
-    src="/logoMotoExpert.png" 
-    alt="Logo" 
-    className="h-10 w-auto transition-opacity group-hover:opacity-70"
-  />
-  <div className="text-white font-black text-xl tracking-tighter">
-    MOTO<span className="text-[#7b9cff]">EXPERT</span>
-  </div>
-</button>
+              <img 
+                src="/logoMotoExpert.png" 
+                alt="Logo" 
+                className="h-10 w-auto transition-opacity group-hover:opacity-70"
+              />
+              <div className="text-white font-black text-xl tracking-tighter">
+                MOTO<span className="text-[#7b9cff]">EXPERT</span>
+              </div>
+            </button>
             <button
               onClick={this.toggleMenu}
               className={`w-12 h-12 rounded-2xl border transition-all duration-300 flex items-center justify-center ${
