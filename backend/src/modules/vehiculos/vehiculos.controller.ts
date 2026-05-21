@@ -11,13 +11,17 @@ import {
   Patch,
   UseInterceptors,
   UploadedFile,
+  NotFoundException,
+  ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { VehiculosService } from './vehiculos.service';
 import { CreateVehiculoDto } from './dto/create-vehiculo.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
+import * as fs from 'fs';
 
 @Controller('vehiculos')
 @UseGuards(AuthGuard('jwt'))
@@ -27,13 +31,14 @@ export class VehiculosController {
   @Post()
   create(@Body() dto: CreateVehiculoDto, @Request() req) {
     const userRole = (req.user.rol || req.user.role)?.toLowerCase();
-    
+
     // Si es admin y se proporciona un usuarioId, usar ese.
     // De lo contrario, usar el del usuario autenticado.
-    const finalUserId = (userRole === 'admin' && dto.usuarioId) 
-      ? dto.usuarioId 
-      : req.user.userId;
-      
+    const finalUserId =
+      userRole === 'admin' && dto.usuarioId
+        ? dto.usuarioId
+        : req.user.userId;
+
     return this.service.create({ ...dto, usuarioId: finalUserId });
   }
 
@@ -77,7 +82,7 @@ export class VehiculosController {
       }
       return this.service.findAll();
     }
-    // Si no es admin o empleado, solo devolvemos los suyos (el service ya maneja el filtro)
+    // Si no es admin o empleado, solo devolvemos los suyos
     return this.service.findAll(req.user.userId);
   }
 
@@ -85,7 +90,7 @@ export class VehiculosController {
   async findOne(@Param('id') id: string, @Request() req) {
     const userRole = (req.user.rol || req.user.role)?.toLowerCase();
     const vehiculo = await this.service.findOne(+id);
-    // Verificamos que el vehículo pertenezca al usuario o sea admin/empleado
+
     if (
       vehiculo &&
       (userRole === 'admin' ||
@@ -99,16 +104,26 @@ export class VehiculosController {
   }
 
   @Patch(':id')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/vehicles',
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
   async update(
     @Param('id') id: string,
     @Body() updateData: any,
     @Request() req,
+    @UploadedFile() file?: any,
   ) {
-<<<<<<< Updated upstream
-    const vehiculo = await this.service.findOne(+id);
-    if (vehiculo && vehiculo.usuario.id === req.user.userId) {
-      return this.service.update(+id, updateData);
-=======
     try {
       const userRole = (req.user.rol || req.user.role)?.toLowerCase();
       const vehiculo = await this.service.findOne(+id);
@@ -127,7 +142,7 @@ export class VehiculosController {
         );
       }
 
-      // 2. Crear el objeto con los datos a actualizar de forma segura
+      // Construir objeto de actualización con campos permitidos
       const finalUpdateData: any = {};
       const allowedFields = [
         'placa',
@@ -149,9 +164,9 @@ export class VehiculosController {
         }
       });
 
-      // 3. VALIDACIÓN CRUCIAL: Solo si el usuario subió una foto nueva
+      // Solo si el usuario subió una foto nueva
       if (file) {
-        // (Opcional) Lógica para borrar la imagen anterior del disco
+        // Borrar imagen anterior del disco si existe
         if (
           vehiculo.imagen &&
           vehiculo.imagen.includes('http://localhost:3001/uploads/vehicles/')
@@ -174,7 +189,6 @@ export class VehiculosController {
         finalUpdateData.imagen = `http://localhost:3001/uploads/vehicles/${file.filename}`;
       }
 
-      // 4. Ejecutar la actualización de forma segura
       return await this.service.update(+id, finalUpdateData);
     } catch (error) {
       console.error('❌ ERROR CRÍTICO EN EL BACKEND:', error);
@@ -188,9 +202,7 @@ export class VehiculosController {
         message: 'Error interno del servidor',
         error: error.message,
       });
->>>>>>> Stashed changes
     }
-    return { message: 'No tienes permiso para actualizar este vehículo' };
   }
 
   @Delete(':id')

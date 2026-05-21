@@ -13,6 +13,7 @@ export class UsuariosService {
   async findAll(): Promise<Usuario[]> {
     return this.usuariosRepository.find();
   }
+
   async findByEmail(email: string) {
     return this.usuariosRepository.findOne({
       where: { email },
@@ -20,22 +21,16 @@ export class UsuariosService {
   }
 
   async findOne(id: number): Promise<Usuario> {
-<<<<<<< Updated upstream
-    const user = await this.usuariosRepository.findOne({ where: { id } });
-    if (!user) throw new NotFoundException('Usuario no encontrado');
-    return user;
-=======
     const usuario = await this.usuariosRepository.findOne({ where: { id } });
     if (!usuario) {
       throw new NotFoundException('Usuario no encontrado');
     }
     return usuario;
->>>>>>> Stashed changes
   }
 
   async update(id: number, updateData: any) {
     const user = await this.usuariosRepository.findOne({ where: { id } });
-    if (!user) throw new Error('Usuario no encontrado');
+    if (!user) throw new NotFoundException('Usuario no encontrado');
 
     // No permitir cambiar el password por aquí por seguridad
     const { password, ...rest } = updateData;

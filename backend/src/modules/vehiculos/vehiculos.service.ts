@@ -46,23 +46,20 @@ export class VehiculosService {
     });
   }
 
-  findAll(userId?: number) {
-    if (userId) {
-      return this.repo.find({
-        where: { usuario: { id: userId } },
-        relations: ['usuario'],
-      });
-    }
-<<<<<<< Updated upstream
-    return this.repo.find({ relations: ['usuario'] });
-=======
+  async findAll(userId?: number) {
+    const where = userId ? { usuario: { id: userId } } : {};
+
     const result = await this.repo.find({
       where,
       relations: ['usuario'],
     });
-    console.log('VEHICULOS:', JSON.stringify(result.map(v => ({ id: v.id, imagen: v.imagen }))));
+
+    console.log(
+      'VEHICULOS:',
+      JSON.stringify(result.map((v) => ({ id: v.id, imagen: v.imagen }))),
+    );
+
     return result;
->>>>>>> Stashed changes
   }
 
   findOne(id: number) {
