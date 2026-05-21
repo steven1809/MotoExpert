@@ -29,17 +29,39 @@ export class VehiculosController {
   constructor(private readonly service: VehiculosService) {}
 
   @Post()
-  create(@Body() dto: CreateVehiculoDto, @Request() req) {
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/vehicles',
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  create(
+    @Body() dto: CreateVehiculoDto,
+    @Request() req,
+    @UploadedFile() file?: any,
+  ) {
     const userRole = (req.user.rol || req.user.role)?.toLowerCase();
 
     // Si es admin y se proporciona un usuarioId, usar ese.
     // De lo contrario, usar el del usuario autenticado.
     const finalUserId =
-      userRole === 'admin' && dto.usuarioId
-        ? dto.usuarioId
-        : req.user.userId;
+      userRole === 'admin' && dto.usuarioId ? dto.usuarioId : req.user.userId;
 
-    return this.service.create({ ...dto, usuarioId: finalUserId });
+    const vehicleData = { ...dto, usuarioId: finalUserId };
+
+    if (file) {
+      vehicleData.imagen = `http://localhost:3001/uploads/vehicles/${file.filename}`;
+    }
+
+    return this.service.create(vehicleData);
   }
 
   @Post(':id/upload-image')
@@ -207,10 +229,34 @@ export class VehiculosController {
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req) {
-    const vehiculo = await this.service.findOne(+id);
-    if (vehiculo && vehiculo.usuario.id === req.user.userId) {
-      return this.service.remove(+id);
+    console.log(`[VehiculosController] Petición DELETE para ID: ${id} por usuario: ${req.user.userId}`);
+    
+    try {
+      const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+      
+      // Buscamos el vehículo sin filtrar por estado para verificar existencia real
+      const vehiculo = await this.service.findOne(+id);
+      
+      if (!vehiculo) {
+        throw new NotFoundException(`Vehículo con ID ${id} no encontrado.`);
+      }
+
+      // Validación de permisos: Admin o dueño
+      if (userRole !== 'admin' && vehiculo.usuario.id !== req.user.userId) {
+        console.warn(`[VehiculosController] Usuario ${req.user.userId} intentó eliminar vehículo ajeno ${id}`);
+        throw new ForbiddenException('No tienes permisos para eliminar este vehículo.');
+      }
+
+      return await this.service.remove(+id);
+    } catch (error) {
+      console.error(`[VehiculosController] Error al eliminar vehículo ${id}:`, error.message);
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      throw new InternalServerErrorException({
+        message: 'Ocurrió un error inesperado al eliminar el vehículo.',
+        error: error.message
+      });
     }
-    return { message: 'No tienes permiso para eliminar este vehículo' };
   }
 }

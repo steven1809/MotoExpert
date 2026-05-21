@@ -1,12 +1,13 @@
 import { IsString, IsNumber, IsOptional, IsNotEmpty } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateCitaDto {
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'La fecha es obligatoria' })
   fecha: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'La hora de inicio es obligatoria' })
   hora_inicio: string;
 
   @IsOptional()
@@ -14,18 +15,22 @@ export class CreateCitaDto {
   hora_fin?: string;
 
   @IsOptional()
-  @IsNumber()
+  @IsNumber({}, { message: 'El ID de usuario debe ser un número' })
+  @Type(() => Number)
   usuarioId?: number;
 
-  @IsNumber()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'El vehículo es obligatorio' })
+  @IsNumber({}, { message: 'El ID de vehículo debe ser un número' })
+  @Type(() => Number)
   vehiculoId: number;
 
-  @IsNumber()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'El servicio es obligatorio' })
+  @IsNumber({}, { message: 'El ID de servicio debe ser un número' })
+  @Type(() => Number)
   servicioId: number;
 
-  @IsNumber()
   @IsOptional()
+  @IsNumber({}, { message: 'El ID de empleado debe ser un número' })
+  @Type(() => Number)
   empleadoId?: number;
 }
