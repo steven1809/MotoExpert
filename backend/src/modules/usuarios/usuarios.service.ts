@@ -19,6 +19,10 @@ export class UsuariosService {
     });
   }
 
+  async findOne(id: number): Promise<Usuario> {
+    return this.usuariosRepository.findOne({ where: { id } });
+  }
+
   async update(id: number, updateData: any) {
     const user = await this.usuariosRepository.findOne({ where: { id } });
     if (!user) throw new Error('Usuario no encontrado');
