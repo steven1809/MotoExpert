@@ -1047,8 +1047,7 @@ class UserDashboard extends Component {
                     />
                   </div>
                   <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-[#94A3B8]">
-                    Te faltan {1000 - (this.state.userProfile?.points || 0)} pts
-                    para llegar al siguiente nivel
+                    Te faltan {Math.max(0, 1000 - (this.state.userProfile?.points || 0))} pts para llegar al siguiente nivel
                   </div>
                 </div>
               </section>
@@ -1084,10 +1083,10 @@ class UserDashboard extends Component {
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                         <path fillRule="evenodd" d="M12 2.25c.31 0 .6.2.7.5l.86 2.63c.1.3.33.53.63.63l2.63.86c.3.1.5.39.5.7s-.2.6-.5.7l-2.63.86c-.3.1-.53.33-.63.63l-.86 2.63c-.1.3-.39.5-.7.5s-.6-.2-.7-.5l-.86-2.63a.87.87 0 00-.63-.63l-2.63-.86a.75.75 0 010-1.4l2.63-.86c.3-.1.53-.33.63-.63l.86-2.63c.1-.3.39-.5.7-.5z" clipRule="evenodd" />
                       </svg>
-                    </div>
+                    </div>  
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-black text-white truncate">Promoción especial disponible</div>
-                      <div className="text-[11px] text-[#94A3B8] truncate">20% OFF en detailing premium</div>
+                      <div className="text-[11px] text-[#94A3B8] truncate">20% OFF en Lavado premium</div>
                     </div>
                     <div className="text-[10px] text-white/50">1d</div>
                   </div>
