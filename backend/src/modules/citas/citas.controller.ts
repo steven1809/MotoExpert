@@ -25,8 +25,11 @@ export class CitasController {
 
   @Post()
   create(@Body() dto: CreateCitaDto, @Request() req) {
+    console.log('[DEBUG] Recibiendo DTO para crear cita:', dto);
     // Forzamos que la cita sea para el usuario autenticado
-    return this.service.create({ ...dto, usuarioId: req.user.userId });
+    const finalDto = { ...dto, usuarioId: req.user.userId };
+    console.log('[DEBUG] DTO Final con usuarioId del JWT:', finalDto);
+    return this.service.create(finalDto);
   }
   @Get()
   findAll(@Request() req, @Query('userId') userId?: string) {

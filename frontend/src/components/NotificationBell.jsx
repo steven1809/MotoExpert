@@ -70,10 +70,10 @@ const NotificationBell = () => {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    if (diffMins < 1) return 'Hace un momento';
+    if (diffMins < 60) return `Hace ${diffMins} minuto${diffMins !== 1 ? 's' : ''}`;
+    if (diffHours < 24) return `Hace ${diffHours} hora${diffHours !== 1 ? 's' : ''}`;
+    return `Hace ${diffDays} día${diffDays !== 1 ? 's' : ''}`;
   };
 
   useEffect(() => {
@@ -101,8 +101,8 @@ const NotificationBell = () => {
           {
             id,
             tipo: 'appointment_overdue',
-            titulo: 'Appointment Overdue',
-            mensaje: `${serviceName} — ${plate} is ${minutes} minutes overdue`,
+            titulo: 'Cita Atrasada',
+            mensaje: `${serviceName} — ${plate} tiene un retraso de ${minutes} minutos`,
             createdAt,
             leida: false,
           },
@@ -111,11 +111,17 @@ const NotificationBell = () => {
       });
     };
 
+    const handleRefresh = () => {
+      fetchNotifications();
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('motoexpert:appointment_overdue', handleOverdue);
+    window.addEventListener('motoexpert:refresh_notifications', handleRefresh);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       window.removeEventListener('motoexpert:appointment_overdue', handleOverdue);
+      window.removeEventListener('motoexpert:refresh_notifications', handleRefresh);
     };
   }, []);
 
@@ -193,13 +199,13 @@ const NotificationBell = () => {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-[#0f1117] border border-[#2a2d3a] rounded-2xl shadow-2xl z-50 overflow-hidden">
           <div className="p-4 border-b border-[#2a2d3a] flex justify-between items-center">
-            <h3 className="text-[#F8FAFC] font-bold text-sm">Notifications</h3>
+            <h3 className="text-[#F8FAFC] font-bold text-sm">Notificaciones</h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
                 className="text-[#2563EB] text-xs font-bold hover:text-[#1d4ed8] transition-colors"
               >
-                Mark all as read
+                Marcar todas como leídas
               </button>
             )}
           </div>
@@ -210,7 +216,7 @@ const NotificationBell = () => {
                 <svg className="w-8 h-8 text-[#94A3B8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-[#94A3B8] italic text-sm">No notifications yet</p>
+                <p className="text-[#94A3B8] italic text-sm">No hay notificaciones aún</p>
               </div>
             ) : (
               notifications.map(notification => {

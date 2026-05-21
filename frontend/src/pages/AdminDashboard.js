@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import CustomSelect from '../components/CustomSelect';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -605,15 +606,16 @@ class AdminDashboard extends Component {
                       onChange={(e) => this.setState({ newUserApellido: e.target.value })}
                       className="w-full px-4 py-3 bg-black/40 border border-white/5 rounded-xl text-white text-sm font-bold outline-none focus:border-[#2563EB]/50"
                     />
-                    <select 
+                    <CustomSelect 
                       value={newUserTipoDoc}
-                      onChange={(e) => this.setState({ newUserTipoDoc: e.target.value })}
-                      className="w-full px-4 py-3 bg-black/40 border border-white/5 rounded-xl text-white text-sm font-bold outline-none"
-                    >
-                      <option>Cédula de Ciudadanía</option>
-                      <option>Cédula de Extranjería</option>
-                      <option>Pasaporte</option>
-                    </select>
+                      onChange={(val) => this.setState({ newUserTipoDoc: val })}
+                      options={[
+                        { value: 'Cédula de Ciudadanía', label: 'Cédula de Ciudadanía' },
+                        { value: 'Cédula de Extranjería', label: 'Cédula de Extranjería' },
+                        { value: 'Pasaporte', label: 'Pasaporte' }
+                      ]}
+                      placeholder="Tipo de documento"
+                    />
                     <input 
                       placeholder="Número de Documento" 
                       value={newUserNumDoc}
@@ -667,16 +669,16 @@ class AdminDashboard extends Component {
                 <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
                   Nivel de Detailing
                 </label>
-                <select 
+                <CustomSelect 
                   value={selectedServicioId}
-                  onChange={(e) => this.setState({ selectedServicioId: e.target.value })}
-                  className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#2563EB]/50 transition-all"
-                >
-                  <option value="">Seleccione el tratamiento...</option>
-                  {servicios.map(s => (
-                    <option key={s.id} value={s.id}>{s.nombre} - ${s.precio}</option>
-                  ))}
-                </select>
+                  onChange={(val) => this.setState({ selectedServicioId: val })}
+                  options={servicios.map(s => ({
+                    value: s.id,
+                    label: `${s.nombre} - $${s.precio}`,
+                    sublabel: s.categoria
+                  }))}
+                  placeholder="Seleccione el tratamiento..."
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -684,16 +686,16 @@ class AdminDashboard extends Component {
                   <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
                     Unidad Asignada
                   </label>
-                  <select 
+                  <CustomSelect 
                     value={selectedVehiculoId}
-                    onChange={(e) => this.setState({ selectedVehiculoId: e.target.value })}
-                    className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#2563EB]/50 transition-all"
-                  >
-                    <option value="">Placa...</option>
-                    {vehiculos.map(v => (
-                      <option key={v.id} value={v.id}>{v.placa} – {v.usuario?.nombre}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => this.setState({ selectedVehiculoId: val })}
+                    options={vehiculos.map(v => ({
+                      value: v.id,
+                      label: `${v.placa} – ${v.usuario?.nombre}`,
+                      sublabel: `${v.marca} ${v.modelo}`
+                    }))}
+                    placeholder="Placa..."
+                  />
                 </div>
                 <div>
                   <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
@@ -713,20 +715,19 @@ class AdminDashboard extends Component {
                 <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
                   Empleado Asignado
                 </label>
-                <select 
+                <CustomSelect 
                   value={selectedEmpleadoId}
-                  onChange={(e) => this.setState({ selectedEmpleadoId: e.target.value })}
-                  className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#2563EB]/50 transition-all"
-                >
-                  <option value="">Sin asignar (Auto-asignación)</option>
-                  {empleados.length === 0 ? (
-                    <option disabled>No hay empleados disponibles</option>
-                  ) : (
-                    empleados.map(e => (
-                      <option key={e.id} value={e.id}>{e.usuario?.nombre} ({e.cargo || 'Técnico'})</option>
-                    ))
-                  )}
-                </select>
+                  onChange={(val) => this.setState({ selectedEmpleadoId: val })}
+                  options={[
+                    { value: '', label: 'Sin asignar (Auto-asignación)' },
+                    ...empleados.map(e => ({
+                      value: e.id,
+                      label: `${e.usuario?.nombre} (${e.cargo || 'Técnico'})`,
+                      sublabel: e.especialidad
+                    }))
+                  ]}
+                  placeholder="Seleccionar empleado..."
+                />
               </div>
 
               <button 

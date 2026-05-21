@@ -1,5 +1,7 @@
-import React, { Component } from 'react';
+import React, { Component} from 'react';
+import CustomSelect from '../components/CustomSelect';
 import carHeroImg from '../assets/images/1.png';
+import vehiculoIcon from '../assets/iconos/coche.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -24,6 +26,8 @@ class Vehiculos extends Component {
       },
       formErrors: {},
       isSubmitting: false,
+      isDeleting: false,
+      deletingId: null,
       filters: {
         searchTerm: '',
         placaFilter: '',
@@ -133,7 +137,12 @@ class Vehiculos extends Component {
   };
 
   handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de eliminar este vehículo?')) return;
+    // Confirmación profesional
+    if (!window.confirm('¿Estás seguro de eliminar este vehículo? Esta acción eliminará también todas las citas asociadas y no se puede deshacer.')) {
+      return;
+    }
+
+    this.setState({ isDeleting: true, deletingId: id });
 
     try {
       const token = localStorage.getItem('token');
@@ -145,28 +154,39 @@ class Vehiculos extends Component {
         },
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (response.ok) {
         if (this.props.showToast) {
-          this.props.showToast('Vehículo eliminado correctamente', 'success');
+          this.props.showToast(data.message || 'Vehículo eliminado correctamente', 'success');
         }
-        this.fetchVehiculos();
+        // Actualizar la lista localmente para feedback inmediato
+        this.setState(prevState => ({
+          vehiculos: prevState.vehiculos.filter(v => v.id !== id),
+          isDeleting: false,
+          deletingId: null
+        }));
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Error al eliminar vehículo:', errorData);
-        
-        const errorMessage = errorData.message || 'Error al eliminar el vehículo';
-        alert(errorMessage);
+        console.error('Error al eliminar vehículo:', data);
+        const errorMessage = data.message || 'Error al eliminar el vehículo';
         
         if (this.props.showToast) {
           this.props.showToast(errorMessage, 'error');
+        } else {
+          alert(errorMessage);
         }
+        this.setState({ isDeleting: false, deletingId: null });
       }
     } catch (err) {
-      console.error('Error de conexión al eliminar vehículo:', err);
-      alert('Error de conexión con el servidor');
+      console.error('Error de red al eliminar vehículo:', err);
+      const networkError = 'Error de conexión con el servidor. Por favor, intenta de nuevo.';
+      
       if (this.props.showToast) {
-        this.props.showToast('Error de conexión con el servidor', 'error');
+        this.props.showToast(networkError, 'error');
+      } else {
+        alert(networkError);
       }
+      this.setState({ isDeleting: false, deletingId: null });
     }
   };
 
@@ -352,6 +372,10 @@ class Vehiculos extends Component {
       { value: 'Moto', label: 'Moto' },
       { value: 'Auto', label: 'Auto' },
     ];
+    const formTipoOptions = [
+      { value: 'Moto', label: 'Moto' },
+      { value: 'Auto', label: 'Auto' },
+    ];
 
     if (loading) return <div className="flex items-center justify-center min-h-screen bg-white dark:bg-[#020617]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#2563EB]"></div></div>;
 
@@ -369,11 +393,7 @@ class Vehiculos extends Component {
             <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-11 w-11 rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                      <path fillRule="evenodd" d="M6.75 4.5A3 3 0 003.77 7.14l-1.5 9A3 3 0 005.23 19.5h.52a3 3 0 005.5 0h1.5a3 3 0 005.5 0h.52a3 3 0 002.96-3.36l-1.5-9A3 3 0 0017.25 4.5H6.75zm3.75 12a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zm9 0a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
+                 <img src={vehiculoIcon} alt="vehiculo" className="w-6 h-6" bg="white"/>
                   <div>
                     <div className="text-lg font-black text-slate-900 dark:text-white">Mis vehículos</div>
                     <div className="text-xs text-slate-600 dark:text-[#94A3B8]">
@@ -396,15 +416,12 @@ class Vehiculos extends Component {
                     />
                   </div>
 
-                  <select
+                  <CustomSelect
                     value={this.state.filters.tipoFilter}
-                    onChange={(e) => this.setState((prev) => ({ filters: { ...prev.filters, tipoFilter: e.target.value } }))}
-                    className="w-full sm:w-[170px] h-11 px-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-[#2563EB]/50 transition-colors"
-                  >
-                    {tipoOptions.map((o) => (
-                      <option key={o.value || 'all'} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => this.setState((prev) => ({ filters: { ...prev.filters, tipoFilter: val } }))}
+                    options={tipoOptions}
+                    className="w-full sm:w-[170px]"
+                  />
 
                   <button
                     type="button"
@@ -509,17 +526,12 @@ class Vehiculos extends Component {
                         <label className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
                           Tipo de vehículo
                         </label>
-                        <select
-                          name="tipo"
+                        <CustomSelect
                           value={this.state.formData.tipo}
-                          onChange={this.handleInputChange}
-                          className={`w-full h-11 px-4 rounded-2xl bg-white/5 border text-white focus:outline-none transition-colors ${
-                            this.state.formErrors.tipo ? 'border-[#E24B4A]' : 'border-white/10 focus:border-[#2563EB]/50'
-                          }`}
-                        >
-                          <option value="Moto">Moto</option>
-                          <option value="Auto">Auto</option>
-                        </select>
+                          onChange={(val) => this.setState((prev) => ({ formData: { ...prev.formData, tipo: val } }))}
+                          options={formTipoOptions}
+                          className={this.state.formErrors.tipo ? 'border-[#E24B4A] rounded-2xl' : ''}
+                        />
                         {this.state.formErrors.tipo && (
                           <div className="text-xs text-[#E24B4A] font-bold">{this.state.formErrors.tipo}</div>
                         )}
@@ -615,16 +627,13 @@ class Vehiculos extends Component {
                     {filteredVehiculos.map((v) => (
                       <div key={v.id} className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
                         <div className="relative h-28 bg-[#0b1220]">
-                          {(() => {
-                            const imageUrl = this.getImageUrl(v.imagen);
-                            return (
                           <img 
-                            src={imageUrl || carHeroImg} 
+                            src={this.getImageUrl(v.imagen) || carHeroImg} 
                             alt={v.marca} 
-                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${imageUrl ? 'opacity-60' : 'opacity-15'}`} 
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                              this.getImageUrl(v.imagen) ? 'opacity-60' : 'opacity-15'
+                            }`} 
                           />
-                            );
-                          })()}
                           <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/40 to-transparent" />
                           <div className="absolute top-3 left-3 inline-flex items-center gap-2">
                             <span className="px-2.5 py-1 rounded-full bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] text-[10px] font-black">
@@ -634,13 +643,20 @@ class Vehiculos extends Component {
                           <div className="absolute top-3 right-3 flex items-center gap-2">
                             <button
                               type="button"
+                              disabled={this.state.isDeleting && this.state.deletingId === v.id}
                               onClick={() => this.handleDelete(v.id)}
-                              className="h-9 w-9 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-[#E24B4A] flex items-center justify-center transition-colors"
-                              aria-label="Eliminar"
+                              className="h-10 w-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-500/10 border border-slate-200 dark:border-white/10 text-slate-400 hover:text-red-500 transition-colors flex items-center justify-center disabled:opacity-50"
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                                <path fillRule="evenodd" d="M9.75 3a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V4.5h4.5a.75.75 0 010 1.5h-.75l-.76 12.125A2.25 2.25 0 0115.995 20.25H8.005a2.25 2.25 0 01-2.245-2.125L5 6h-.75a.75.75 0 010-1.5h4.5V3zm2.25 5.25a.75.75 0 00-.75.75v8.25a.75.75 0 001.5 0V9a.75.75 0 00-.75-.75z" clipRule="evenodd" />
-                              </svg>
+                              {this.state.isDeleting && this.state.deletingId === v.id ? (
+                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                  <path fillRule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 013.878.512.75.75 0 11-.256 1.478l-.209-.035-1.005 13.07a3 3 0 01-2.991 2.77H8.084a3 3 0 01-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 01-.256-1.478A48.567 48.567 0 017.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 013.369 0c1.603.051 2.815 1.387 2.815 2.951zm-6.136-1.452a51.196 51.196 0 013.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 00-6 0v-.113c0-.794.609-1.428 1.364-1.452zm-.355 5.945a.75.75 0 10-1.5.058l.347 9a.75.75 0 101.499-.058l-.346-9zm5.48.058a.75.75 0 10-1.498-.058l-.347 9a.75.75 0 001.5.058l.345-9z" clipRule="evenodd" />
+                                </svg>
+                              )}
                             </button>
                           </div>
                         </div>
