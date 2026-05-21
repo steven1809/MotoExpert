@@ -11,6 +11,8 @@ class Vehiculos extends Component {
       loading: true,
       error: null,
       showForm: false,
+      isEditing: false,
+      editId: null,
       formData: {
         placa: '',
         tipo: 'Moto',
@@ -131,18 +133,71 @@ class Vehiculos extends Component {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
       if (response.ok) {
+        if (this.props.showToast) {
+          this.props.showToast('Vehículo eliminado correctamente', 'success');
+        }
         this.fetchVehiculos();
       } else {
-        alert('Error al eliminar el vehículo');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error al eliminar vehículo:', errorData);
+        
+        const errorMessage = errorData.message || 'Error al eliminar el vehículo';
+        alert(errorMessage);
+        
+        if (this.props.showToast) {
+          this.props.showToast(errorMessage, 'error');
+        }
       }
     } catch (err) {
-      alert('Error de conexión');
+      console.error('Error de conexión al eliminar vehículo:', err);
+      alert('Error de conexión con el servidor');
+      if (this.props.showToast) {
+        this.props.showToast('Error de conexión con el servidor', 'error');
+      }
     }
   };
+
+  handleEdit = (vehiculo) => {
+    this.setState({
+      showForm: true,
+      isEditing: true,
+      editId: vehiculo.id,
+      formData: {
+        placa: vehiculo.placa || '',
+        tipo: vehiculo.tipo || 'Moto',
+        marca: vehiculo.marca || '',
+        modelo: vehiculo.modelo || '',
+        anio: vehiculo.anio ? String(vehiculo.anio) : '',
+        color: vehiculo.color || '',
+        imagen: null, // No cargamos el archivo binario, pero podemos mostrar la URL
+      },
+      formErrors: {},
+    });
+  };
+
+  handleCloseForm = () => {
+     this.setState({
+       showForm: false,
+       isEditing: false,
+       editId: null,
+       isSubmitting: false,
+       formData: {
+         placa: '',
+         tipo: 'Moto',
+         marca: '',
+         modelo: '',
+         anio: '',
+         color: '',
+         imagen: null,
+       },
+       formErrors: {},
+     });
+   };
 
   handleInputChange = (e) => {
     let { name, value } = e.target;
@@ -198,7 +253,7 @@ class Vehiculos extends Component {
     
     if (!this.validateForm()) return;
 
-    const { formData } = this.state;
+    const { formData, isEditing, editId } = this.state;
     this.setState({ isSubmitting: true });
 
     try {
@@ -210,68 +265,70 @@ class Vehiculos extends Component {
         return;
       }
 
-      const dataToSend = {
-        placa: formData.placa,
-        tipo: formData.tipo,
-        marca: formData.marca.trim(),
-        modelo: formData.modelo.trim(),
-        usuarioId: parseInt(userId, 10)
-      };
+      const fData = new FormData();
+      fData.append('placa', formData.placa);
+      fData.append('tipo', formData.tipo);
+      fData.append('marca', formData.marca.trim());
+      fData.append('modelo', formData.modelo.trim());
+      fData.append('usuarioId', userId);
 
       if (formData.anio.trim()) {
-        dataToSend.anio = parseInt(formData.anio, 10);
+        fData.append('anio', formData.anio.trim());
       }
       if (formData.color.trim()) {
-        dataToSend.color = formData.color.trim();
+        fData.append('color', formData.color.trim());
+      }
+      if (formData.imagen) {
+        fData.append('file', formData.imagen);
       }
 
-      const response = await fetch(`${API_BASE_URL}/vehiculos`, {
-        method: 'POST',
+      const url = isEditing ? `${API_BASE_URL}/vehiculos/${editId}` : `${API_BASE_URL}/vehiculos`;
+      const method = isEditing ? 'PATCH' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(dataToSend),
+        body: fData,
       });
 
       if (response.ok) {
-        this.setState({
-          showForm: false,
-          formData: {
-            placa: '',
-            tipo: 'Moto',
-            marca: '',
-            modelo: '',
-            anio: '',
-            color: '',
-            imagen: null,
-          },
-          formErrors: {},
-          isSubmitting: false
-        });
+        this.handleCloseForm();
         this.fetchVehiculos();
+        
+        const successMsg = isEditing ? 'Vehículo actualizado correctamente' : 'Vehículo registrado correctamente';
         if (this.props.showToast) {
-          this.props.showToast('Unit registered successfully', 'success');
+          this.props.showToast(successMsg, 'success');
         }
 
-        // Check for redirect flag
-        const redirectAfterVehicle = localStorage.getItem('redirectAfterVehicle');
-        if (redirectAfterVehicle === 'citas' && this.props.setView) {
-          localStorage.removeItem('redirectAfterVehicle');
-          this.props.setView('citas');
-        }
-        // Also keep the existing pendingAction check for backward compatibility
-        const pendingAction = localStorage.getItem('pendingAction');
-        if (pendingAction === 'agendar_cita' && this.props.setView) {
-          localStorage.removeItem('pendingAction');
-          this.props.setView('citas');
+        if (!isEditing) {
+          // Check for redirect flag
+          const redirectAfterVehicle = localStorage.getItem('redirectAfterVehicle');
+          if (redirectAfterVehicle === 'citas' && this.props.setView) {
+            localStorage.removeItem('redirectAfterVehicle');
+            this.props.setView('citas');
+          }
+          // Also keep the existing pendingAction check for backward compatibility
+          const pendingAction = localStorage.getItem('pendingAction');
+          if (pendingAction === 'agendar_cita' && this.props.setView) {
+            localStorage.removeItem('pendingAction');
+            this.props.setView('citas');
+          }
         }
       } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.message || 'No se pudo crear el vehículo'}`);
+        let errorMessage = 'No se pudo procesar la solicitud';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          console.error('Error al parsear respuesta de error:', parseError);
+        }
+        alert(`Error: ${errorMessage}`);
         this.setState({ isSubmitting: false });
       }
     } catch (err) {
+      console.error('Error al enviar formulario:', err);
       alert('Error de conexión');
       this.setState({ isSubmitting: false });
     }
@@ -343,7 +400,7 @@ class Vehiculos extends Component {
 
                   <button
                     type="button"
-                    onClick={() => this.setState({ showForm: !showForm })}
+                    onClick={() => this.setState({ showForm: !showForm, isEditing: false, editId: null })}
                     className="w-full sm:w-auto h-11 px-5 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black uppercase tracking-widest transition-colors"
                   >
                     + Registrar vehículo
@@ -365,12 +422,16 @@ class Vehiculos extends Component {
                 <div className="rounded-3xl border border-[#2563EB]/25 bg-[#0b1220] overflow-hidden">
                   <div className="px-5 py-4 flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-black text-white">Registrar nuevo vehículo</div>
-                      <div className="text-xs text-[#94A3B8]">Completa la información de tu vehículo</div>
+                      <div className="text-sm font-black text-white">
+                        {this.state.isEditing ? 'Editar vehículo' : 'Registrar nuevo vehículo'}
+                      </div>
+                      <div className="text-xs text-[#94A3B8]">
+                        {this.state.isEditing ? 'Actualiza la información de tu vehículo' : 'Completa la información de tu vehículo'}
+                      </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => this.setState({ showForm: false })}
+                      onClick={() => this.handleCloseForm()}
                       className="h-10 w-10 rounded-2xl bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 transition-colors flex items-center justify-center"
                       aria-label="Cerrar"
                     >
@@ -512,7 +573,7 @@ class Vehiculos extends Component {
                     <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
                       <button
                         type="button"
-                        onClick={() => this.setState({ showForm: false })}
+                        onClick={() => this.handleCloseForm()}
                         className="h-11 px-6 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors"
                       >
                         Cancelar
@@ -522,7 +583,7 @@ class Vehiculos extends Component {
                         disabled={this.state.isSubmitting}
                         className="h-11 px-6 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] disabled:bg-white/10 disabled:text-white/40 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest transition-colors"
                       >
-                        {this.state.isSubmitting ? 'Guardando...' : 'Guardar vehículo'}
+                        {this.state.isSubmitting ? 'Guardando...' : (this.state.isEditing ? 'Actualizar vehículo' : 'Guardar vehículo')}
                       </button>
                     </div>
                   </form>
@@ -546,8 +607,12 @@ class Vehiculos extends Component {
                     {filteredVehiculos.map((v) => (
                       <div key={v.id} className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
                         <div className="relative h-28 bg-[#0b1220]">
-                          <img src={carHeroImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-15" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/80 to-transparent" />
+                          <img 
+                            src={v.imagen || carHeroImg} 
+                            alt={v.marca} 
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${v.imagen ? 'opacity-60' : 'opacity-15'}`} 
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/40 to-transparent" />
                           <div className="absolute top-3 left-3 inline-flex items-center gap-2">
                             <span className="px-2.5 py-1 rounded-full bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] text-[10px] font-black">
                               Principal
@@ -591,7 +656,7 @@ class Vehiculos extends Component {
                           <div className="flex gap-2">
                             <button
                               type="button"
-                              onClick={() => this.props.showToast?.('Edición disponible pronto.', 'info')}
+                              onClick={() => this.handleEdit(v)}
                               className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
                             >
                               Editar

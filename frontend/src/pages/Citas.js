@@ -1222,14 +1222,6 @@ const Citas = ({
 
                   <button
                     type="button"
-                    onClick={() => historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                    className="w-full sm:w-auto h-11 px-4 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-xs font-black uppercase tracking-widest transition-colors"
-                  >
-                    Filtros{hasActiveFilters ? ' •' : ''}
-                  </button>
-
-                  <button
-                    type="button"
                     onClick={() => {
                       setShowForm(true);
                       setTimeout(() => formSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
@@ -1465,7 +1457,11 @@ const Citas = ({
                                   }`}
                                 >
                                   <div className="relative h-20 bg-[#0b1220]">
-                                    <img src={carHeroImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-15" />
+                                    <img 
+                                      src={v.imagen || carHeroImg} 
+                                      alt="" 
+                                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${v.imagen ? 'opacity-40' : 'opacity-15'}`} 
+                                    />
                                     <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/80 to-transparent" />
                                     {isSelected && (
                                       <div className="absolute top-2 right-2 h-7 w-7 rounded-2xl bg-[#2563EB] text-white flex items-center justify-center">
@@ -1608,7 +1604,7 @@ const Citas = ({
                                 Sede
                               </div>
                               <input
-                                value="AutoClean Center"
+                                value="MotoExpert"
                                 readOnly
                                 className="w-full h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-white/80 focus:outline-none"
                               />
@@ -1958,7 +1954,11 @@ const Citas = ({
 
                       <div className="px-5 pb-5">
                         <div className="relative h-28 rounded-2xl overflow-hidden border border-white/10 bg-[#0b1220]">
-                          <img src={carHeroImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-15" />
+                          <img 
+                            src={cita.vehiculo?.imagen || carHeroImg} 
+                            alt="" 
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${cita.vehiculo?.imagen ? 'opacity-40' : 'opacity-15'}`} 
+                          />
                           <div className="absolute inset-0 bg-gradient-to-r from-[#0b1220] via-[#0b1220]/85 to-transparent" />
                         </div>
 

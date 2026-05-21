@@ -54,6 +54,12 @@ export class CitasService {
       );
     }
 
+    if (vehiculo.estado === 'INACTIVO') {
+      throw new BadRequestException(
+        'No se pueden agendar citas para un vehículo que ha sido eliminado',
+      );
+    }
+
     const finalUsuarioId = dto.usuarioId || vehiculo.usuario?.id;
     if (!finalUsuarioId) {
       throw new BadRequestException('El vehículo no tiene un propietario asignado');
@@ -193,6 +199,56 @@ export class CitasService {
       cita.completedAt = new Date();
       if (report) {
         cita.report = report;
+      }
+
+      // --- LOGICA DE PUNTOS Y FIDELIZACION ---
+      const usuario = await this.usuarioRepo.findOneBy({ id: cita.usuario.id });
+      if (usuario) {
+        // 1. Calcular puntos (10% del valor del servicio o base de 150)
+        const servicePrice = Number(cita.servicio?.precio) || 0;
+        const earnedPoints =
+          servicePrice > 0 ? Math.round(servicePrice * 0.1) : 150;
+
+        usuario.points = (usuario.points || 0) + earnedPoints;
+
+        // 2. Lógica de Subida de Nivel (Cada 1000 puntos)
+        while (usuario.points >= 1000) {
+          usuario.points -= 1000;
+          usuario.level = (usuario.level || 1) + 1;
+
+          // Actualizar Rank
+          if (usuario.level >= 5) {
+            usuario.rank = 'Platinum';
+          } else if (usuario.level >= 3) {
+            usuario.rank = 'Gold';
+          } else {
+            usuario.rank = 'Silver';
+          }
+
+          // 3. Generar Bono de Descuento
+          const bonusCode = `LEVEL${usuario.level}-${Math.random()
+            .toString(36)
+            .substring(2, 8)
+            .toUpperCase()}`;
+          const discount =
+            usuario.level >= 5 ? 25 : usuario.level >= 3 ? 20 : 15;
+
+          if (!usuario.bonuses) usuario.bonuses = [];
+          usuario.bonuses.push({
+            code: bonusCode,
+            discount: discount,
+            createdAt: new Date().toISOString(),
+          });
+
+          // Notificación especial de subida de nivel
+          await this.notificacionesService.create(
+            usuario,
+            'level_up',
+            '¡Felicidades! Has subido de nivel',
+            `Has alcanzado el Nivel ${usuario.level} (${usuario.rank}). Tu código de bono es: ${bonusCode}`,
+          );
+        }
+        await this.usuarioRepo.save(usuario);
       }
     }
 
