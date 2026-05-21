@@ -1,0 +1,71 @@
+[33m84f7a04[m[33m ([m[1;36mHEAD[m[33m)[m Merge pull request #2 from steven1809/Brandon
+[33mb56bcef[m ajustes registro admin
+[33mb6c6e0f[m Merge branch 'main' of https://github.com/steven1809/MotoExpert into Brandon
+[33ma5bd1b4[m  ajustdes admin
+[33m334cb6a[m correcciones reseñas
+[33md477a8b[m actualizacion de secciones
+[33m29f854c[m cambios de user dashboard
+[33m2d5d281[m  config admin
+[33m21829cd[m correccion de tokens de validacion
+[33mc58f697[m arrglo de vehiculos
+[33m05be3ba[m creacion de medios de pago
+[33mfec4123[m cambios de landing
+[33mda843b0[m mejoras admin usuarios y exportacion
+[33m45b7018[m Merge branch 'main' of https://github.com/steven1809/MotoExpert
+[33m862ced4[m[33m ([m[1;31morigin/nuevo,login[m[33m)[m login nuevo
+[33m671b983[m[33m ([m[1;31morigin/Brandon[m[33m)[m actualizacion navbar user
+[33me27b7ea[m creacion de reseñas
+[33m29ed510[m boton de notificaiones
+[33m65a44de[m actualización de package.json después de aplicar stash
+[33med3d037[m Merge branch 'main' of https://github.com/steven1809/MotoExpert
+[33m43f3e4b[m cambios se en servicios
+[33m308b8ca[m configuracion de navbar
+[33mc692cea[m configuracion de navbar
+[33m1a03f79[m cambios de dashboard
+[33mb3018a2[m cambios de login
+[33m241c9af[m[33m ([m[1;31morigin/alex[m[33m)[m cambios de dashboard admin
+[33m94b160a[m Resolver conflictos de LandingPage
+[33m9589d89[m fondo de los servicios
+[33m369822a[m login con google y notificacion por correo
+[33m3d654a5[m Merge branch 'landding-nueva'
+[33m4410575[m[33m ([m[1;31morigin/landding-nueva[m[33m)[m Agrega textos personalizados en servicios
+[33m167230c[m feat: agregar onboarding modal por usuario
+[33m589a7a0[m feat: agregar sistema de cambio de tema oscuro/claro
+[33m17b428e[m landing page mejorada
+[33m29bbb1b[m Merge branch 'main' of https://github.com/steven1809/MotoExpert
+[33mf412570[m Revert "Actualización de templates y mejoras"
+[33md30b1da[m Revert "Actualización de templates y mejoras"
+[33m6b738aa[m[33m ([m[1;31morigin/TEMPLATES[m[33m)[m Actualización de templates y mejoras
+[33mccf04c4[m feat: notificaciones de servicio y dashboards por rol
+[33m8ff78f3[m vinculacion de empleado al formulario de citas y correxion de jwt role
+[33m88740f4[m feat: integración de detalles en cards y preparación para limpieza de repositorio
+[33mb5b884c[m[33m ([m[1;31morigin/feat/gestion-roles[m[33m)[m Implementación de roles de empleado, buscador de usuarios y ajuste de Navbar
+[33mee589c3[m Sincronización: Implementación de mapa, gestión de inactividad y corrección de servicios con datos de DB
+[33m45ede96[m chore: ignore frontend build output
+[33m8c17856[m  agregue informacion a las cards de servicios
+[33m340651c[m Merge branch 'alex'
+[33mdbbc958[m cards de servicios
+[33m83ed9ce[m Merge branch 'cambios-landing'
+[33me752c67[m[33m ([m[1;31morigin/cambios-landing[m[33m)[m Agregando cambios de login
+[33mec9ba2f[m[33m ([m[1;31morigin/vehiculos_y_citas[m[33m)[m avance vehiculos y citas
+[33mb3784d1[m[33m ([m[1;31morigin/steven[m[33m)[m visualizacoin de usuarios al admin
+[33m3ebb20a[m Fix: resolver conflictos en App.js y agregar LandingPage
+[33mdb9cdf6[m Fix: resolucion manual de conflictos tras merge con allow-unrelated-histories
+[33m7098678[m[33m ([m[1;31morigin/feature-navbar-global-fix[m[33m)[m Fix: implementacion de navbar global, correccion de setView y eliminacion de duplicados
+[33m0150c66[m Merge branch 'main' of https://github.com/steven1809/MotoExpert
+[33m72c51cc[m se actualizo el menu
+[33m1bf6346[m[33m ([m[1;31morigin/feature/servicios-crud[m[33m)[m ajuste de interfaz
+[33mf11669f[m[33m ([m[1;31morigin/menu-hamburguesa[m[33m)[m Avances en autenticacion, fronted y roles de admin y user
+[33m6b168a1[m mis cambios locales antes de actualizar
+[33mec2083e[m Merge branch 'inicio_sesion'
+[33m4e05085[m[33m ([m[1;31morigin/inicio_sesion[m[33m)[m estilos login
+[33mbbf1310[m creacion de vehiculos citas
+[33m369821f[m creacion de inicio de sesion
+[33m3d6e4d8[m Conflictos resueltos y código unificado
+[33m5060bf8[m Mis cambios locales antes de actualizar
+[33mdacd49a[m Merge pull request #1 from steven1809/feature/registro-usuarios
+[33m4849f04[m[33m ([m[1;31morigin/feature/registro-usuarios[m[33m)[m creacion de registro de usuarios con lista para ver los registrados
+[33me09ab0c[m feat: implementar auth en backend y nuevos componentes en frontend
+[33m319852b[m creacion de modulos de servicios y empleados
+[33m104cbba[m chore: estructura limpia sin dependencias y bd postgres lista
+[33m6da8c9b[m commit inicial: estructura de proyecto motoexpert con backend y fronted
