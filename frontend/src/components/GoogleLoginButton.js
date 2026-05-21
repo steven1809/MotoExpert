@@ -2,6 +2,16 @@ import React, { useEffect, useRef } from 'react';
 
 const GoogleLoginButton = ({ onSuccess, onError }) => {
   const buttonRef = useRef(null);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+  }, [onSuccess]);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
   useEffect(() => {
     const loadGoogleScript = () => {
@@ -15,9 +25,9 @@ const GoogleLoginButton = ({ onSuccess, onError }) => {
             client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
             callback: (response) => {
               if (response.credential) {
-                onSuccess(response.credential);
+                onSuccessRef.current?.(response.credential);
               } else {
-                onError && onError('No credential received');
+                onErrorRef.current?.('No credential received');
               }
             },
           });

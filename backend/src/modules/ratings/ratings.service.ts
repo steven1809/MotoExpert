@@ -24,13 +24,16 @@ export class RatingsService {
   ) {}
 
   async create(
-    usuario: Usuario,
+    userPayload: any,
     citaId: number,
     specialistRating: number,
     serviceRating: number,
     comment?: string,
   ) {
-    const cita = await this.citaRepo.findOne({ where: { id: citaId } });
+    const cita = await this.citaRepo.findOne({ 
+      where: { id: citaId },
+      relations: ['empleado', 'servicio', 'usuario']
+    });
     if (!cita) throw new NotFoundException('Cita no encontrada');
     if (cita.estado !== 'FINALIZADO')
       throw new BadRequestException(
@@ -45,6 +48,9 @@ export class RatingsService {
       throw new BadRequestException('Ya has calificado este servicio');
 
     const empleado = cita.empleado;
+    
+    // El objeto usuario del request tiene userId, lo mapeamos a id para TypeORM
+    const usuario = { id: userPayload.userId } as Usuario;
 
     const rating = this.repo.create({
       usuario,
@@ -101,5 +107,12 @@ export class RatingsService {
       totalReviews: total,
       averageRating: averageSpecialistRating.toFixed(1),
     };
+  }
+
+  async findAll() {
+    return this.repo.find({
+      order: { createdAt: 'DESC' },
+      relations: ['usuario', 'cita', 'cita.servicio', 'empleado'],
+    });
   }
 }

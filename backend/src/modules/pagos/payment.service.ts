@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   GoneException,
   Injectable,
   NotFoundException,
@@ -110,6 +111,42 @@ export class PaymentService {
     await this.paymentRepo.save(payment);
 
     return { valid: true, appointmentId: payment.appointmentId };
+  }
+
+  async getTokenInfoForUser(userId: number, appointmentId: number): Promise<{
+    payment: null | {
+      tokenCode: string | null;
+      tokenUsed: boolean;
+      tokenExpiresAt: Date | null;
+    };
+  }> {
+    const cita = await this.citaRepo.findOne({
+      where: { id: appointmentId },
+      relations: { usuario: true },
+    });
+
+    if (!cita) {
+      throw new NotFoundException('Cita no encontrada');
+    }
+
+    if (cita.usuario?.id !== userId) {
+      throw new ForbiddenException('No autorizado');
+    }
+
+    const payment = await this.paymentRepo.findOne({
+      where: { appointmentId },
+      select: { tokenCode: true, tokenUsed: true, tokenExpiresAt: true },
+    });
+
+    if (!payment) return { payment: null };
+
+    return {
+      payment: {
+        tokenCode: payment.tokenCode,
+        tokenUsed: payment.tokenUsed,
+        tokenExpiresAt: payment.tokenExpiresAt,
+      },
+    };
   }
 
   private async buildToken(): Promise<{

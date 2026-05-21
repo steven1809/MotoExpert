@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import SearchAndFilter from '../components/SearchAndFilter';
+import carHeroImg from '../assets/images/1.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -12,14 +12,13 @@ class Vehiculos extends Component {
       error: null,
       showForm: false,
       formData: {
-        documentType: '',
-        documentNumber: '',
         placa: '',
-        tipo: 'motorcycle', // Valor por defecto
-        brand: '',
-        year: '',
+        tipo: 'Moto',
+        marca: '',
+        modelo: '',
+        anio: '',
         color: '',
-        model: ''
+        imagen: null,
       },
       formErrors: {},
       isSubmitting: false,
@@ -149,11 +148,9 @@ class Vehiculos extends Component {
     let { name, value } = e.target;
     
     // Process input values
-    if (name === 'documentNumber') {
-      value = value.replace(/\D/g, ''); // Only numbers
-    } else if (name === 'placa') {
+    if (name === 'placa') {
       value = value.toUpperCase(); // Force uppercase
-    } else if (name === 'year') {
+    } else if (name === 'anio') {
       value = value.replace(/\D/g, ''); // Only numbers
     }
 
@@ -175,28 +172,20 @@ class Vehiculos extends Component {
     const currentYear = new Date().getFullYear();
 
     // Required fields
-    if (!formData.documentType.trim()) errors.documentType = 'This field is required';
-    if (!formData.documentNumber.trim()) {
-      errors.documentNumber = 'This field is required';
-    } else if (formData.documentNumber.length < 5) {
-      errors.documentNumber = 'Document number must be at least 5 digits';
-    }
-
     if (!formData.placa.trim()) {
-      errors.placa = 'This field is required';
+      errors.placa = 'Este campo es requerido';
     } else if (formData.placa.length < 4) {
-      errors.placa = 'Plate must be at least 4 characters';
+      errors.placa = 'La placa debe tener al menos 4 caracteres';
     }
 
-    if (!formData.tipo) errors.tipo = 'This field is required';
-    if (!formData.brand.trim()) errors.brand = 'This field is required';
-    
-    if (!formData.year.trim()) {
-      errors.year = 'This field is required';
-    } else {
-      const year = parseInt(formData.year, 10);
-      if (year < 1990 || year > currentYear + 1) {
-        errors.year = `Year must be between 1990 and ${currentYear + 1}`;
+    if (!formData.tipo) errors.tipo = 'Este campo es requerido';
+    if (!formData.marca.trim()) errors.marca = 'Este campo es requerido';
+    if (!formData.modelo.trim()) errors.modelo = 'Este campo es requerido';
+
+    if (formData.anio.trim()) {
+      const year = parseInt(formData.anio, 10);
+      if (year < 1900 || year > currentYear + 1) {
+        errors.anio = `El año debe estar entre 1900 y ${currentYear + 1}`;
       }
     }
 
@@ -223,13 +212,18 @@ class Vehiculos extends Component {
 
       const dataToSend = {
         placa: formData.placa,
-        tipo: formData.tipo === 'motorcycle' ? 'Moto' : 'Auto',
-        marca: formData.brand,
-        anio: parseInt(formData.year, 10),
-        color: formData.color.trim() || null,
-        modelo: formData.model.trim() || null,
+        tipo: formData.tipo,
+        marca: formData.marca.trim(),
+        modelo: formData.modelo.trim(),
         usuarioId: parseInt(userId, 10)
       };
+
+      if (formData.anio.trim()) {
+        dataToSend.anio = parseInt(formData.anio, 10);
+      }
+      if (formData.color.trim()) {
+        dataToSend.color = formData.color.trim();
+      }
 
       const response = await fetch(`${API_BASE_URL}/vehiculos`, {
         method: 'POST',
@@ -244,14 +238,13 @@ class Vehiculos extends Component {
         this.setState({
           showForm: false,
           formData: {
-            documentType: '',
-            documentNumber: '',
             placa: '',
-            tipo: 'motorcycle',
-            brand: '',
-            year: '',
+            tipo: 'Moto',
+            marca: '',
+            modelo: '',
+            anio: '',
             color: '',
-            model: ''
+            imagen: null,
           },
           formErrors: {},
           isSubmitting: false
@@ -285,342 +278,368 @@ class Vehiculos extends Component {
   };
 
   render() {
-    const { vehiculos, loading, showForm, formData, error } = this.state;
+    const { vehiculos, loading, showForm, error } = this.state;
     const filteredVehiculos = this.getFilteredVehiculos();
+    const totalVehiculos = Array.isArray(vehiculos) ? vehiculos.length : 0;
+    const totalFiltered = Array.isArray(filteredVehiculos) ? filteredVehiculos.length : 0;
+    const tipoOptions = [
+      { value: '', label: 'Todos los tipos' },
+      { value: 'Moto', label: 'Moto' },
+      { value: 'Auto', label: 'Auto' },
+    ];
 
     if (loading) return <div className="flex items-center justify-center min-h-screen bg-white dark:bg-[#020617]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#2563EB]"></div></div>;
 
     return (
-      <div className="space-y-12 animate-in fade-in duration-700 pb-32 bg-white dark:bg-[#020617]">
-        <header className="relative py-20 px-10 overflow-hidden rounded-[3rem] border border-slate-200 dark:border-white/5 mx-6 mt-6 bg-slate-100 dark:bg-[#111827]">
-          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-purple-600/10 rounded-full blur-[100px]" />
-          <div className="relative z-10 text-center space-y-4">
-            <div className="inline-block px-4 py-1 rounded-full bg-purple-600/10 border border-purple-600/20 text-purple-500 text-[10px] font-black uppercase tracking-[0.3em]">Fleet Management</div>
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter uppercase leading-none">
-              Mi <span className="text-purple-500">Vehiculos</span>
-            </h1>
-            <p className="text-slate-500 dark:text-[#94A3B8] text-lg font-medium max-w-xl mx-auto italic">Administra tus unidades para agilizar tus servicios premium.</p>
-          </div>
-        </header>
-
-        <div className="container mx-auto px-6 space-y-12">
-          <div className="space-y-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic uppercase tracking-tighter flex items-center">
-                <span className="w-2 h-2 bg-purple-600 rounded-full mr-4 animate-pulse" />
-                Unidades Registradas
-              </h2>
-              <button
-                onClick={() => this.setState({ showForm: !showForm })}
-                className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-purple-600/20 transition-all active:scale-95"
-              >
-                {showForm ? 'Cerrar Registro' : 'Añadir Unidad VIP'}
-              </button>
+      <div className="min-h-screen bg-white dark:bg-[#020617] pb-24 animate-in fade-in duration-700">
+        <div className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
+          <div>
+            <div className="text-sm font-black text-slate-900 dark:text-white">Vehículos</div>
+            <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
+              Administra los vehículos registrados en tu cuenta.
             </div>
-            
-            {/* Search and Filters */}
-            <SearchAndFilter 
-              vehiculos={vehiculos} 
-              onFilterChange={this.handleFilterChange} 
-            />
           </div>
 
-          {error && (
-            <div className="p-6 bg-red-950/20 border border-red-500/20 rounded-[2rem] text-red-400 text-sm font-bold italic uppercase tracking-widest text-center animate-in zoom-in duration-300">
-              ⚠️ {error}
-            </div>
-          )}
-
-          {/* Modal Form */}
-          {showForm && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-              <div className="bg-[#0f1117] border border-[#2a2d3a] p-8 rounded-[2.5rem] shadow-2xl max-w-[560px] w-full mx-4 animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto">
-                <div className="text-center space-y-2 mb-8">
-                  <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">
-                    Register New Unit
-                  </h2>
-                  <p className="text-[#94A3B8] text-sm">
-                    Complete all fields to add your vehicle to the fleet
-                  </p>
-                </div>
-
-                <form onSubmit={this.handleSubmit} className="space-y-6">
-                  {/* Section 1: Owner Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-[#6b7080] text-[11px] font-bold uppercase tracking-[0.08em]">
-                      Owner Information
-                    </h3>
-                    
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-                        Document type
-                      </label>
-                      <select
-                        name="documentType"
-                        value={this.state.formData.documentType}
-                        onChange={this.handleInputChange}
-                        className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
-                          this.state.formErrors.documentType ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
-                        }`}
-                      >
-                        <option value="">Select...</option>
-                        <option value="CC">CC - Cédula de Ciudadanía</option>
-                        <option value="CE">CE - Cédula de Extranjería</option>
-                        <option value="NIT">NIT</option>
-                        <option value="Pasaporte">Pasaporte</option>
-                      </select>
-                      {this.state.formErrors.documentType && (
-                        <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.documentType}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-                        Document number
-                      </label>
-                      <input
-                        type="text"
-                        name="documentNumber"
-                        value={this.state.formData.documentNumber}
-                        onChange={this.handleInputChange}
-                        placeholder="Enter document number"
-                        className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
-                          this.state.formErrors.documentNumber ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
-                        }`}
-                      />
-                      {this.state.formErrors.documentNumber && (
-                        <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.documentNumber}</p>
-                      )}
+          <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0b1220] overflow-hidden">
+            <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                      <path fillRule="evenodd" d="M6.75 4.5A3 3 0 003.77 7.14l-1.5 9A3 3 0 005.23 19.5h.52a3 3 0 005.5 0h1.5a3 3 0 005.5 0h.52a3 3 0 002.96-3.36l-1.5-9A3 3 0 0017.25 4.5H6.75zm3.75 12a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zm9 0a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-lg font-black text-slate-900 dark:text-white">Mis vehículos</div>
+                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">
+                      Gestiona los vehículos registrados para tus citas y servicios.
                     </div>
                   </div>
+                </div>
 
-                  {/* Section 2: Vehicle Details */}
-                  <div className="space-y-4">
-                    <h3 className="text-[#6b7080] text-[11px] font-bold uppercase tracking-[0.08em]">
-                      Vehicle Details
-                    </h3>
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <div className="relative w-full sm:w-[280px]">
+                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={this.state.filters.searchTerm}
+                      onChange={(e) => this.setState((prev) => ({ filters: { ...prev.filters, searchTerm: e.target.value } }))}
+                      placeholder="Buscar vehículo..."
+                      className="w-full h-11 pl-12 pr-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#2563EB]/50 transition-colors"
+                    />
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* Plate */}
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-                          License plate
+                  <select
+                    value={this.state.filters.tipoFilter}
+                    onChange={(e) => this.setState((prev) => ({ filters: { ...prev.filters, tipoFilter: e.target.value } }))}
+                    className="w-full sm:w-[170px] h-11 px-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-[#2563EB]/50 transition-colors"
+                  >
+                    {tipoOptions.map((o) => (
+                      <option key={o.value || 'all'} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={() => this.setState({ showForm: !showForm })}
+                    className="w-full sm:w-auto h-11 px-5 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black uppercase tracking-widest transition-colors"
+                  >
+                    + Registrar vehículo
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <div className="px-6 pt-5">
+                <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200">
+                  {error}
+                </div>
+              </div>
+            )}
+
+            {showForm && (
+              <div className="px-6 py-6 border-b border-slate-200 dark:border-white/10">
+                <div className="rounded-3xl border border-[#2563EB]/25 bg-[#0b1220] overflow-hidden">
+                  <div className="px-5 py-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-black text-white">Registrar nuevo vehículo</div>
+                      <div className="text-xs text-[#94A3B8]">Completa la información de tu vehículo</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => this.setState({ showForm: false })}
+                      className="h-10 w-10 rounded-2xl bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 transition-colors flex items-center justify-center"
+                      aria-label="Cerrar"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path fillRule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <form onSubmit={this.handleSubmit} className="px-5 pb-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                          Marca
                         </label>
                         <input
-                          type="text"
-                          name="placa"
-                          value={this.state.formData.placa}
+                          name="marca"
+                          value={this.state.formData.marca}
                           onChange={this.handleInputChange}
-                          placeholder="e.g. ABC123"
-                          className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
-                            this.state.formErrors.placa ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
+                          placeholder="Ej. Mazda"
+                          className={`w-full h-11 px-4 rounded-2xl bg-white/5 border text-white placeholder:text-white/40 focus:outline-none transition-colors ${
+                            this.state.formErrors.marca ? 'border-[#E24B4A]' : 'border-white/10 focus:border-[#2563EB]/50'
                           }`}
                         />
-                        {this.state.formErrors.placa && (
-                          <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.placa}</p>
+                        {this.state.formErrors.marca && (
+                          <div className="text-xs text-[#E24B4A] font-bold">{this.state.formErrors.marca}</div>
                         )}
                       </div>
 
-                      {/* Type */}
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-                          Type
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                          Modelo
+                        </label>
+                        <input
+                          name="modelo"
+                          value={this.state.formData.modelo}
+                          onChange={this.handleInputChange}
+                          placeholder="Ej. CX-5"
+                          className={`w-full h-11 px-4 rounded-2xl bg-white/5 border text-white placeholder:text-white/40 focus:outline-none transition-colors ${
+                            this.state.formErrors.modelo ? 'border-[#E24B4A]' : 'border-white/10 focus:border-[#2563EB]/50'
+                          }`}
+                        />
+                        {this.state.formErrors.modelo && (
+                          <div className="text-xs text-[#E24B4A] font-bold">{this.state.formErrors.modelo}</div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                          Año
+                        </label>
+                        <input
+                          name="anio"
+                          value={this.state.formData.anio}
+                          onChange={this.handleInputChange}
+                          placeholder="Ej. 2022"
+                          className={`w-full h-11 px-4 rounded-2xl bg-white/5 border text-white placeholder:text-white/40 focus:outline-none transition-colors ${
+                            this.state.formErrors.anio ? 'border-[#E24B4A]' : 'border-white/10 focus:border-[#2563EB]/50'
+                          }`}
+                        />
+                        {this.state.formErrors.anio && (
+                          <div className="text-xs text-[#E24B4A] font-bold">{this.state.formErrors.anio}</div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                          Tipo de vehículo
                         </label>
                         <select
                           name="tipo"
                           value={this.state.formData.tipo}
                           onChange={this.handleInputChange}
-                          className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
-                            this.state.formErrors.tipo ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
+                          className={`w-full h-11 px-4 rounded-2xl bg-white/5 border text-white focus:outline-none transition-colors ${
+                            this.state.formErrors.tipo ? 'border-[#E24B4A]' : 'border-white/10 focus:border-[#2563EB]/50'
                           }`}
                         >
-                          <option value="motorcycle">Motorcycle</option>
-                          <option value="car">Car</option>
+                          <option value="Moto">Moto</option>
+                          <option value="Auto">Auto</option>
                         </select>
                         {this.state.formErrors.tipo && (
-                          <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.tipo}</p>
+                          <div className="text-xs text-[#E24B4A] font-bold">{this.state.formErrors.tipo}</div>
                         )}
                       </div>
 
-                      {/* Brand */}
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-                          Brand
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                          Placa
                         </label>
                         <input
-                          type="text"
-                          name="brand"
-                          value={this.state.formData.brand}
+                          name="placa"
+                          value={this.state.formData.placa}
                           onChange={this.handleInputChange}
-                          placeholder="e.g. Yamaha, Honda, Toyota"
-                          className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
-                            this.state.formErrors.brand ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
+                          placeholder="Ej. ABC-123"
+                          className={`w-full h-11 px-4 rounded-2xl bg-white/5 border text-white placeholder:text-white/40 focus:outline-none transition-colors uppercase ${
+                            this.state.formErrors.placa ? 'border-[#E24B4A]' : 'border-white/10 focus:border-[#2563EB]/50'
                           }`}
                         />
-                        {this.state.formErrors.brand && (
-                          <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.brand}</p>
+                        {this.state.formErrors.placa && (
+                          <div className="text-xs text-[#E24B4A] font-bold">{this.state.formErrors.placa}</div>
                         )}
                       </div>
 
-                      {/* Year */}
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-                          Year
-                        </label>
-                        <input
-                          type="text"
-                          name="year"
-                          value={this.state.formData.year}
-                          onChange={this.handleInputChange}
-                          placeholder={`e.g. ${new Date().getFullYear()}`}
-                          className={`w-full h-[42px] px-4 bg-[#1a1d27] border rounded-xl text-[#F8FAFC] text-sm focus:outline-none transition-all ${
-                            this.state.formErrors.year ? 'border-[#E24B4A]' : 'border-[#2a2d3a] focus:border-[#2563EB]'
-                          }`}
-                        />
-                        {this.state.formErrors.year && (
-                          <p className="text-[#E24B4A] text-xs font-bold">{this.state.formErrors.year}</p>
-                        )}
-                      </div>
-
-                      {/* Color */}
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
                           Color
                         </label>
                         <input
-                          type="text"
                           name="color"
                           value={this.state.formData.color}
                           onChange={this.handleInputChange}
-                          placeholder="e.g. Black, White, Red"
-                          className="w-full h-[42px] px-4 bg-[#1a1d27] border border-[#2a2d3a] rounded-xl text-[#F8FAFC] text-sm focus:outline-none focus:border-[#2563EB] transition-all"
+                          placeholder="Ej. Gris oscuro"
+                          className="w-full h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[#2563EB]/50 transition-colors"
                         />
                       </div>
 
-                      {/* Model */}
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-                          Model / Reference
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
+                          Imagen del vehículo
                         </label>
-                        <input
-                          type="text"
-                          name="model"
-                          value={this.state.formData.model}
-                          onChange={this.handleInputChange}
-                          placeholder="e.g. MT-07, Civic, NX4"
-                          className="w-full h-[42px] px-4 bg-[#1a1d27] border border-[#2a2d3a] rounded-xl text-[#F8FAFC] text-sm focus:outline-none focus:border-[#2563EB] transition-all"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex flex-col gap-3 pt-4">
-                    <button
-                      type="submit"
-                      disabled={this.state.isSubmitting}
-                      className="w-full px-8 py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-[#2a2d3a] disabled:text-[#6b7080] disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-purple-600/20 transition-all active:scale-95"
-                    >
-                      {this.state.isSubmitting ? 'Registering...' : 'Register unit'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => this.setState({ 
-                        showForm: false, 
-                        formData: {
-                          documentType: '',
-                          documentNumber: '',
-                          placa: '',
-                          tipo: 'motorcycle',
-                          brand: '',
-                          year: '',
-                          color: '',
-                          model: ''
-                        },
-                        formErrors: {} 
-                      })}
-                      className="w-full px-8 py-4 bg-[#2a2d3a] hover:bg-[#3a3d4a] text-[#94A3B8] font-black text-xs uppercase tracking-[0.2em] rounded-2xl border border-[#2a2d3a] transition-all active:scale-95"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* Listado de Vehículos */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredVehiculos.length > 0 ? (
-              filteredVehiculos.map(v => (
-                (() => {
-                  const status = this.getStatusForVehiculo(v);
-                  const ui = this.getStatusUI(status);
-                  const progress = this.getProgressForStatus(status);
-                  return (
-                    <div key={v.id} className="bg-[#131318] border border-white/[0.08] p-7 rounded-xl shadow-sm space-y-5 relative overflow-hidden">
-                      <div className="absolute top-5 right-5 flex items-center gap-2">
-                        <span className="px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.12em] border border-white/[0.08]" style={{ color: ui.color }}>
-                          {ui.label}
-                        </span>
-                        <button
-                          onClick={() => this.handleDelete(v.id)}
-                          className="w-9 h-9 rounded-xl bg-[#0a0a0d] border border-white/[0.08] text-[#ff4d4d] hover:bg-[#ff4d4d]/10 transition-colors flex items-center justify-center"
-                          aria-label="Eliminar"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        <label className="w-full h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-white/80 cursor-pointer flex items-center justify-between hover:bg-white/10 transition-colors">
+                          <span className="text-sm">Subir imagen</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              this.setState((prev) => ({ formData: { ...prev.formData, imagen: file } }));
+                            }}
+                          />
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white/50">
+                            <path d="M11.25 3.75a.75.75 0 01.75.75v6h6a.75.75 0 010 1.5h-6v6a.75.75 0 01-1.5 0v-6h-6a.75.75 0 010-1.5h6v-6a.75.75 0 01.75-.75z" />
                           </svg>
-                        </button>
-                      </div>
-
-                      <div className="flex items-start gap-4 pr-20">
-                        <div className="w-12 h-12 rounded-lg bg-[#0a0a0d] border border-white/[0.08] flex items-center justify-center text-white font-mono text-[11px] uppercase tracking-[0.12em]">
-                          {String(v.tipo || 'Unidad').slice(0, 4)}
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="text-white font-extrabold uppercase tracking-tight text-xl truncate">
-                            {v.marca || 'Vehículo'}
-                          </h3>
-                          <p className="text-slate-400 text-sm truncate">
-                            {v.modelo || 'Sin modelo'}{v.anio ? ` · ${v.anio}` : ''}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${progress}%`, backgroundColor: ui.bar }} />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="px-3 py-2 rounded-xl bg-[#1e1e28] border border-white/[0.08]">
-                          <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">PLATE</div>
-                          <div className="text-white font-semibold mt-0.5 truncate">{v.placa || '-'}</div>
-                        </div>
-                        <div className="px-3 py-2 rounded-xl bg-[#1e1e28] border border-white/[0.08]">
-                          <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">TYPE</div>
-                          <div className="text-white font-semibold mt-0.5 truncate">{v.tipo || '-'}</div>
-                        </div>
-                        <div className="px-3 py-2 rounded-xl bg-[#1e1e28] border border-white/[0.08]">
-                          <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">COLOR</div>
-                          <div className="text-white font-semibold mt-0.5 truncate">{v.color || '-'}</div>
-                        </div>
-                        <div className="px-3 py-2 rounded-xl bg-[#1e1e28] border border-white/[0.08]">
-                          <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">YEAR</div>
-                          <div className="text-white font-semibold mt-0.5 truncate">{v.anio || '-'}</div>
-                        </div>
+                        </label>
                       </div>
                     </div>
-                  );
-                })()
-              ))
-            ) : (
-              <div className="col-span-full py-32 text-center bg-slate-100 dark:bg-[#111827] rounded-[3rem] border border-dashed border-slate-200 dark:border-white/5">
-                <p className="text-slate-500 dark:text-[#94A3B8] italic font-medium">
-                  {vehiculos.length > 0 ? 'No se encontraron vehículos con esos filtros' : 'No se detectan unidades registradas en su perfil.'}
-                </p>
+
+                    <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => this.setState({ showForm: false })}
+                        className="h-11 px-6 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={this.state.isSubmitting}
+                        className="h-11 px-6 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] disabled:bg-white/10 disabled:text-white/40 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest transition-colors"
+                      >
+                        {this.state.isSubmitting ? 'Guardando...' : 'Guardar vehículo'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             )}
+
+            <div className="px-6 py-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-black text-slate-900 dark:text-white">
+                  Vehículos registrados ({totalVehiculos})
+                </div>
+                <div className="text-xs text-slate-600 dark:text-[#94A3B8]">
+                  {totalFiltered !== totalVehiculos ? `${totalFiltered} visibles` : ''}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {filteredVehiculos.length > 0 ? (
+                  <>
+                    {filteredVehiculos.map((v) => (
+                      <div key={v.id} className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+                        <div className="relative h-28 bg-[#0b1220]">
+                          <img src={carHeroImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-15" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/80 to-transparent" />
+                          <div className="absolute top-3 left-3 inline-flex items-center gap-2">
+                            <span className="px-2.5 py-1 rounded-full bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] text-[10px] font-black">
+                              Principal
+                            </span>
+                          </div>
+                          <div className="absolute top-3 right-3 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => this.handleDelete(v.id)}
+                              className="h-9 w-9 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-[#E24B4A] flex items-center justify-center transition-colors"
+                              aria-label="Eliminar"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                <path fillRule="evenodd" d="M9.75 3a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V4.5h4.5a.75.75 0 010 1.5h-.75l-.76 12.125A2.25 2.25 0 0115.995 20.25H8.005a2.25 2.25 0 01-2.245-2.125L5 6h-.75a.75.75 0 010-1.5h4.5V3zm2.25 5.25a.75.75 0 00-.75.75v8.25a.75.75 0 001.5 0V9a.75.75 0 00-.75-.75z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 space-y-3">
+                          <div>
+                            <div className="text-sm font-black text-slate-900 dark:text-white">
+                              {(v.marca || 'Vehículo')}{v.anio ? ` ${v.anio}` : ''}
+                            </div>
+                            <div className="text-xs text-slate-600 dark:text-[#94A3B8]">
+                              {v.placa || '—'} · {v.tipo || '—'}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-[#94A3B8]">
+                            <div className="rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
+                              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-white/40">Color</div>
+                              <div className="mt-1 font-bold text-slate-900 dark:text-white/90 truncate">{v.color || '—'}</div>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
+                              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-white/40">Modelo</div>
+                              <div className="mt-1 font-bold text-slate-900 dark:text-white/90 truncate">{v.modelo || '—'}</div>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => this.props.showToast?.('Edición disponible pronto.', 'info')}
+                              className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => this.props.setView?.('citas')}
+                              className="flex-1 h-10 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                            >
+                              Agendar cita
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => this.setState({ showForm: true })}
+                      className="rounded-3xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition-colors p-6 flex flex-col items-center justify-center text-center"
+                    >
+                      <div className="h-14 w-14 rounded-3xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center text-2xl">
+                        +
+                      </div>
+                      <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Agregar vehículo</div>
+                      <div className="mt-1 text-xs text-slate-600 dark:text-[#94A3B8]">
+                        Registra uno nuevo para agendar tus servicios
+                      </div>
+                    </button>
+                  </>
+                ) : (
+                  <div className="col-span-full rounded-3xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-10 text-center">
+                    <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
+                      {totalVehiculos > 0 ? 'No se encontraron vehículos con esos filtros.' : 'Aún no tienes vehículos registrados.'}
+                    </div>
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={() => this.setState({ showForm: true })}
+                        className="h-11 px-6 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black uppercase tracking-widest transition-colors"
+                      >
+                        + Registrar vehículo
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

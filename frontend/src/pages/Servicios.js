@@ -1,13 +1,61 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CardServicio from "../components/CardServicio";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+const normalizeText = (t) =>
+  (t || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+const limpiarTexto = (texto) => {
+  if (!texto) return "";
+  return String(texto)
+    .replace(/♦/g, "ó")
+    .replace(/\?/g, "ó")
+    .replace(/â€™/g, "'")
+    .replace(/Ã³/g, "ó")
+    .replace(/Ã©/g, "é")
+    .replace(/Ã¡/g, "á")
+    .replace(/Ã­/g, "í")
+    .replace(/Ãº/g, "ú")
+    .replace(/Ã±/g, "ñ")
+    .replace(/\uFFFD/g, "ó");
+};
+
+const imagenesServicio = {
+  "Lavado Premium": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80",
+  "Lavado Express": "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&q=80",
+  "Lavado de Motor": "https://images.unsplash.com/photo-1565043666747-69f6646db940?w=800&q=80",
+  "Limpieza Profunda": "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=800&q=80",
+  "Protección Cerámica": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80",
+  "Pulido Profesional": "https://images.unsplash.com/photo-1614026480418-bd11fdb9fa06?w=800&q=80",
+};
+
+const getImagen = (servicio) =>
+  servicio?.imagen_url ||
+  imagenesServicio[limpiarTexto(servicio?.nombre)] ||
+  "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&q=80";
+
+const getCategoryTags = (servicio) => {
+  const n = normalizeText(servicio?.nombre);
+  const tags = [];
+  if (n.includes("interior")) tags.push("Interior");
+  if (n.includes("exterior")) tags.push("Exterior");
+  if (n.includes("detailing") || n.includes("detail")) tags.push("Detailing");
+  if (n.includes("express")) tags.push("Express");
+  if (n.includes("premium")) tags.push("Premium");
+  return tags.length ? tags : ["Todos"];
+};
 
 export default function Servicios({ setView }) {
   const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filtroBusqueda, setFiltroBusqueda] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("Todos");
   const [userRole, setUserRole] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editServicio, setEditServicio] = useState(null);
@@ -132,12 +180,28 @@ export default function Servicios({ setView }) {
     }
   }, [loading, servicios]);
 
-  const serviciosFiltrados = servicios.filter((servicio) =>
-    servicio.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase())
-  );
+  const featuredServiceId = useMemo(() => {
+    const byName = servicios.find((s) => normalizeText(s?.nombre).includes("lavado premium"));
+    if (byName?.id) return byName.id;
+    const byPrice = [...servicios]
+      .filter((s) => s && typeof s.precio !== "undefined")
+      .sort((a, b) => Number(b.precio || 0) - Number(a.precio || 0))[0];
+    return byPrice?.id ?? null;
+  }, [servicios]);
+
+  const serviciosFiltrados = useMemo(() => {
+    const term = normalizeText(filtroBusqueda);
+    return servicios.filter((servicio) => {
+      const nameMatches = normalizeText(servicio?.nombre).includes(term);
+      if (!nameMatches) return false;
+      if (categoryFilter === "Todos") return true;
+      const tags = getCategoryTags(servicio);
+      return tags.includes(categoryFilter);
+    });
+  }, [categoryFilter, filtroBusqueda, servicios]);
 
   return (
-    <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-white dark:bg-[#020617] pb-24 animate-in fade-in duration-700">
         {/* Modal Admin */}
         {showModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -179,102 +243,142 @@ export default function Servicios({ setView }) {
           </div>
         )}
 
-        <div className="max-w-6xl mx-auto mb-10">
-          <div className="bg-[#0d1117] border border-white/10 rounded-[18px] px-6 py-7">
-            <div className="flex flex-col items-center text-center gap-3">
-              <span className="inline-flex items-center px-4 py-1 rounded-full border border-[#8b7cf6]/50 text-[#8b7cf6] text-[10px] font-black uppercase tracking-[0.3em]">
-                Servicios Premium
-              </span>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight uppercase leading-none">
-                <span className="text-white">SERVICIOS </span>
-                <span className="text-[#8b7cf6] italic">ESPECIALIZADOS</span>
-              </h1>
-              <p className="text-sm md:text-base text-white/70 italic max-w-3xl">
-                Soluciones profesionales diseñadas para mantener tus vehículos en óptimas condiciones
-              </p>
+        <div className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
+          <div className="flex flex-col gap-2">
+            <div className="text-sm font-black text-slate-900 dark:text-white">Servicios</div>
+            <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
+              Explora nuestros servicios y agenda el que mejor se adapte a tu vehículo.
+            </div>
+          </div>
+
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="relative w-full lg:max-w-[520px]">
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Buscar servicio..."
+                value={filtroBusqueda}
+                onChange={(e) => setFiltroBusqueda(e.target.value)}
+                className="w-full h-11 pl-12 pr-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#2563EB]/50 transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 justify-start lg:justify-end">
+              {["Todos", "Express", "Premium", "Detailing", "Interior", "Exterior"].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategoryFilter(c)}
+                  className={`h-9 px-4 rounded-2xl border text-[11px] font-black uppercase tracking-widest transition-colors ${
+                    categoryFilter === c
+                      ? "bg-[#2563EB]/15 border-[#2563EB]/25 text-[#60A5FA]"
+                      : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
 
               {userRole === "admin" && (
-                <div className="pt-3">
-                  <button 
-                    onClick={() => handleOpenModal()}
-                    className="bg-blue-600 hover:bg-blue-700 text-slate-900 dark:text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 transform hover:scale-105 transition-all flex items-center space-x-2"
-                  >
-                    <span>+ Añadir Nuevo Servicio</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenModal()}
+                  className="h-9 px-4 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                >
+                  + Añadir servicio
+                </button>
               )}
             </div>
           </div>
-        </div>
-
-        <div className="max-w-md mx-auto mb-12 relative group">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <input
-            type="text"
-            placeholder="Buscar servicio (ej: Motor)..."
-            value={filtroBusqueda}
-            onChange={(e) => setFiltroBusqueda(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all shadow-2xl font-medium"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {serviciosFiltrados.map((servicio) => {
-            const slug = normalizeSlug(servicio.nombre);
-            const isAutoExpand = window.location.hash === `#${slug}`;
-
-            return (
-              <div key={servicio.id} id={slug} className="scroll-mt-32">
-                <CardServicio 
-                  servicio={servicio} 
-                  isAdmin={userRole === "admin"}
-                  onEdit={() => handleOpenModal(servicio)}
-                  onDelete={() => handleDelete(servicio.id)}
-                  autoExpand={isAutoExpand}
-                  setView={setView}
-                />
+          <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-6 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div className="text-sm font-black text-slate-900 dark:text-white">
+                Todos nuestros servicios incluyen productos premium
               </div>
-            );
-          })}
+              <div className="text-xs text-slate-600 dark:text-[#94A3B8]">
+                Utilizamos productos de alta calidad que cuidan y protegen tu vehículo.
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-6 text-xs text-slate-600 dark:text-[#94A3B8]">
+              <div className="inline-flex items-center gap-2">
+                <span className="h-9 w-9 rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center">✓</span>
+                Productos premium
+              </div>
+              <div className="inline-flex items-center gap-2">
+                <span className="h-9 w-9 rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center">✓</span>
+                Personal especializado
+              </div>
+              <div className="inline-flex items-center gap-2">
+                <span className="h-9 w-9 rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center">✓</span>
+                Garantía de satisfacción
+              </div>
+            </div>
+          </div>
+
+          {loading && (
+            <div className="text-center text-slate-500 dark:text-slate-400 mt-10 flex flex-col items-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-4"></div>
+              Cargando servicios...
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="text-center text-red-300 mt-10">
+              {error}
+            </div>
+          )}
+
+          {!loading && !error && servicios.length > 0 && serviciosFiltrados.length === 0 && (
+            <div className="text-center py-16 bg-slate-100 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 mt-10">
+              <div className="text-4xl mb-4">🔍</div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No se encontraron servicios</h3>
+              <p className="text-slate-500 dark:text-slate-400">No se encontraron servicios que coincidan con tu búsqueda: <span className="text-blue-500 font-bold">"{filtroBusqueda}"</span></p>
+              <button
+                onClick={() => setFiltroBusqueda("")}
+                className="mt-6 text-sm text-blue-400 hover:text-blue-300 font-medium underline"
+              >
+                Limpiar búsqueda
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && serviciosFiltrados.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {serviciosFiltrados.map((servicio) => {
+                const servicioUI = {
+                  ...servicio,
+                  nombre: limpiarTexto(servicio?.nombre),
+                  descripcion: limpiarTexto(servicio?.descripcion),
+                  imagen: getImagen(servicio),
+                };
+                const slug = normalizeSlug(servicioUI.nombre || servicio?.nombre || "");
+                const isAutoExpand = window.location.hash === `#${slug}`;
+
+                return (
+                  <div key={servicio.id} id={slug} className="scroll-mt-32">
+                    <CardServicio
+                      servicio={servicioUI}
+                      isAdmin={userRole === "admin"}
+                      onEdit={() => handleOpenModal(servicio)}
+                      onDelete={() => handleDelete(servicio.id)}
+                      autoExpand={isAutoExpand}
+                      setView={setView}
+                      isFeatured={featuredServiceId === servicio.id}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {!loading && !error && servicios.length === 0 && (
+            <div className="text-center text-slate-500 dark:text-slate-400 mt-10">
+              No hay servicios registrados todavía.
+            </div>
+          )}
         </div>
-
-        {loading && (
-          <div className="text-center text-slate-500 dark:text-slate-400 mt-10 flex flex-col items-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-4"></div>
-            Cargando servicios...
-          </div>
-        )}
-
-        {!loading && error && (
-          <div className="text-center text-red-300 mt-10">
-            {error}
-          </div>
-        )}
-
-        {!loading && !error && servicios.length > 0 && serviciosFiltrados.length === 0 && (
-          <div className="text-center py-16 bg-slate-100 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 mt-10">
-            <div className="text-4xl mb-4">🔍</div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No se encontraron servicios</h3>
-            <p className="text-slate-500 dark:text-slate-400">No se encontraron servicios que coincidan con tu búsqueda: <span className="text-blue-500 font-bold">"{filtroBusqueda}"</span></p>
-            <button 
-              onClick={() => setFiltroBusqueda("")}
-              className="mt-6 text-sm text-blue-400 hover:text-blue-300 font-medium underline"
-            >
-              Limpiar búsqueda
-            </button>
-          </div>
-        )}
-
-        {!loading && !error && servicios.length === 0 && (
-          <div className="text-center text-slate-500 dark:text-slate-400 mt-10">
-            No hay servicios registrados todavía.
-          </div>
-        )}
-
       </div>
   );
 }

@@ -2,12 +2,6 @@ import React, { Component } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import {
-  FaInstagram,
-  FaFacebook,
-  FaWhatsapp,
-  FaTwitter,
-} from 'react-icons/fa';
 import Car3D from '../components/Car3D';
 import premiumImg from '../assets/services/premium.jpg';
 import expressImg from '../assets/services/express.jpeg';
@@ -16,6 +10,7 @@ import limpiezaImg from '../assets/services/limpiezap.jpeg';
 import proteccionImg from '../assets/services/proteccionc.jpeg';
 import pulidoImg from '../assets/services/pulidop.jpeg';
 import carwashVideo from '../assets/videos/6872078-hd_1280_720_25fps.mp4';
+import { FaCalendarAlt, FaFacebook, FaInstagram, FaTwitter, FaWhatsapp } from 'react-icons/fa';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -26,6 +21,34 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
+const IconWhatsapp = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M20 12a8 8 0 0 1-11.5 7.2L4 20l.9-3.7A8 8 0 1 1 20 12Z" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M9.5 10.2c.3-.6.6-.7 1-.7h.7c.2 0 .5.1.6.4l.8 1.7c.1.3.1.5 0 .7l-.5.7c-.1.2-.1.4 0 .6.5.9 1.3 1.7 2.2 2.2.2.1.4.1.6 0l.7-.5c.2-.1.4-.1.7 0l1.7.8c.3.1.4.4.4.6v.7c0 .4-.1.7-.7 1-1 .6-2.2.5-3.3.1-2.2-.8-4.3-2.9-5.1-5.1-.4-1.1-.5-2.3.1-3.2Z" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const IconInstagram = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <rect x="3" y="3" width="18" height="18" rx="5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="12" cy="12" r="4" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="17" cy="7" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+const IconFacebook = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M14 8h2V5h-2c-1.66 0-3 1.34-3 3v2H9v3h2v6h3v-6h2.5l.5-3H14V8c0-.55.45-1 1-1Z" />
+  </svg>
+);
+
+const IconTwitterX = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M5 4l14 16" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M19 4L5 20" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 class LandingPage extends Component {
   state = {
     activeView: 'inicio',
@@ -33,6 +56,8 @@ class LandingPage extends Component {
     landingLoading: false,
     landingError: '',
     landingCardsVisible: true,
+    landingServicioDetalleOpen: false,
+    landingServicioDetalle: null,
     contactForm: {
       nombre: '',
       email: '',
@@ -68,6 +93,28 @@ class LandingPage extends Component {
   }
 
   normalizeText = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+  fixServicioNombre = (nombre) => {
+    const s = String(nombre || '').trim();
+    if (!s) return s;
+    if (s.includes('�')) {
+      const lower = s.toLowerCase();
+      if (lower.includes('protecci') && lower.includes('cer')) return 'Protección Cerámica';
+      if (lower.includes('pulido')) return 'Pulido Profesional';
+      if (lower.includes('limpieza') && (lower.includes('prof') || lower.includes('profunda'))) return 'Limpieza Profunda';
+      if (lower.includes('motor')) return 'Lavado de Motor';
+      if (lower.includes('express')) return 'Lavado Express';
+      if (lower.includes('premium')) return 'Lavado Premium';
+    }
+    const lower = s.toLowerCase();
+    if (lower.includes('lavado') && lower.includes('premium')) return 'Lavado Premium';
+    if (lower.includes('lavado') && lower.includes('express')) return 'Lavado Express';
+    if (lower.includes('motor')) return 'Lavado de Motor';
+    if (lower.includes('limpieza') && (lower.includes('prof') || lower.includes('profunda'))) return 'Limpieza Profunda';
+    if (lower.includes('protecci') && lower.includes('cer')) return 'Protección Cerámica';
+    if (lower.includes('pulido')) return 'Pulido Profesional';
+    return s;
+  };
 
   getCategoriaFromNombre = (nombre) => {
     const n = this.normalizeText(nombre);
@@ -105,6 +152,92 @@ class LandingPage extends Component {
     const n = this.normalizeText(nombre);
     if (n.includes('express')) return 'Auto · Moto · Camioneta · SUV';
     return 'Auto · Camioneta · SUV';
+  };
+
+  getLandingServicioImagenFallback = (nombre) => {
+    const fixed = this.fixServicioNombre(nombre);
+    const imagenesServicio = {
+      'Lavado Premium': 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80',
+      'Lavado Express': 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&q=80',
+      'Lavado de Motor': 'https://images.unsplash.com/photo-1565043666747-69f6646db940?w=800&q=80',
+      'Limpieza Profunda': 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=800&q=80',
+      'Protección Cerámica': 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80',
+      'Pulido Profesional': 'https://images.unsplash.com/photo-1614026480418-bd11fdb9fa06?w=800&q=80',
+    };
+    return imagenesServicio[fixed] || null;
+  };
+
+  getLandingServicioMetaFromNombre = (nombre) => {
+    const n = this.normalizeText(nombre);
+    if (n.includes('lavado') && n.includes('premium')) {
+      return {
+        duracion: '90min',
+        rating: 4.9,
+        reviews: 120,
+        imagenUrl: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80',
+        incluye: ['Prelavado con espuma activa', 'Lavado a mano', 'Limpieza de llantas y rines', 'Secado con microfibra'],
+      };
+    }
+    if (n.includes('express')) {
+      return {
+        duracion: '30min',
+        rating: 4.7,
+        reviews: 95,
+        imagenUrl: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&q=80',
+        incluye: ['Lavado exterior', 'Secado rápido', 'Limpieza de vidrios', 'Acabado rápido'],
+      };
+    }
+    if (n.includes('motor')) {
+      return {
+        duracion: '60min',
+        rating: 4.8,
+        reviews: 32,
+        imagenUrl: 'https://images.unsplash.com/photo-1565043666747-69f6646db940?w=800&q=80',
+        incluye: ['Desengrasado seguro', 'Limpieza detallada', 'Protección de plásticos', 'Acabado satinado'],
+      };
+    }
+    if (n.includes('profunda') || n.includes('limpieza')) {
+      return {
+        duracion: '180min',
+        rating: 4.8,
+        reviews: 48,
+        imagenUrl: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=800&q=80',
+        incluye: ['Aspirado profundo', 'Limpieza de tapicería', 'Limpieza de paneles', 'Desinfección interior'],
+      };
+    }
+    if (n.includes('protecc') || n.includes('ceram')) {
+      return {
+        duracion: '480min',
+        rating: 4.7,
+        reviews: 64,
+        imagenUrl: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80',
+        incluye: ['Preparación de superficie', 'Aplicación cerámica', 'Curado inicial', 'Recomendaciones de mantenimiento'],
+      };
+    }
+    if (n.includes('pulido')) {
+      return {
+        duracion: '240min',
+        rating: 4.7,
+        reviews: 64,
+        imagenUrl: 'https://images.unsplash.com/photo-1614026480418-bd11fdb9fa06?w=800&q=80',
+        incluye: ['Corrección de pintura', 'Eliminación de swirls', 'Realce de brillo', 'Sellado de acabado'],
+      };
+    }
+    return {
+      duracion: '60min',
+      rating: 4.8,
+      reviews: 50,
+      imagenUrl: null,
+      incluye: ['Atención profesional', 'Productos premium', 'Proceso seguro', 'Resultados garantizados'],
+    };
+  };
+
+  openLandingServicioDetalle = (servicio) => {
+    this.setState({ landingServicioDetalleOpen: true, landingServicioDetalle: servicio });
+  };
+
+  closeLandingServicioDetalle = () => {
+    this.setState({ landingServicioDetalleOpen: false, landingServicioDetalle: null });
   };
 
   buildLandingServiciosUrl = () => {
@@ -239,6 +372,7 @@ class LandingPage extends Component {
     const { activeView } = this.state;
     const { landingServicios, landingLoading, landingError, landingFiltros } = this.state;
     const { landingCardsVisible } = this.state;
+    const { landingServicioDetalleOpen, landingServicioDetalle } = this.state;
     const serviciosOrdenados = [...landingServicios].sort((a, b) => {
       const aPrecio = Number(a?.precio ?? 0);
       const bPrecio = Number(b?.precio ?? 0);
@@ -301,7 +435,7 @@ class LandingPage extends Component {
                 </h1>
 
                 <p className="text-[11px] text-white/70">
-                  Detailing & Car Care
+                  Lo mejor para tu vehiculo
                 </p>
               </div>
             </div>
@@ -342,7 +476,7 @@ class LandingPage extends Component {
 
               <button
                 onClick={this.props.onEnterRegister}
-                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 transition-all duration-300 shadow-lg shadow-blue-600/30"
+                className="px-6 py-3 rounded-xl bg-transparent-600 border border-white hover:border-blue-600 hover:text-blue-600 transition-all duration-300 shadow-lg"
               >
                 Registrarse
               </button>
@@ -388,16 +522,8 @@ class LandingPage extends Component {
 
                 <div className="container mx-auto px-6 relative z-20 text-center">
 
-                  <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-blue-500/20 bg-blue-500/10 mb-8">
-                    <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-
-                    <span className="text-sm text-blue-300">
-                      Servicio premium para tu vehículo
-                    </span>
-                  </div>
-
                   <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-8">
-                    Lavado y detailing
+                    Lavado y Mantenimiento
 
                     <span className="block mt-3 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
                       con nivel profesional
@@ -412,7 +538,7 @@ class LandingPage extends Component {
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
 
                     <button
-                      onClick={() => this.setActiveView('servicios')}
+                      onClick={() => this.setActiveView('Login')}
                       className="px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 transition-all duration-300 shadow-xl shadow-blue-600/30"
                     >
                       Agendar cita
@@ -642,58 +768,92 @@ class LandingPage extends Component {
                       {!landingLoading && !landingError && serviciosOrdenados.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                           {serviciosOrdenados.map((servicio, i) => {
-                            const nombre = servicio?.nombre || 'Servicio';
-                            const descripcion = servicio?.descripcion || 'Sin descripción';
+                            const nombre = this.fixServicioNombre(servicio?.nombre || 'Servicio');
                             const categoria = this.getCategoriaFromNombre(nombre);
-                            const tipoVehiculo = this.getTipoVehiculoBadgeFromNombre(nombre);
-                            const bg = this.getImageForCategoria(categoria, nombre);
                             const precioShort = this.formatPriceShort(servicio?.precio);
+                            const meta = this.getLandingServicioMetaFromNombre(nombre);
+                            const duracionValue =
+                              servicio?.duracion ??
+                              servicio?.duracion_min ??
+                              servicio?.duracionMin ??
+                              meta.duracion;
+                            const duracion = typeof duracionValue === 'number' ? `${duracionValue}min` : (duracionValue || meta.duracion);
+                            const rating = Number(servicio?.rating ?? meta.rating);
+                            const imagen =
+                              servicio?.imagen_url ||
+                              servicio?.image_url ||
+                              this.getLandingServicioImagenFallback(nombre) ||
+                              meta.imagenUrl ||
+                              this.getImageForCategoria(categoria, nombre);
+
+                            const badgeColor =
+                              categoria === 'Lavado'
+                                ? 'bg-blue-500'
+                                : categoria === 'Motor'
+                                  ? 'bg-purple-500'
+                                  : categoria === 'Limpieza'
+                                    ? 'bg-green-500'
+                                    : categoria === 'Protección'
+                                      ? 'bg-yellow-500'
+                                      : 'bg-orange-500';
 
                             return (
                               <div
                                 key={servicio.id}
-                                className={`group relative overflow-hidden rounded-3xl border border-white/5 bg-white/[0.03] p-8 hover:border-blue-500/30 bg-cover bg-center transition-opacity transition-transform ease-in-out ${landingCardsVisible ? 'opacity-100 translate-y-0 duration-300' : 'opacity-0 translate-y-5 duration-200'}`}
                                 style={{
-                                  ...(bg ? { backgroundImage: `url(${bg})` } : undefined),
-                                  transitionDelay: landingCardsVisible ? `${i * 75}ms` : '0ms'
+                                  transitionDelay: landingCardsVisible ? `${i * 75}ms` : '0ms',
                                 }}
+                                className={`group relative h-72 rounded-2xl overflow-hidden border border-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-900/30 ${landingCardsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'} transition-opacity transition-transform ease-in-out`}
                               >
-                                {bg && (
-                                  <div className="absolute inset-0 bg-gradient-to-t from-[#030712]/80 via-[#030712]/45 to-[#030712]/30" />
-                                )}
+                                <img
+                                  src={imagen}
+                                  alt={nombre}
+                                  className="absolute inset-0 w-full h-full object-cover object-center"
+                                  loading="lazy"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
 
-                                <div className="relative z-10">
-                                  <div className="absolute top-6 left-6">
-                                    <span className="px-3 py-1 rounded-full text-[10px] font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-300">
-                                      {categoria}
-                                    </span>
+                                <div className="absolute top-4 left-4 z-10">
+                                  <span className={`px-3 py-1 rounded-full text-[11px] font-semibold text-white ${badgeColor}`}>
+                                    {categoria}
+                                  </span>
+                                </div>
+
+                                <div className="absolute top-4 right-4 z-10 text-blue-300 font-bold">
+                                  {precioShort || 'Consulta'}
+                                </div>
+
+                                <div
+                                  className="absolute inset-x-0 bottom-0 z-10 p-5"
+                                  style={{ background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.95))' }}
+                                >
+                                  <h3 className="text-white text-2xl font-bold">{nombre}</h3>
+
+                                  <div className="mt-2 text-gray-300 text-sm flex flex-wrap items-center gap-x-3 gap-y-1">
+                                    <span>⏱ {duracion}</span>
+                                    <span className="text-gray-500">·</span>
+                                    <span>{categoria}</span>
+                                    <span className="text-gray-500">·</span>
+                                    <span>⭐ {Number.isFinite(rating) ? rating.toFixed(1) : meta.rating.toFixed(1)}</span>
                                   </div>
 
-                                  <div className="absolute top-6 right-6">
-                                    <span className="px-3 py-1 rounded-full text-[10px] font-semibold bg-white/5 border border-white/10 text-slate-200">
-                                      {tipoVehiculo}
-                                    </span>
-                                  </div>
-
-                                  <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
-                                    <div className="w-6 h-6 rounded-full bg-blue-400"></div>
-                                  </div>
-
-                                  <h3 className="text-2xl font-semibold mb-4 text-white">{nombre}</h3>
-
-                                  <p
-                                    className="text-slate-300/80 leading-relaxed mb-6 overflow-hidden"
-                                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
-                                  >
-                                    {descripcion}
-                                  </p>
-
-                                  <div className="flex items-center justify-between">
-                                    <div className={`font-bold ${precioShort ? 'text-emerald-400' : 'text-slate-400'}`}>
-                                      {precioShort || 'Precio no disponible'}
-                                    </div>
-                                    <button className="text-blue-400 hover:text-blue-300 transition-colors">
-                                      Saber más →
+                                  <div className="mt-4 flex items-center gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (typeof this.props.onEnterLogin === 'function') this.props.onEnterLogin();
+                                      }}
+                                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition-all duration-300 text-white font-semibold text-sm"
+                                    >
+                                      <FaCalendarAlt className="w-4 h-4" />
+                                      AGENDAR
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => this.openLandingServicioDetalle(servicio)}
+                                      className="flex-1 inline-flex items-center justify-center px-4 py-3 rounded-xl bg-transparent border border-gray-500 hover:border-white transition-all duration-300 text-white font-semibold text-sm"
+                                    >
+                                      VER DETALLES
                                     </button>
                                   </div>
                                 </div>
@@ -702,6 +862,102 @@ class LandingPage extends Component {
                           })}
                         </div>
                       )}
+
+                      {landingServicioDetalleOpen && landingServicioDetalle && (() => {
+                        const nombre = this.fixServicioNombre(landingServicioDetalle?.nombre || 'Servicio');
+                        const descripcion = landingServicioDetalle?.descripcion || 'Sin descripción';
+                        const categoria = this.getCategoriaFromNombre(nombre);
+                        const tipoVehiculo = this.getTipoVehiculoBadgeFromNombre(nombre);
+                        const meta = this.getLandingServicioMetaFromNombre(nombre);
+                        const imagen =
+                          landingServicioDetalle?.imagen_url ||
+                          landingServicioDetalle?.image_url ||
+                          this.getLandingServicioImagenFallback(nombre) ||
+                          meta.imagenUrl ||
+                          this.getImageForCategoria(categoria, nombre);
+                        const precioShort = this.formatPriceShort(landingServicioDetalle?.precio);
+                        const duracionValue =
+                          landingServicioDetalle?.duracion ??
+                          landingServicioDetalle?.duracion_min ??
+                          landingServicioDetalle?.duracionMin ??
+                          meta.duracion;
+                        const duracion = typeof duracionValue === 'number' ? `${duracionValue}min` : (duracionValue || meta.duracion);
+                        const rating = Number(landingServicioDetalle?.rating ?? meta.rating);
+                        const reviews = Number(landingServicioDetalle?.reviews ?? meta.reviews);
+
+                        return (
+                          <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 py-6">
+                            <button
+                              type="button"
+                              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                              onClick={this.closeLandingServicioDetalle}
+                              aria-label="Cerrar"
+                            />
+                            <div className="relative w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0b1220] shadow-2xl overflow-hidden">
+                              <div className="relative h-44">
+                                <img src={imagen} alt={nombre} className="absolute inset-0 w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/55" />
+                                <div className="absolute top-4 left-4 px-3 py-1 rounded-full text-[11px] font-semibold bg-blue-600/20 border border-blue-500 text-blue-200">
+                                  {categoria}
+                                </div>
+                                <div className="absolute top-4 right-4 text-blue-300 font-bold">
+                                  {precioShort || 'Consulta'}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={this.closeLandingServicioDetalle}
+                                  className="absolute bottom-4 right-4 w-10 h-10 rounded-full border border-white/10 bg-black/30 hover:bg-black/50 transition-all duration-300 text-white"
+                                  aria-label="Cerrar"
+                                >
+                                  ×
+                                </button>
+                                <div className="absolute left-5 bottom-4">
+                                  <div className="text-white text-2xl font-bold">{nombre}</div>
+                                  <div className="text-gray-300 text-sm mt-1">
+                                    ⏱ {duracion} <span className="text-gray-500">·</span> ⭐ {Number.isFinite(rating) ? rating.toFixed(1) : meta.rating.toFixed(1)}{' '}
+                                    <span className="text-gray-500">({Number.isFinite(reviews) ? reviews : meta.reviews} reseñas)</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="p-6">
+                                <div className="text-slate-300 leading-relaxed">{descripcion}</div>
+
+                                <div className="mt-6">
+                                  <div className="text-white font-semibold mb-3">¿Qué incluye?</div>
+                                  <ul className="grid gap-2 text-slate-300">
+                                    {meta.incluye.slice(0, 4).map((item) => (
+                                      <li key={item} className="flex items-start gap-2">
+                                        <span className="text-blue-400 mt-[2px]">•</span>
+                                        <span>{item}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+
+                                <div className="mt-6">
+                                  <div className="text-white font-semibold mb-3">Vehículos compatibles</div>
+                                  <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-slate-200 text-sm">
+                                    {tipoVehiculo}
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    this.closeLandingServicioDetalle();
+                                    if (typeof this.props.onEnterLogin === 'function') this.props.onEnterLogin();
+                                  }}
+                                  className="mt-8 w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-blue-600 hover:bg-blue-700 transition-all duration-300 text-white font-semibold"
+                                >
+                                  <FaCalendarAlt className="w-5 h-5" />
+                                  Agendar ahora
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -1092,6 +1348,18 @@ class LandingPage extends Component {
                       <p className="text-slate-500 mt-2">
                         Detailing & Car Care
                       </p>
+                    </div>
+
+                    <div className="flex gap-8 text-slate-400 text-sm">
+                      <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+                        Instagram
+                      </a>
+                      <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+                        Facebook
+                      </a>
+                      <a href="https://wa.me/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+                        WhatsApp
+                      </a>
                     </div>
                   </div>
                   <div className="border-t border-white/5 mt-10 pt-8 text-center text-slate-500 text-sm">

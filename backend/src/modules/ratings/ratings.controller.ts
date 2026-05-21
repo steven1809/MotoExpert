@@ -11,11 +11,11 @@ import { RatingsService } from './ratings.service';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('ratings')
-@UseGuards(AuthGuard('jwt'))
 export class RatingsController {
   constructor(private readonly service: RatingsService) {}
 
   @Post()
+  @UseGuards(AuthGuard('jwt'))
   create(
     @Body()
     body: {
@@ -33,6 +33,11 @@ export class RatingsController {
       body.serviceRating,
       body.comment,
     );
+  }
+
+  @Get()
+  findAll() {
+    return this.service.findAll();
   }
 
   @Get('cita/:citaId')
