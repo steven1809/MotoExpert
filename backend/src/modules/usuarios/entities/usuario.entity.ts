@@ -40,6 +40,18 @@ export class Usuario {
   @Column({ default: 'local' })
   provider: string;
 
+  @Column({ default: 0 })
+  points: number;
+
+  @Column({ default: 1 })
+  level: number;
+
+  @Column({ default: 'Silver' })
+  rank: string;
+
+  @Column('json', { nullable: true, default: [] })
+  bonuses: { code: string; discount: number; createdAt: string }[];
+
   @OneToMany(() => Vehiculo, (vehiculo) => vehiculo.usuario)
   vehiculos: Vehiculo[];
 
