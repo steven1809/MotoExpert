@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import Login from "./components/Login/Login"; 
 import Servicios from "./pages/Servicios";
 import UsersList from "./pages/UsersList";
-import Vehiculos from "./pages/vehiculos";
+import Vehiculos from "./pages/Vehiculos";
 import Citas from "./pages/Citas";
 import MiCuenta from "./pages/MiCuenta";
 import PanelEmpleado from "./pages/PanelEmpleado";
