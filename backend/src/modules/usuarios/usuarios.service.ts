@@ -19,7 +19,7 @@ export class UsuariosService {
     });
   }
 
-  async findOne(id: number): Promise<Usuario> {
+  async findOne(id: number): Promise<Usuario | null> {
     return this.usuariosRepository.findOne({ where: { id } });
   }
 
