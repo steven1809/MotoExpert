@@ -16,10 +16,10 @@ async function bootstrap() {
     }),
   );
 
-  // Servir archivos estáticos (fotos de perfil)
+  // Solo esta línea es suficiente:
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   await app.listen(port);
 }
 void bootstrap();

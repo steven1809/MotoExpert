@@ -104,9 +104,91 @@ export class VehiculosController {
     @Body() updateData: any,
     @Request() req,
   ) {
+<<<<<<< Updated upstream
     const vehiculo = await this.service.findOne(+id);
     if (vehiculo && vehiculo.usuario.id === req.user.userId) {
       return this.service.update(+id, updateData);
+=======
+    try {
+      const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+      const vehiculo = await this.service.findOne(+id);
+
+      if (!vehiculo) {
+        throw new NotFoundException('Vehículo no encontrado');
+      }
+
+      // Comparación segura de IDs (convertir ambos a String)
+      if (
+        userRole !== 'admin' &&
+        String(vehiculo.usuario.id) !== String(req.user.userId)
+      ) {
+        throw new ForbiddenException(
+          'No tienes permiso para actualizar este vehículo',
+        );
+      }
+
+      // 2. Crear el objeto con los datos a actualizar de forma segura
+      const finalUpdateData: any = {};
+      const allowedFields = [
+        'placa',
+        'marca',
+        'modelo',
+        'tipo',
+        'anio',
+        'color',
+      ];
+
+      allowedFields.forEach((field) => {
+        if (updateData[field] !== undefined && updateData[field] !== 'null') {
+          if (field === 'anio') {
+            const anioVal = parseInt(updateData[field], 10);
+            finalUpdateData[field] = isNaN(anioVal) ? null : anioVal;
+          } else {
+            finalUpdateData[field] = updateData[field];
+          }
+        }
+      });
+
+      // 3. VALIDACIÓN CRUCIAL: Solo si el usuario subió una foto nueva
+      if (file) {
+        // (Opcional) Lógica para borrar la imagen anterior del disco
+        if (
+          vehiculo.imagen &&
+          vehiculo.imagen.includes('http://localhost:3001/uploads/vehicles/')
+        ) {
+          const oldFilename = vehiculo.imagen.split('/').pop();
+          const oldPath = join(
+            process.cwd(),
+            'uploads',
+            'vehicles',
+            oldFilename || '',
+          );
+          if (fs.existsSync(oldPath)) {
+            try {
+              fs.unlinkSync(oldPath);
+            } catch (err) {
+              console.error('Error al eliminar imagen antigua:', err);
+            }
+          }
+        }
+        finalUpdateData.imagen = `http://localhost:3001/uploads/vehicles/${file.filename}`;
+      }
+
+      // 4. Ejecutar la actualización de forma segura
+      return await this.service.update(+id, finalUpdateData);
+    } catch (error) {
+      console.error('❌ ERROR CRÍTICO EN EL BACKEND:', error);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException({
+        message: 'Error interno del servidor',
+        error: error.message,
+      });
+>>>>>>> Stashed changes
     }
     return { message: 'No tienes permiso para actualizar este vehículo' };
   }
