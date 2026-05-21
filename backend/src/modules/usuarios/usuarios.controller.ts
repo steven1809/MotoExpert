@@ -1,19 +1,11 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Body,
-  Param,
-  UseGuards,
-  Post,
-  UseInterceptors,
-  UploadedFile,
-} from '@nestjs/common';
+import { Controller, Get, Patch, Body, Param, UseGuards, Post, UseInterceptors, UploadedFile, ForbiddenException } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { Request } from 'express';
+import { Req } from '@nestjs/common';
 
 @Controller('usuarios')
 export class UsuariosController {
@@ -26,7 +18,11 @@ export class UsuariosController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateData: any) {
+  update(@Param('id') id: string, @Body() updateData: any, @Req() req: any) {
+    // Si se intenta actualizar el rol, validar que el usuario que hace la petición sea admin
+    if (updateData.role && req.user.role !== 'admin') {
+      throw new ForbiddenException('Solo los administradores pueden cambiar roles de usuario');
+    }
     return this.usuariosService.update(+id, updateData);
   }
 
@@ -47,7 +43,7 @@ export class UsuariosController {
     }),
   )
   uploadPhoto(@Param('id') id: string, @UploadedFile() file: any) {
-    const photoUrl = `http://localhost:3000/uploads/profiles/${file.filename}`;
+    const photoUrl = `http://localhost:3001/uploads/profiles/${file.filename}`;
     return this.usuariosService.update(+id, { picture: photoUrl });
   }
 }

@@ -9,13 +9,13 @@ export class CreateCitaDto {
   @IsNotEmpty()
   hora_inicio: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  hora_fin: string;
+  hora_fin?: string;
 
+  @IsOptional()
   @IsNumber()
-  @IsNotEmpty()
-  usuarioId: number;
+  usuarioId?: number;
 
   @IsNumber()
   @IsNotEmpty()
