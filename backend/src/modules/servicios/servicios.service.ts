@@ -30,6 +30,75 @@ export class ServiciosService implements OnModuleInit {
       .trim();
   }
 
+  private servicioDedupeKey(nombre: string) {
+    const normalized = this.normalize(nombre || '');
+    const alnum = normalized.replace(/[^a-z0-9]/g, '');
+    const consonants = alnum.replace(/[aeiou]/g, '');
+
+    if (consonants.includes('lvd') && consonants.includes('bsc')) {
+      return 'lavado_basico';
+    }
+    if (consonants.includes('lvd') && consonants.includes('xprs')) {
+      return 'lavado_express';
+    }
+    if (consonants.includes('lvd') && consonants.includes('spcl')) {
+      return 'lavado_especial';
+    }
+    if (consonants.includes('lvd') && consonants.includes('prmm')) {
+      return 'lavado_premium';
+    }
+
+    return consonants;
+  }
+
+  private servicioScore(servicio: Servicio) {
+    const descripcionLen = (servicio?.descripcion || '').toString().trim().length;
+    const incluyeLen = (servicio?.incluye || '').toString().trim().length;
+    const beneficiosLen = (servicio?.beneficios || '').toString().trim().length;
+    const precio = Number(servicio?.precio);
+    const duracion =
+      Number(servicio?.duration_minutes) || Number(servicio?.duracion) || 0;
+    const hasPrecio = Number.isFinite(precio) && precio > 0 ? 1 : 0;
+    const hasDuracion = Number.isFinite(duracion) && duracion > 0 ? 1 : 0;
+
+    return (
+      Math.min(descripcionLen, 160) +
+      Math.min(incluyeLen, 200) +
+      Math.min(beneficiosLen, 200) +
+      hasPrecio * 10 +
+      hasDuracion * 10
+    );
+  }
+
+  private dedupeServicios(list: Servicio[]) {
+    const input = Array.isArray(list) ? list : [];
+    const map = new Map<string, Servicio>();
+
+    for (const servicio of input) {
+      const key = this.servicioDedupeKey(servicio?.nombre || '');
+      if (!key) continue;
+
+      const prev = map.get(key);
+      if (!prev) {
+        map.set(key, servicio);
+        continue;
+      }
+
+      const prevScore = this.servicioScore(prev);
+      const nextScore = this.servicioScore(servicio);
+      if (nextScore > prevScore) {
+        map.set(key, servicio);
+        continue;
+      }
+
+      if (nextScore === prevScore && Number(servicio?.id) > Number(prev?.id)) {
+        map.set(key, servicio);
+      }
+    }
+
+    return Array.from(map.values());
+  }
+
   private categoriaToken(raw: string) {
     const normalized = this.normalize(raw);
     if (normalized.includes('lav')) return 'lavado';
@@ -121,12 +190,13 @@ export class ServiciosService implements OnModuleInit {
     }
 
     const servicios = await qb.getMany();
+    const serviciosDedupe = this.dedupeServicios(servicios);
 
     const tipoVehiculoRaw = (filters.tipo_vehiculo || '').toString().trim();
-    if (!tipoVehiculoRaw) return servicios;
+    if (!tipoVehiculoRaw) return serviciosDedupe;
 
     const target = this.normalize(tipoVehiculoRaw);
-    return servicios.filter((s) => {
+    return serviciosDedupe.filter((s) => {
       const allowed = this.getTiposVehiculo(s);
       return allowed.some((t) => this.normalize(t) === target);
     });

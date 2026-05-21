@@ -86,6 +86,13 @@ class Vehiculos extends Component {
     return 82;
   };
 
+  getImageUrl = (imagen) => {
+    if (!imagen) return null;
+    if (imagen.startsWith('http://') || imagen.startsWith('https://')) return imagen;
+    if (imagen.startsWith('/')) return `${API_BASE_URL}${imagen}`;
+    return `${API_BASE_URL}/${imagen}`;
+  };
+
   componentDidMount() {
     this.fetchVehiculos();
     this.checkPendingAction();
@@ -115,6 +122,7 @@ class Vehiculos extends Component {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[Vehiculos] /vehiculos response imagen:', Array.isArray(data) ? data.map((v) => ({ id: v?.id, imagen: v?.imagen })) : data);
         this.setState({ vehiculos: data, loading: false });
       } else {
         this.setState({ error: 'Error al obtener vehículos', loading: false });
@@ -607,11 +615,16 @@ class Vehiculos extends Component {
                     {filteredVehiculos.map((v) => (
                       <div key={v.id} className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
                         <div className="relative h-28 bg-[#0b1220]">
+                          {(() => {
+                            const imageUrl = this.getImageUrl(v.imagen);
+                            return (
                           <img 
-                            src={v.imagen || carHeroImg} 
+                            src={imageUrl || carHeroImg} 
                             alt={v.marca} 
-                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${v.imagen ? 'opacity-60' : 'opacity-15'}`} 
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${imageUrl ? 'opacity-60' : 'opacity-15'}`} 
                           />
+                            );
+                          })()}
                           <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/40 to-transparent" />
                           <div className="absolute top-3 left-3 inline-flex items-center gap-2">
                             <span className="px-2.5 py-1 rounded-full bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] text-[10px] font-black">
