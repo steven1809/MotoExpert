@@ -142,7 +142,11 @@ export class VehiculosController {
         );
       }
 
+<<<<<<< Updated upstream
       // Construir objeto de actualización con campos permitidos
+=======
+      // Crear el objeto con los datos a actualizar de forma segura
+>>>>>>> Stashed changes
       const finalUpdateData: any = {};
       const allowedFields = [
         'placa',
@@ -167,6 +171,11 @@ export class VehiculosController {
       // Solo si el usuario subió una foto nueva
       if (file) {
         // Borrar imagen anterior del disco si existe
+
+      // VALIDACIÓN CRUCIAL: Solo si el usuario subió una foto nueva
+      if (file) {
+        // Lógica para borrar la imagen anterior del disco
+
         if (
           vehiculo.imagen &&
           vehiculo.imagen.includes('http://localhost:3001/uploads/vehicles/')
@@ -189,6 +198,9 @@ export class VehiculosController {
         finalUpdateData.imagen = `http://localhost:3001/uploads/vehicles/${file.filename}`;
       }
 
+
+      // Ejecutar la actualización de forma segura
+
       return await this.service.update(+id, finalUpdateData);
     } catch (error) {
       console.error('❌ ERROR CRÍTICO EN EL BACKEND:', error);
@@ -208,9 +220,18 @@ export class VehiculosController {
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req) {
     const vehiculo = await this.service.findOne(+id);
-    if (vehiculo && vehiculo.usuario.id === req.user.userId) {
-      return this.service.remove(+id);
+    if (!vehiculo) {
+      throw new NotFoundException('Vehículo no encontrado');
     }
-    return { message: 'No tienes permiso para eliminar este vehículo' };
+    const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+    if (
+      userRole !== 'admin' &&
+      vehiculo.usuario.id !== req.user.userId
+    ) {
+      throw new ForbiddenException(
+        'No tienes permiso para eliminar este vehículo',
+      );
+    }
+    return this.service.remove(+id);
   }
 }
