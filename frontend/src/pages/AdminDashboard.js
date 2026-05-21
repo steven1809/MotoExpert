@@ -389,15 +389,11 @@ class AdminDashboard extends Component {
       <div className="min-h-screen bg-[#020617] p-6">
         <div className="mb-8">
           <div className="bg-gradient-to-br from-slate-900 to-[#111827] rounded-[3rem] p-12 text-center">
-            <div className="inline-block px-4 py-2 rounded-full bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] text-[10px] font-black uppercase tracking-[0.3em] mb-6">
-              SYSTEM OVERVIEW
-            </div>
+           
             <h1 className="text-5xl md:text-6xl font-black text-[#F8FAFC] italic uppercase tracking-tighter mb-4">
               CONTROL <span className="text-[#2563EB]">ADMINISTRATIVO</span>
             </h1>
-            <p className="text-[#94A3B8] max-w-2xl mx-auto">
-              Monitoreo de métricas críticas y gestión global del ecosistema MotoExpert.
-            </p>
+            
           </div>
         </div>
 

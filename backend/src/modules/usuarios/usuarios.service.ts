@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from './entities/usuario.entity';
@@ -20,7 +20,17 @@ export class UsuariosService {
   }
 
   async findOne(id: number): Promise<Usuario> {
-    return this.usuariosRepository.findOne({ where: { id } });
+<<<<<<< Updated upstream
+    const user = await this.usuariosRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return user;
+=======
+    const usuario = await this.usuariosRepository.findOne({ where: { id } });
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    return usuario;
+>>>>>>> Stashed changes
   }
 
   async update(id: number, updateData: any) {

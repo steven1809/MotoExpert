@@ -53,7 +53,16 @@ export class VehiculosService {
         relations: ['usuario'],
       });
     }
+<<<<<<< Updated upstream
     return this.repo.find({ relations: ['usuario'] });
+=======
+    const result = await this.repo.find({
+      where,
+      relations: ['usuario'],
+    });
+    console.log('VEHICULOS:', JSON.stringify(result.map(v => ({ id: v.id, imagen: v.imagen }))));
+    return result;
+>>>>>>> Stashed changes
   }
 
   findOne(id: number) {
