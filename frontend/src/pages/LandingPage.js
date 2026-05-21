@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -21,33 +21,59 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
-const IconWhatsapp = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-    <path d="M20 12a8 8 0 0 1-11.5 7.2L4 20l.9-3.7A8 8 0 1 1 20 12Z" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M9.5 10.2c.3-.6.6-.7 1-.7h.7c.2 0 .5.1.6.4l.8 1.7c.1.3.1.5 0 .7l-.5.7c-.1.2-.1.4 0 .6.5.9 1.3 1.7 2.2 2.2.2.1.4.1.6 0l.7-.5c.2-.1.4-.1.7 0l1.7.8c.3.1.4.4.4.6v.7c0 .4-.1.7-.7 1-1 .6-2.2.5-3.3.1-2.2-.8-4.3-2.9-5.1-5.1-.4-1.1-.5-2.3.1-3.2Z" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
+function CountUp({ value, suffix = '', className = '' }) {
+  const ref = useRef(null);
+  const [display, setDisplay] = useState(0);
 
-const IconInstagram = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-    <rect x="3" y="3" width="18" height="18" rx="5" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="12" cy="12" r="4" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="17" cy="7" r="1" fill="currentColor" stroke="none" />
-  </svg>
-);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
 
-const IconFacebook = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M14 8h2V5h-2c-1.66 0-3 1.34-3 3v2H9v3h2v6h3v-6h2.5l.5-3H14V8c0-.55.45-1 1-1Z" />
-  </svg>
-);
+    let raf = 0;
+    let started = false;
 
-const IconTwitterX = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-    <path d="M5 4l14 16" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M19 4L5 20" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
+    const start = () => {
+      if (started) return;
+      started = true;
+      const from = 0;
+      const to = Number(value) || 0;
+      const duration = 900;
+      const startAt = performance.now();
+
+      const step = (now) => {
+        const t = Math.min(1, (now - startAt) / duration);
+        const eased = 1 - Math.pow(1 - t, 3);
+        const next = Math.round(from + (to - from) * eased);
+        setDisplay(next);
+        if (t < 1) raf = requestAnimationFrame(step);
+      };
+
+      raf = requestAnimationFrame(step);
+    };
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) start();
+      },
+      { threshold: 0.35 }
+    );
+    io.observe(el);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      io.disconnect();
+    };
+  }, [value]);
+
+  const formatted = Number.isFinite(display) ? display.toLocaleString('es-CO') : String(display);
+
+  return (
+    <span ref={ref} className={className}>
+      {formatted}
+      {suffix}
+    </span>
+  );
+}
 
 class LandingPage extends Component {
   state = {
@@ -58,6 +84,7 @@ class LandingPage extends Component {
     landingCardsVisible: true,
     landingServicioDetalleOpen: false,
     landingServicioDetalle: null,
+    isScrolled: false,
     contactForm: {
       nombre: '',
       email: '',
@@ -83,9 +110,54 @@ class LandingPage extends Component {
     });
   };
 
+  componentDidMount() {
+    try {
+      window.addEventListener('scroll', this.handleScroll, { passive: true });
+      this.handleScroll();
+    } catch {}
+    this.initRevealObserver();
+  }
+
+  componentWillUnmount() {
+    try {
+      window.removeEventListener('scroll', this.handleScroll);
+    } catch {}
+    try {
+      this.revealObserver?.disconnect?.();
+    } catch {}
+  }
+
+  handleScroll = () => {
+    const next = (window.scrollY || 0) > 8;
+    if (next !== this.state.isScrolled) this.setState({ isScrolled: next });
+  };
+
+  initRevealObserver = () => {
+    if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') return;
+    try {
+      this.revealObserver?.disconnect?.();
+    } catch {}
+
+    this.revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add('reveal-visible');
+        });
+      },
+      { threshold: 0.12 }
+    );
+
+    try {
+      document.querySelectorAll('[data-reveal]').forEach((el) => {
+        this.revealObserver.observe(el);
+      });
+    } catch {}
+  };
+
   componentDidUpdate(prevProps, prevState) {
-    if (this.state.activeView !== 'servicios') return;
     const viewChanged = prevState.activeView !== this.state.activeView;
+    if (viewChanged) this.initRevealObserver();
+    if (this.state.activeView !== 'servicios') return;
     const filtrosChanged = prevState.landingFiltros !== this.state.landingFiltros;
     if (viewChanged || filtrosChanged) {
       this.fetchLandingServicios();
@@ -369,7 +441,7 @@ class LandingPage extends Component {
   };
 
   render() {
-    const { activeView } = this.state;
+    const { activeView, isScrolled } = this.state;
     const { landingServicios, landingLoading, landingError, landingFiltros } = this.state;
     const { landingCardsVisible } = this.state;
     const { landingServicioDetalleOpen, landingServicioDetalle } = this.state;
@@ -411,7 +483,11 @@ class LandingPage extends Component {
         </div>
 
         {/* HEADER */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
+        <header
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+            isScrolled ? 'backdrop-blur-xl bg-[rgba(10,10,30,0.8)] border-b border-white/10' : 'bg-transparent'
+          }`}
+        >
           <div className="container mx-auto px-6 py-5 flex items-center justify-between">
 
             {/* LOGO */}
@@ -454,8 +530,8 @@ class LandingPage extends Component {
                     key={key}
                     type="button"
                     onClick={() => this.setActiveView(key)}
-                    className={`text-sm text-white/80 hover:text-white transition-colors ${
-                      isActive ? 'underline underline-offset-8 decoration-white/70' : ''
+                    className={`relative text-sm text-white/80 hover:text-white transition-colors after:absolute after:left-0 after:-bottom-2 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-blue-400 after:to-cyan-300 after:transition-transform after:duration-300 hover:after:scale-x-100 ${
+                      isActive ? 'after:scale-x-100' : ''
                     }`}
                   >
                     {label}
@@ -487,7 +563,7 @@ class LandingPage extends Component {
         <main className="relative z-10">
           {activeView === 'inicio' && (
             <div className="animate-in fade-in duration-200">
-              <section className="relative overflow-hidden min-h-screen flex items-center justify-center pt-32">
+              <section data-reveal className="reveal relative overflow-hidden min-h-screen flex items-center justify-center pt-32">
                 <video
                   autoPlay
                   muted
@@ -513,6 +589,8 @@ class LandingPage extends Component {
                   }}
                 />
 
+                <div className="absolute inset-0 z-10 opacity-70 hero-dots pointer-events-none" />
+
                 <div
                   className="absolute top-0 left-0 right-0 h-[120px] z-10 pointer-events-none"
                   style={{
@@ -522,13 +600,16 @@ class LandingPage extends Component {
 
                 <div className="container mx-auto px-6 relative z-20 text-center">
 
-                  <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-8">
-                    Lavado y Mantenimiento
-
+                  <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6">
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-blue-400">
+                      Lavado y Mantenimiento
+                    </span>
                     <span className="block mt-3 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
                       con nivel profesional
                     </span>
                   </h1>
+
+                  <div className="max-w-xl mx-auto glow-underline" />
 
                   <p className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed mb-12">
                     Agenda servicios, administra mantenimientos y dale a tu vehículo
@@ -539,7 +620,7 @@ class LandingPage extends Component {
 
                     <button
                       onClick={() => this.setActiveView('Login')}
-                      className="px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 transition-all duration-300 shadow-xl shadow-blue-600/30"
+                      className="px-8 py-4 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md hover:bg-white/15 transition-all duration-300 shadow-xl shadow-blue-600/20"
                     >
                       Agendar cita
                     </button>
@@ -547,7 +628,7 @@ class LandingPage extends Component {
                     <button
                       type="button"
                       onClick={() => this.setActiveView('servicios')}
-                      className="px-8 py-4 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300"
+                      className="px-8 py-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md hover:bg-white/15 transition-all duration-300"
                     >
                       Explorar servicios
                     </button>
@@ -583,16 +664,18 @@ class LandingPage extends Component {
 
           {activeView === 'servicios' && (
             <div className="pt-32 animate-in fade-in duration-200">
-              <section className="py-28">
+              <section data-reveal className="reveal relative py-28 overflow-hidden">
+                <div className="pointer-events-none absolute inset-0 opacity-60 diag-lines" />
+                <div className="pointer-events-none absolute inset-0 grain" />
                 <div className="container mx-auto px-6">
-                  <div className="text-center mb-20">
+                  <div className="text-center lg:text-left mb-16 lg:mb-18">
                     <span className="text-blue-400 text-sm">Nuestros servicios</span>
 
-                    <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6 tracking-tight">
+                    <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-4 tracking-tight">
                       Cuidado completo para tu vehículo
                     </h2>
 
-                    <p className="text-slate-400 max-w-2xl mx-auto text-lg">
+                    <p className="text-slate-400 max-w-2xl mx-auto lg:mx-0 text-lg leading-relaxed">
                       Servicios profesionales diseñados para mantener tu vehículo limpio, protegido y en excelentes condiciones.
                     </p>
                   </div>
@@ -788,14 +871,22 @@ class LandingPage extends Component {
 
                             const badgeColor =
                               categoria === 'Lavado'
-                                ? 'bg-blue-500'
+                                ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
                                 : categoria === 'Motor'
-                                  ? 'bg-purple-500'
+                                  ? 'bg-gradient-to-r from-purple-500 to-fuchsia-500'
                                   : categoria === 'Limpieza'
-                                    ? 'bg-green-500'
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-400'
                                     : categoria === 'Protección'
-                                      ? 'bg-yellow-500'
-                                      : 'bg-orange-500';
+                                      ? 'bg-gradient-to-r from-yellow-500 to-amber-400'
+                                      : 'bg-gradient-to-r from-orange-500 to-red-500';
+
+                            const variant = i % 3;
+                            const cardExtra =
+                              variant === 0
+                                ? 'lg:translate-y-2 lg:h-[19rem]'
+                                : variant === 1
+                                  ? 'lg:-translate-y-1 lg:h-[18rem]'
+                                  : 'lg:translate-y-4 lg:h-[20rem]';
 
                             return (
                               <div
@@ -803,31 +894,33 @@ class LandingPage extends Component {
                                 style={{
                                   transitionDelay: landingCardsVisible ? `${i * 75}ms` : '0ms',
                                 }}
-                                className={`group relative h-72 rounded-2xl overflow-hidden border border-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-900/30 ${landingCardsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'} transition-opacity transition-transform ease-in-out`}
+                                className={`group relative h-72 rounded-2xl overflow-hidden bg-white/[0.05] backdrop-blur-md border border-white/[0.08] transition-all duration-200 ease-out hover:-translate-y-1.5 hover:border-blue-500 hover:shadow-[0_0_22px_rgba(59,130,246,0.18)] ${cardExtra} ${landingCardsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'} transition-opacity transition-transform`}
                               >
                                 <img
                                   src={imagen}
                                   alt={nombre}
-                                  className="absolute inset-0 w-full h-full object-cover object-center"
+                                  className="absolute inset-0 w-full h-full object-cover object-center opacity-95"
                                   loading="lazy"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
+                                <div className="absolute inset-0 opacity-40 carbon-fiber" />
 
                                 <div className="absolute top-4 left-4 z-10">
-                                  <span className={`px-3 py-1 rounded-full text-[11px] font-semibold text-white ${badgeColor}`}>
+                                  <span className={`px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-widest text-white ${badgeColor} shadow-lg shadow-black/20 ring-1 ring-white/10`}>
                                     {categoria}
                                   </span>
                                 </div>
 
-                                <div className="absolute top-4 right-4 z-10 text-blue-300 font-bold">
+                                <div className="absolute top-4 right-4 z-10 text-blue-200/90 font-extrabold tracking-tight">
                                   {precioShort || 'Consulta'}
                                 </div>
 
                                 <div
-                                  className="absolute inset-x-0 bottom-0 z-10 p-5"
-                                  style={{ background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.95))' }}
+                                  className="absolute inset-x-0 bottom-0 z-10 p-6 backdrop-blur-md border-t border-white/10"
+                                  style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.04), rgba(0,0,0,0.95))' }}
                                 >
                                   <h3 className="text-white text-2xl font-bold">{nombre}</h3>
+                                  <div className="mt-3 h-px w-16 bg-gradient-to-r from-white/0 via-white/25 to-white/0" />
 
                                   <div className="mt-2 text-gray-300 text-sm flex flex-wrap items-center gap-x-3 gap-y-1">
                                     <span>⏱ {duracion}</span>
@@ -843,15 +936,15 @@ class LandingPage extends Component {
                                       onClick={() => {
                                         if (typeof this.props.onEnterLogin === 'function') this.props.onEnterLogin();
                                       }}
-                                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition-all duration-300 text-white font-semibold text-sm"
+                                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition-all duration-200 ease-out text-white font-semibold text-sm shadow-lg shadow-blue-900/20"
                                     >
-                                      <FaCalendarAlt className="w-4 h-4" />
+                                      <FaCalendarAlt className="w-5 h-5" />
                                       AGENDAR
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => this.openLandingServicioDetalle(servicio)}
-                                      className="flex-1 inline-flex items-center justify-center px-4 py-3 rounded-xl bg-transparent border border-gray-500 hover:border-white transition-all duration-300 text-white font-semibold text-sm"
+                                      className="flex-1 inline-flex items-center justify-center px-4 py-3 rounded-xl bg-white/5 border border-white/20 hover:border-white/40 hover:bg-white/10 transition-all duration-200 ease-out text-white font-semibold text-sm backdrop-blur-md"
                                     >
                                       VER DETALLES
                                     </button>
@@ -967,7 +1060,7 @@ class LandingPage extends Component {
 
           {activeView === 'nosotros' && (
             <div className="pt-32 animate-in fade-in duration-200">
-              <section className="relative overflow-hidden py-24">
+              <section data-reveal className="reveal relative overflow-hidden py-24">
                 <div
                   className="absolute inset-0"
                   style={{
@@ -977,6 +1070,8 @@ class LandingPage extends Component {
                     backgroundPosition: 'center',
                   }}
                 />
+                <div className="absolute inset-0 opacity-30 carbon-fiber pointer-events-none" />
+                <div className="absolute inset-0 grain pointer-events-none" />
                 <div
                   className="absolute inset-0"
                   style={{
@@ -996,29 +1091,35 @@ class LandingPage extends Component {
                 </div>
               </section>
 
-              <section className="py-20 bg-gray-900/80">
+              <section data-reveal className="reveal relative py-20 bg-gray-900/80 overflow-hidden">
+                <div className="pointer-events-none absolute inset-0 opacity-35 diag-lines" />
                 <div className="container mx-auto px-6">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                     {[
-                      ['10+', 'Años de experiencia'],
-                      ['15.000+', 'Vehículos atendidos'],
-                      ['98%', 'Clientes satisfechos'],
-                      ['6', 'Servicios especializados'],
+                      [10, '+', 'Años de experiencia'],
+                      [15000, '+', 'Vehículos atendidos'],
+                      [98, '%', 'Clientes satisfechos'],
+                      [6, '', 'Servicios especializados'],
                     ].map((s, i) => (
-                      <div key={i} className="text-center rounded-2xl bg-gray-800/30 border border-white/5 p-6">
-                        <div className="text-4xl font-bold text-blue-500">{s[0]}</div>
-                        <div className="text-slate-300 mt-2">{s[1]}</div>
+                      <div
+                        key={i}
+                        className={`text-center rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md p-6 shadow-lg shadow-blue-900/10 transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-500/35 hover:shadow-[0_0_18px_rgba(59,130,246,0.14)] ${i % 2 === 0 ? 'md:-translate-y-1' : 'md:translate-y-1'}`}
+                      >
+                        <div className="text-3xl md:text-[34px] font-extrabold text-blue-500 tracking-tight">
+                          <CountUp value={s[0]} suffix={s[1]} />
+                        </div>
+                        <div className="text-slate-300 mt-2 text-sm">{s[2]}</div>
                       </div>
                     ))}
                   </div>
                 </div>
               </section>
 
-              <section className="py-20">
+              <section data-reveal className="reveal py-20">
                 <div className="container mx-auto px-6">
                   <div className="grid lg:grid-cols-2 gap-12 items-start">
                     <div>
-                      <h3 className="text-3xl font-bold mb-6">¿Quiénes somos?</h3>
+                      <h3 className="text-3xl font-bold mb-6 tracking-tight">¿Quiénes somos?</h3>
                       <div className="space-y-5 text-slate-300 leading-relaxed">
                         <p>
                           MotoExpert nació en 2014 en Bogotá como un pequeño taller familiar con grandes sueños. Lo que comenzó con dos empleados y un local de 40m² hoy se ha convertido en un centro especializado con tecnología de punta y un equipo de más de 10 profesionales certificados.
@@ -1034,17 +1135,17 @@ class LandingPage extends Component {
 
                     <div className="space-y-5">
                       {[
-                        ['🎯', 'Misión', 'Ofrecer servicios de detailing de clase mundial con atención personalizada, precios justos y resultados que superan las expectativas.'],
-                        ['👁️', 'Visión', 'Ser el centro de car care más reconocido de Colombia para 2027, expandiendo nuestra presencia a las principales ciudades del país.'],
-                        ['💎', 'Valores', 'Calidad · Honestidad · Puntualidad · Pasión · Responsabilidad ambiental'],
+                        ['🎯', 'Misión', 'Ofrecer servicios de detailing de clase mundial con atención personalizada, precios justos y resultados que superan las expectativas.', 'border-blue-500'],
+                        ['👁️', 'Visión', 'Ser el centro de car care más reconocido de Colombia para 2027, expandiendo nuestra presencia a las principales ciudades del país.', 'border-purple-500'],
+                        ['💎', 'Valores', 'Calidad · Honestidad · Puntualidad · Pasión · Responsabilidad ambiental', 'border-green-500'],
                       ].map((c, i) => (
                         <div
                           key={i}
-                          className="bg-gray-800/50 border border-white/5 border-l-4 border-blue-500 rounded-xl p-5 transition-all duration-300"
+                          className={`bg-white/[0.03] border border-white/10 backdrop-blur-md border-l-4 ${c[3]} rounded-2xl p-6 shadow-lg shadow-blue-900/10 hover:-translate-y-1 hover:border-white/20 transition-all duration-200 ease-out`}
                         >
                           <div className="flex items-center gap-3 mb-3">
-                            <div className="text-xl">{c[0]}</div>
-                            <div className="text-white font-semibold">{c[1]}</div>
+                            <div className="text-2xl">{c[0]}</div>
+                            <div className="text-white font-semibold text-lg">{c[1]}</div>
                           </div>
                           <div className="text-slate-300 leading-relaxed">{c[2]}</div>
                         </div>
@@ -1054,7 +1155,7 @@ class LandingPage extends Component {
                 </div>
               </section>
 
-              <section className="py-20 bg-gray-900/80">
+              <section data-reveal className="reveal py-20 bg-gray-900/80">
                 <div className="container mx-auto px-6">
                   <div className="text-center max-w-3xl mx-auto mb-12">
                     <span className="text-blue-400 text-sm">Tecnología & Precisión</span>
@@ -1064,13 +1165,13 @@ class LandingPage extends Component {
                     </p>
                   </div>
 
-                  <div className="max-w-3xl mx-auto">
+                  <div className="max-w-3xl mx-auto rounded-2xl shadow-[0_40px_80px_rgba(59,130,246,0.2)]">
                     <Car3D />
                   </div>
                 </div>
               </section>
 
-              <section className="py-20 bg-gray-900/50">
+              <section data-reveal className="reveal py-20 bg-gray-900/50">
                 <div className="container mx-auto px-6">
                   <div className="text-center mb-14">
                     <h2 className="text-4xl md:text-5xl font-bold tracking-tight">El equipo detrás de la magia</h2>
@@ -1115,7 +1216,7 @@ class LandingPage extends Component {
                 </div>
               </section>
 
-              <section className="py-20 bg-gray-900/50">
+              <section data-reveal className="reveal py-20 bg-gray-900/50">
                 <div className="container mx-auto px-6">
                   <div className="text-center mb-14">
                     <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Trabajamos con los mejores</h2>
@@ -1147,7 +1248,9 @@ class LandingPage extends Component {
 
           {activeView === 'contacto' && (
             <div className="pt-32 animate-in fade-in duration-200">
-              <section className="py-20">
+              <section data-reveal className="reveal relative py-20 overflow-hidden">
+                <div className="pointer-events-none absolute inset-0 opacity-25 carbon-fiber" />
+                <div className="pointer-events-none absolute inset-0 grain" />
                 <div className="container mx-auto px-6">
                   <div className="text-center max-w-3xl mx-auto mb-14">
                     <span className="text-blue-400 text-sm">Contáctanos</span>
@@ -1160,7 +1263,7 @@ class LandingPage extends Component {
                   </div>
 
                   <div className="grid lg:grid-cols-2 gap-10 items-start">
-                    <div className="rounded-2xl bg-gray-800/50 p-8 border border-white/5">
+                    <div className="rounded-3xl bg-white/[0.03] p-8 border border-white/[0.08] backdrop-blur-md shadow-2xl shadow-blue-900/10 lg:-translate-y-1">
                       <form onSubmit={this.handleContactSubmit} className="space-y-5">
                         <div>
                           <label className="block text-white font-semibold mb-2">Nombre completo</label>
@@ -1169,7 +1272,7 @@ class LandingPage extends Component {
                             name="nombre"
                             value={contactForm.nombre}
                             onChange={this.handleContactChange}
-                            className={`w-full bg-gray-800/50 rounded-lg px-4 py-3 border text-white ${contactErrors.nombre ? 'border-red-500' : 'border-gray-600'}`}
+                            className={`w-full bg-gray-800/40 rounded-lg px-4 py-3 border text-white placeholder:text-slate-500 transition-all duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 ${contactErrors.nombre ? 'border-red-500' : 'border-gray-600'}`}
                             placeholder="Tu nombre"
                           />
                           {contactErrors.nombre && <div className="text-red-400 text-sm mt-2">{contactErrors.nombre}</div>}
@@ -1182,7 +1285,7 @@ class LandingPage extends Component {
                             name="email"
                             value={contactForm.email}
                             onChange={this.handleContactChange}
-                            className={`w-full bg-gray-800/50 rounded-lg px-4 py-3 border text-white ${contactErrors.email ? 'border-red-500' : 'border-gray-600'}`}
+                            className={`w-full bg-gray-800/40 rounded-lg px-4 py-3 border text-white placeholder:text-slate-500 transition-all duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 ${contactErrors.email ? 'border-red-500' : 'border-gray-600'}`}
                             placeholder="tuemail@correo.com"
                           />
                           {contactErrors.email && <div className="text-red-400 text-sm mt-2">{contactErrors.email}</div>}
@@ -1195,8 +1298,8 @@ class LandingPage extends Component {
                             name="telefono"
                             value={contactForm.telefono}
                             onChange={this.handleContactChange}
-                            className={`w-full bg-gray-800/50 rounded-lg px-4 py-3 border text-white ${contactErrors.telefono ? 'border-red-500' : 'border-gray-600'}`}
-                            placeholder="+57 300 000 0000"
+                            className={`w-full bg-gray-800/40 rounded-lg px-4 py-3 border text-white placeholder:text-slate-500 transition-all duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 ${contactErrors.telefono ? 'border-red-500' : 'border-gray-600'}`}
+                            placeholder="+57 316 810 6470"
                           />
                           {contactErrors.telefono && <div className="text-red-400 text-sm mt-2">{contactErrors.telefono}</div>}
                         </div>
@@ -1207,7 +1310,7 @@ class LandingPage extends Component {
                             name="servicio"
                             value={contactForm.servicio}
                             onChange={this.handleContactChange}
-                            className={`w-full bg-gray-800/50 rounded-lg px-4 py-3 border text-white ${contactErrors.servicio ? 'border-red-500' : 'border-gray-600'}`}
+                            className={`w-full bg-gray-800/40 rounded-lg px-4 py-3 border text-white transition-all duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 ${contactErrors.servicio ? 'border-red-500' : 'border-gray-600'}`}
                           >
                             <option value="">Selecciona una opción</option>
                             <option value="Lavado Premium">Lavado Premium</option>
@@ -1227,7 +1330,7 @@ class LandingPage extends Component {
                             value={contactForm.mensaje}
                             onChange={this.handleContactChange}
                             rows={5}
-                            className={`w-full bg-gray-800/50 rounded-lg px-4 py-3 border text-white resize-none ${contactErrors.mensaje ? 'border-red-500' : 'border-gray-600'}`}
+                            className={`w-full bg-gray-800/40 rounded-lg px-4 py-3 border text-white resize-none placeholder:text-slate-500 transition-all duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 ${contactErrors.mensaje ? 'border-red-500' : 'border-gray-600'}`}
                             placeholder="Cuéntanos cómo podemos ayudarte"
                           />
                           {contactErrors.mensaje && <div className="text-red-400 text-sm mt-2">{contactErrors.mensaje}</div>}
@@ -1248,15 +1351,15 @@ class LandingPage extends Component {
                       </form>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-6 lg:translate-y-2">
                       {[
-                        ['📞', 'Teléfono', '+57 300 000 0000'],
-                        ['✉️', 'Email', 'info@motoexpert.com'],
+                        ['📞', 'Teléfono', '+57 316 810 6470'],
+                        ['✉️', 'Email', 'contacto@motoexpert.com'],
                         ['🕐', 'Horario', 'Lun-Sáb 8:00am - 6:00pm'],
                       ].map((info, i) => (
                         <div
                           key={i}
-                          className="rounded-2xl bg-gray-800/50 p-6 border border-white/5 hover:border-blue-500 hover:bg-gray-800 transition-all duration-300"
+                          className="rounded-2xl bg-white/[0.03] p-6 border border-white/10 backdrop-blur-md shadow-lg shadow-blue-900/10 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.14)] transition-all duration-300"
                         >
                           <div className="flex items-start gap-4">
                             <div className="text-2xl">{info[0]}</div>
@@ -1268,7 +1371,7 @@ class LandingPage extends Component {
                         </div>
                       ))}
 
-                      <div className="rounded-2xl bg-gray-800/50 p-6 border border-white/5 hover:border-blue-500 hover:bg-gray-800 transition-all duration-300">
+                      <div className="rounded-2xl bg-white/[0.03] p-6 border border-white/10 backdrop-blur-md shadow-lg shadow-blue-900/10 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.14)] transition-all duration-300">
                         <div className="flex items-start gap-4">
                           <div className="text-2xl">💬</div>
                           <div className="flex-1">
@@ -1278,7 +1381,7 @@ class LandingPage extends Component {
                               type="button"
                               onClick={() => {
                                 try {
-                                  window.open('https://wa.me/573000000000', '_blank', 'noopener,noreferrer');
+                                  window.open('https://wa.me/573168106470', '_blank', 'noopener,noreferrer');
                                 } catch {}
                               }}
                               className="mt-4 inline-flex items-center justify-center px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition-all duration-300 text-white font-semibold"
@@ -1289,33 +1392,34 @@ class LandingPage extends Component {
                         </div>
                       </div>
 
-                      <div className="pt-8 border-t border-gray-700 text-center">
+                      <div className="pt-8 text-center">
+                        <div className="section-sep mb-8" />
                         <h3 className="text-2xl font-semibold text-white">Síguenos en redes</h3>
                         <p className="text-slate-400 mt-2">Mantente al día con nuestras novedades</p>
                         <div className="mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
                           {[
                             {
                               name: 'WhatsApp',
-                              href: 'https://wa.me/573000000000',
-                              icon: <FaWhatsapp className="w-6 h-6 text-white" />,
+                              href: 'https://wa.me/573168106470',
+                              icon: <FaWhatsapp className="w-7 h-7 text-white" />,
                               style: { backgroundColor: '#25D366' },
                             },
                             {
                               name: 'Instagram',
                               href: 'https://www.instagram.com/',
-                              icon: <FaInstagram className="w-6 h-6 text-white" />,
+                              icon: <FaInstagram className="w-7 h-7 text-white" />,
                               style: { background: 'linear-gradient(135deg, #E1306C 0%, #833AB4 100%)' },
                             },
                             {
                               name: 'Facebook',
                               href: 'https://www.facebook.com/',
-                              icon: <FaFacebook className="w-6 h-6 text-white" />,
+                              icon: <FaFacebook className="w-7 h-7 text-white" />,
                               style: { backgroundColor: '#1877F2' },
                             },
                             {
                               name: 'X (Twitter)',
                               href: 'https://twitter.com/',
-                              icon: <FaTwitter className="w-6 h-6 text-white" />,
+                              icon: <FaTwitter className="w-7 h-7 text-white" />,
                               style: { backgroundColor: '#1DA1F2' },
                             },
                           ].map((social) => (
@@ -1326,7 +1430,7 @@ class LandingPage extends Component {
                               rel="noopener noreferrer"
                               aria-label={social.name}
                               style={social.style}
-                              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 hover:border-blue-500 ${social.className || 'border border-white/10'}`}
+                              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ease-out hover:scale-105 hover:border-blue-500 hover:shadow-[0_0_16px_rgba(59,130,246,0.18)] ${social.className || 'border border-white/10'}`}
                             >
                               {social.icon}
                             </a>
@@ -1337,42 +1441,14 @@ class LandingPage extends Component {
                   </div>
                 </div>
               </section>
-
-              <footer className="border-t border-white/5 pt-16 pb-10">
-                <div className="container mx-auto px-6">
-                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div>
-                      <h3 className="text-2xl font-semibold tracking-tight">
-                        Moto<span className="text-blue-400">Expert</span>
-                      </h3>
-                      <p className="text-slate-500 mt-2">
-                        Detailing & Car Care
-                      </p>
-                    </div>
-
-                    <div className="flex gap-8 text-slate-400 text-sm">
-                      <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
-                        Instagram
-                      </a>
-                      <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
-                        Facebook
-                      </a>
-                      <a href="https://wa.me/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
-                        WhatsApp
-                      </a>
-                    </div>
-                  </div>
-                  <div className="border-t border-white/5 mt-10 pt-8 text-center text-slate-500 text-sm">
-                    © {new Date().getFullYear()} MotoExpert. Todos los derechos reservados.
-                  </div>
-                </div>
-              </footer>
             </div>
           )}
 
           {activeView === 'ubicacion' && (
             <div className="pt-32 animate-in fade-in duration-200">
-              <section className="py-20">
+              <section data-reveal className="reveal relative py-20 overflow-hidden">
+                <div className="pointer-events-none absolute inset-0 opacity-25 carbon-fiber" />
+                <div className="pointer-events-none absolute inset-0 grain" />
                 <div className="container mx-auto px-6">
                   <div className="text-center max-w-3xl mx-auto mb-14">
                     <span className="text-blue-400 text-sm">Ubicación</span>
@@ -1380,60 +1456,58 @@ class LandingPage extends Component {
                       Encuéntranos
                     </h2>
                     <p className="text-slate-400 text-lg md:text-xl leading-relaxed">
-                      Visítanos en nuestra sede principal
+                      Visítanos en nuestra sede en Ibagué
                     </p>
                   </div>
 
                   <div className="grid lg:grid-cols-2 gap-10 items-start">
-                    <div className="rounded-2xl bg-gray-800/50 p-8 border border-white/5">
+                    <div className="rounded-3xl bg-white/[0.03] p-8 border border-white/[0.08] backdrop-blur-md shadow-2xl shadow-blue-900/10 hover:border-blue-500/25 transition-all duration-200 ease-out lg:translate-y-2">
                       <h3 className="text-2xl font-semibold mb-6">Nuestra sede</h3>
                       <div className="space-y-4 text-slate-300">
                         <div className="flex items-start gap-3">
-                          <div className="text-lg">📍</div>
+                          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg">📍</div>
                           <div>
                             <div className="font-semibold text-white">Dirección</div>
-                            <div className="text-slate-400">Calle 123 # 45-67, Bogotá, Colombia</div>
+                            <div className="text-slate-400">Ibagué, Tolima, Colombia</div>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
-                          <div className="text-lg">🕐</div>
+                          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg">🕐</div>
                           <div>
                             <div className="font-semibold text-white">Horario de atención</div>
-                            <div className="text-slate-400">Lunes a Viernes: 8:00am - 6:00pm</div>
-                            <div className="text-slate-400">Sábado: 8:00am - 2:00pm</div>
-                            <div className="text-slate-400">Domingo: Cerrado</div>
+                            <div className="text-slate-400">Lun-Sáb 8:00am - 6:00pm</div>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
-                          <div className="text-lg">📞</div>
+                          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg">📞</div>
                           <div>
                             <div className="font-semibold text-white">Teléfono</div>
-                            <div className="text-slate-400">+57 300 000 0000</div>
+                            <div className="text-slate-400">+57 316 810 6470</div>
                           </div>
                         </div>
                       </div>
 
                       <a
-                        href="https://www.google.com/maps/search/?api=1&query=Calle+123+45-67+Bogota+Colombia"
+                        href="https://www.google.com/maps/search/?api=1&query=Ibague+Tolima+Colombia"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-8 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl inline-block transition-all duration-300 font-semibold"
+                        className="mt-8 inline-flex items-center justify-center px-6 py-3 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md text-white font-semibold transition-all duration-200 ease-out hover:bg-white/15 hover:border-blue-500/45 hover:shadow-[0_0_18px_rgba(59,130,246,0.18)]"
                       >
                         Cómo llegar
                       </a>
                     </div>
 
-                    <div className="rounded-2xl bg-gray-800/50 p-8 border border-white/5">
-                      <div className="bg-gray-800 rounded-2xl h-80 w-full overflow-hidden">
+                    <div className="rounded-3xl bg-white/[0.03] p-8 border border-white/[0.08] backdrop-blur-md shadow-2xl shadow-blue-900/10 hover:border-blue-500/25 transition-all duration-200 ease-out lg:-translate-y-2">
+                      <div className="bg-gray-900/40 border border-white/10 rounded-3xl h-80 w-full overflow-hidden shadow-[0_0_16px_rgba(59,130,246,0.10)]">
                         <MapContainer
-                          center={[4.7110, -74.0721]}
+                          center={[4.4389, -75.2322]}
                           zoom={15}
                           scrollWheelZoom={false}
                           style={{ height: '100%', width: '100%', borderRadius: '1rem' }}
                         >
                           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                          <Marker position={[4.7110, -74.0721]}>
-                            <Popup>MotoExpert - Detailing & Car Care (Bogotá)</Popup>
+                          <Marker position={[4.4389, -75.2322]}>
+                            <Popup>MotoExpert - Detailing & Car Care (Ibagué)</Popup>
                           </Marker>
                         </MapContainer>
                       </div>
@@ -1442,7 +1516,7 @@ class LandingPage extends Component {
                 </div>
               </section>
 
-              <section className="py-20 bg-gray-900/50">
+              <section data-reveal className="reveal py-20 bg-gray-900/50">
                 <div className="container mx-auto px-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {[
@@ -1465,6 +1539,85 @@ class LandingPage extends Component {
             </div>
           )}
         </main>
+
+        <footer className="bg-gray-950 border-t border-gray-800">
+          <div className="container mx-auto px-6 py-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+              <div className="flex items-center justify-center md:justify-start gap-3">
+                <img src={require('../assets/images/logo.png')} alt="MotoExpert" className="h-10 w-auto object-contain" />
+                <div>
+                  <div className="text-lg font-semibold tracking-tight">
+                    Moto<span className="text-blue-400">Expert</span>
+                  </div>
+                  <div className="text-sm text-slate-500">Detailing & Car Care</div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-slate-400">
+                {[
+                  ['inicio', 'Inicio'],
+                  ['servicios', 'Servicios'],
+                  ['nosotros', 'Nosotros'],
+                  ['contacto', 'Contacto'],
+                  ['ubicacion', 'Ubicación'],
+                ].map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => this.setActiveView(key)}
+                    className="hover:text-white transition-colors"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-center md:justify-end gap-4">
+                {[
+                  {
+                    name: 'WhatsApp',
+                    href: 'https://wa.me/573168106470',
+                    icon: <FaWhatsapp className="w-6 h-6 text-white" />,
+                    style: { backgroundColor: '#25D366' },
+                  },
+                  {
+                    name: 'Instagram',
+                    href: 'https://www.instagram.com/',
+                    icon: <FaInstagram className="w-6 h-6 text-white" />,
+                    style: { background: 'linear-gradient(135deg, #E1306C 0%, #833AB4 100%)' },
+                  },
+                  {
+                    name: 'Facebook',
+                    href: 'https://www.facebook.com/',
+                    icon: <FaFacebook className="w-6 h-6 text-white" />,
+                    style: { backgroundColor: '#1877F2' },
+                  },
+                  {
+                    name: 'X (Twitter)',
+                    href: 'https://twitter.com/',
+                    icon: <FaTwitter className="w-6 h-6 text-white" />,
+                    style: { backgroundColor: '#1DA1F2' },
+                  },
+                ].map((social) => (
+                  <a
+                    key={social.name}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.name}
+                    style={social.style}
+                    className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 hover:border-blue-500 border border-white/10"
+                  >
+                    {social.icon}
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-8" />
+            <div className="text-center text-slate-500 text-sm">© 2024 MotoExpert. Todos los derechos reservados.</div>
+          </div>
+        </footer>
       </div>
     );
   }
