@@ -306,25 +306,17 @@ function App() {
           onClose={() => setShowGoogleModal(false)} 
           onLoginSuccess={handleLoginSuccess}
         />
-        {!isLoggedIn && view === "landing" && (
+        {(!isLoggedIn && (view === "landing" || view === "login" || view === "register")) && (
           <LandingPage onEnterLogin={() => setView("login")} onEnterRegister={() => setView("register")} />
         )}
 
-      {!isLoggedIn && view === "login" && (
-        <div className="min-h-screen bg-white dark:bg-[#020617] flex flex-col items-center justify-center p-4 text-slate-900 dark:text-[#F8FAFC]">
-          <button onClick={() => setView("landing")} className="mb-4 text-slate-500 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] transition text-sm">
-            ← Volver al inicio
-          </button>
-          <Login initialMode="login" onLoginSuccess={handleLoginSuccess} />
-        </div>
-      )}
-
-      {!isLoggedIn && view === "register" && (
-        <div className="min-h-screen bg-white dark:bg-[#020617] flex flex-col items-center justify-center p-4 text-slate-900 dark:text-[#F8FAFC]">
-          <button onClick={() => setView("landing")} className="mb-4 text-slate-500 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] transition text-sm">
-            ← Volver al inicio
-          </button>
-          <Login initialMode="register" onLoginSuccess={handleLoginSuccess} />
+      {!isLoggedIn && (view === "login" || view === "register") && (
+        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-[2px] flex items-center justify-center">
+          <Login 
+            initialMode={view} 
+            onLoginSuccess={handleLoginSuccess} 
+            onBack={() => setView("landing")} 
+          />
         </div>
       )}
 
