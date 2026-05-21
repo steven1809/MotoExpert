@@ -9,6 +9,87 @@ import carHeroImg from '../assets/images/1.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+const limpiarTexto = (texto) => {
+  if (!texto) return '';
+  return String(texto)
+    .replace(/♦/g, 'ó')
+    .replace(/\?/g, 'ó')
+    .replace(/â€™/g, "'")
+    .replace(/Ã³/g, 'ó')
+    .replace(/Ã©/g, 'é')
+    .replace(/Ã¡/g, 'á')
+    .replace(/Ã­/g, 'í')
+    .replace(/Ãº/g, 'ú')
+    .replace(/Ã±/g, 'ñ')
+    .replace(/\uFFFD/g, 'ó')
+    .trim();
+};
+
+const getServicioDedupeKey = (nombre) => {
+  const base = limpiarTexto(nombre);
+  const normalized = (base || '')
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  const alnum = normalized.replace(/[^a-z0-9]/g, '');
+  const consonants = alnum.replace(/[aeiou]/g, '');
+
+  if (consonants.includes('lvd') && consonants.includes('bsc')) return 'lavado_basico';
+  if (consonants.includes('lvd') && consonants.includes('xprs')) return 'lavado_express';
+  if (consonants.includes('lvd') && consonants.includes('spcl')) return 'lavado_especial';
+  if (consonants.includes('lvd') && consonants.includes('prmm')) return 'lavado_premium';
+
+  return consonants;
+};
+
+const getServicioScore = (s) => {
+  const descripcionLen = (s?.descripcion || '').toString().trim().length;
+  const incluyeLen = Array.isArray(s?.incluye)
+    ? s.incluye.length
+    : (s?.incluye || '').toString().split(',').filter(Boolean).length;
+  const beneficiosLen = Array.isArray(s?.beneficios)
+    ? s.beneficios.length
+    : (s?.beneficios || '').toString().split(',').filter(Boolean).length;
+  const hasPrecio = Number.isFinite(Number(s?.precio)) && Number(s?.precio) > 0 ? 1 : 0;
+  const hasDuracion = Number.isFinite(Number(s?.duracion)) && Number(s?.duracion) > 0 ? 1 : 0;
+  return Math.min(descripcionLen, 120) + incluyeLen * 10 + beneficiosLen * 10 + hasPrecio * 5 + hasDuracion * 5;
+};
+
+const dedupeServicios = (list) => {
+  const input = Array.isArray(list) ? list : [];
+  const map = new Map();
+
+  for (const servicio of input) {
+    const nombreLimpio = limpiarTexto(servicio?.nombre);
+    const key = getServicioDedupeKey(servicio?.nombre);
+    if (!key) continue;
+
+    const prev = map.get(key);
+    if (!prev) {
+      map.set(key, { ...servicio, nombre: nombreLimpio });
+      continue;
+    }
+
+    const prevScore = getServicioScore(prev);
+    const nextScore = getServicioScore(servicio);
+    if (nextScore > prevScore) {
+      map.set(key, { ...servicio, nombre: nombreLimpio });
+      continue;
+    }
+
+    if (nextScore === prevScore) {
+      const prevId = Number(prev?.id);
+      const nextId = Number(servicio?.id);
+      if (Number.isFinite(prevId) && Number.isFinite(nextId) && nextId > prevId) {
+        map.set(key, { ...servicio, nombre: nombreLimpio });
+      }
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => Number(a?.id ?? 0) - Number(b?.id ?? 0));
+};
+
 const TokenCodeModal = ({ isOpen, onClose, tokenCode }) => {
   if (!isOpen) return null;
 
@@ -421,7 +502,7 @@ const Citas = ({
         ]);
         setCitas(citasData);
         setVehiculos(vehiculosData);
-        setServicios(serviciosData);
+        setServicios(dedupeServicios(serviciosData));
         setEmpleados(empleadosData.filter(e => e.estado === 'activo')); // Solo activos
       } else {
         setError('Error al obtener datos iniciales');
@@ -1509,7 +1590,7 @@ const Citas = ({
                               >
                                 <option value="">Selecciona el servicio</option>
                                 {servicios.map((s) => (
-                                  <option key={s.id} value={s.id}>{s.nombre}</option>
+                                  <option key={s.id} value={s.id}>{limpiarTexto(s.nombre)}</option>
                                 ))}
                               </select>
                               {selectedServicio?.descripcion && (

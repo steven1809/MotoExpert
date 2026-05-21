@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import CardServicio from "../components/CardServicio";
 
+import premiumImg from "../assets/services/premium.jpg";
+import expressImg from "../assets/services/express.jpeg";
+import interiorImg from "../assets/services/limpiezap.jpeg";
+import motorImg from "../assets/services/motor.jpeg";
+import protectionImg from "../assets/services/proteccionc.jpeg";
+import pulidoImg from "../assets/services/pulidop.jpeg";
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 const normalizeText = (t) =>
@@ -25,22 +32,98 @@ const limpiarTexto = (texto) => {
     .replace(/\uFFFD/g, "ó");
 };
 
-const imagenesServicio = {
-  "Lavado Premium": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80",
-  "Lavado Express": "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&q=80",
-  "Lavado de Motor": "https://images.unsplash.com/photo-1565043666747-69f6646db940?w=800&q=80",
-  "Limpieza Profunda": "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=800&q=80",
-  "Protección Cerámica": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80",
-  "Pulido Profesional": "https://images.unsplash.com/photo-1614026480418-bd11fdb9fa06?w=800&q=80",
+const getImagen = (servicio) => {
+  if (servicio?.imagen) return servicio.imagen;
+  if (servicio?.imagen_url) return servicio.imagen_url;
+
+  const n = normalizeText(limpiarTexto(servicio?.nombre));
+  if (n.includes("especial")) return "https://noticias.pro.pvt.coches.com/wp-content/uploads/2012/06/Miracle_Detail_01.jpg?force_format=original&w=1600&h=1067";
+  if (n.includes("basico")) return "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGPhprEHv-0cx4AczUB9nO-G639m4Ti0g4RA&s";
+  if (n.includes("premium")) return "https://www.shutterstock.com/image-photo/young-women-swimsuits-cleaning-automobile-260nw-1537318124.jpg";
+  if (n.includes("express")) return expressImg;
+  if (n.includes("motor")) return motorImg;
+  if (n.includes("profunda") || n.includes("interior")) return interiorImg;
+  if (n.includes("proteccion") || n.includes("ceram")) return protectionImg;
+  if (n.includes("pulido")) return pulidoImg;
+  return expressImg;
 };
 
-const getImagen = (servicio) =>
-  servicio?.imagen_url ||
-  imagenesServicio[limpiarTexto(servicio?.nombre)] ||
-  "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&q=80";
+const getServicioScore = (s) => {
+  const descripcionLen = (s?.descripcion || "").toString().trim().length;
+  const incluyeLen = Array.isArray(s?.incluye)
+    ? s.incluye.length
+    : (s?.incluye || "").toString().split(",").filter(Boolean).length;
+  const beneficiosLen = Array.isArray(s?.beneficios)
+    ? s.beneficios.length
+    : (s?.beneficios || "").toString().split(",").filter(Boolean).length;
+
+  const hasPrecio = Number.isFinite(Number(s?.precio)) && Number(s?.precio) > 0 ? 1 : 0;
+  const hasDuracion = Number.isFinite(Number(s?.duracion)) && Number(s?.duracion) > 0 ? 1 : 0;
+  const hasImagen = Boolean(s?.imagen || s?.imagen_url) ? 1 : 0;
+
+  return (
+    Math.min(descripcionLen, 120) +
+    incluyeLen * 10 +
+    beneficiosLen * 10 +
+    hasPrecio * 5 +
+    hasDuracion * 5 +
+    hasImagen * 5
+  );
+};
+
+const getServicioDedupeKey = (nombre) => {
+  const base = limpiarTexto(nombre);
+  const normalized = (base || '')
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  const alnum = normalized.replace(/[^a-z0-9]/g, '');
+  const consonants = alnum.replace(/[aeiou]/g, '');
+
+  if (consonants.includes('lvd') && consonants.includes('bsc')) return 'lavado_basico';
+  if (consonants.includes('lvd') && consonants.includes('xprs')) return 'lavado_express';
+  if (consonants.includes('lvd') && consonants.includes('spcl')) return 'lavado_especial';
+  if (consonants.includes('lvd') && consonants.includes('prmm')) return 'lavado_premium';
+
+  return consonants;
+};
+
+const dedupeServicios = (list) => {
+  const input = Array.isArray(list) ? list : [];
+  const map = new Map();
+
+  for (const servicio of input) {
+    const key = getServicioDedupeKey(servicio?.nombre);
+    if (!key) continue;
+
+    const prev = map.get(key);
+    if (!prev) {
+      map.set(key, servicio);
+      continue;
+    }
+
+    const prevScore = getServicioScore(prev);
+    const nextScore = getServicioScore(servicio);
+    if (nextScore > prevScore) {
+      map.set(key, servicio);
+      continue;
+    }
+
+    if (nextScore === prevScore) {
+      const prevId = Number(prev?.id);
+      const nextId = Number(servicio?.id);
+      if (Number.isFinite(prevId) && Number.isFinite(nextId) && nextId > prevId) {
+        map.set(key, servicio);
+      }
+    }
+  }
+
+  return Array.from(map.values());
+};
 
 const getCategoryTags = (servicio) => {
-  const n = normalizeText(servicio?.nombre);
+  const n = normalizeText(limpiarTexto(servicio?.nombre));
   const tags = [];
   if (n.includes("interior")) tags.push("Interior");
   if (n.includes("exterior")) tags.push("Exterior");
@@ -79,7 +162,7 @@ export default function Servicios({ setView }) {
     fetch(`${API_BASE_URL}/servicios`)
       .then((res) => res.json())
       .then((data) => {
-        setServicios(Array.isArray(data) ? data : []);
+        setServicios(dedupeServicios(data));
       })
       .catch(() => {
         setServicios([]);
@@ -191,13 +274,14 @@ export default function Servicios({ setView }) {
 
   const serviciosFiltrados = useMemo(() => {
     const term = normalizeText(filtroBusqueda);
-    return servicios.filter((servicio) => {
+    const filtered = servicios.filter((servicio) => {
       const nameMatches = normalizeText(servicio?.nombre).includes(term);
       if (!nameMatches) return false;
       if (categoryFilter === "Todos") return true;
       const tags = getCategoryTags(servicio);
       return tags.includes(categoryFilter);
     });
+    return dedupeServicios(filtered);
   }, [categoryFilter, filtroBusqueda, servicios]);
 
   return (
