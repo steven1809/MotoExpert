@@ -1,6 +1,27 @@
 import { useMemo, useState, useEffect } from "react";
 
+import premiumImg from "../assets/services/premium.jpg";
+import expressImg from "../assets/services/express.jpeg";
+import interiorImg from "../assets/services/limpiezap.jpeg";
+import motorImg from "../assets/services/motor.jpeg";
+import protectionImg from "../assets/services/proteccionc.jpeg";
+import pulidoImg from "../assets/services/pulidop.jpeg";
+
 const SERVICIO_INFO = {
+  especial: {
+    nombre: "Lavado Especial",
+    descripcion: "Lavado más completo para remover suciedad adherida y dejar un acabado superior. Ideal cuando el vehículo necesita un extra.",
+    incluye: ["Prelavado", "Lavado exterior detallado", "Limpieza de rines y llantas", "Secado premium"],
+    beneficios: ["Mejor acabado", "Mayor brillo", "Protección básica"],
+    productos: "Productos premium",
+    nivel: "Especial",
+    recomendaciones: "Recomendado cuando el vehículo viene con suciedad difícil o después de un viaje largo.",
+    imagen: "https://noticias.pro.pvt.coches.com/wp-content/uploads/2012/06/Miracle_Detail_01.jpg?force_format=original&w=1600&h=1067",
+    badge: "Exterior",
+    tags: ["Exterior"],
+    rating: 4.8,
+    reviews: 72
+  },
   basico: {
     nombre: "Lavado Básico",
     descripcion: "Limpieza exterior profunda con técnica de dos cubos para evitar micro-rayones. Ideal para el mantenimiento regular.",
@@ -9,7 +30,7 @@ const SERVICIO_INFO = {
     productos: "Meguiar's Gold Class, Microfibras de 400 GSM",
     nivel: "Estándar Premium",
     recomendaciones: "Realizar cada 15 días para mantener el brillo.",
-    imagen: "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&q=80&w=800",
+    imagen: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGPhprEHv-0cx4AczUB9nO-G639m4Ti0g4RA&s",
     badge: "Exterior",
     tags: ["Exterior"],
     rating: 4.7,
@@ -23,7 +44,7 @@ const SERVICIO_INFO = {
     productos: "Sonax Gloss Shampoo",
     nivel: "Esencial",
     recomendaciones: "Ideal para suciedad ligera después de un viaje corto.",
-    imagen: "https://images.unsplash.com/photo-1605152276897-4f618f831968?auto=format&fit=crop&q=80&w=800",
+    imagen: expressImg,
     badge: "Express",
     tags: ["Exterior"],
     rating: 4.7,
@@ -37,7 +58,7 @@ const SERVICIO_INFO = {
     productos: "Chemical Guys VRP, CarPro IronX, Collinite 845",
     nivel: "VIP High-End",
     recomendaciones: "Recomendado cada 2-3 meses para protección total.",
-    imagen: "https://images.unsplash.com/photo-1558981403-c5f91cbba527?auto=format&fit=crop&q=80&w=800",
+    imagen: "https://www.shutterstock.com/image-photo/young-women-swimsuits-cleaning-automobile-260nw-1537318124.jpg",
     badge: "Premium",
     tags: ["Exterior", "Interior"],
     rating: 4.9,
@@ -51,7 +72,7 @@ const SERVICIO_INFO = {
     productos: "Koch Chemie Green Star, Gtechniq C4",
     nivel: "Técnico Especializado",
     recomendaciones: "Realizar una vez al año o después de temporadas de lluvia.",
-    imagen: "https://images.unsplash.com/photo-1486006920555-c77dcf18193c?auto=format&fit=crop&q=80&w=800",
+    imagen: motorImg,
     badge: "Detailing",
     tags: ["Detailing"],
     rating: 4.8,
@@ -65,11 +86,39 @@ const SERVICIO_INFO = {
     productos: "P&S Terminator, Vapor Polti",
     nivel: "Restauración",
     recomendaciones: "Ideal para vehículos recién comprados o después de viajes largos.",
-    imagen: "https://images.unsplash.com/photo-1599256621730-535171e28e50?auto=format&fit=crop&q=80&w=800",
+    imagen: interiorImg,
     badge: "Interior",
     tags: ["Interior"],
     rating: 4.8,
     reviews: 48
+  },
+  proteccion: {
+    nombre: "Protección Cerámica",
+    descripcion: "Protección avanzada para la pintura con acabado brillante y mayor resistencia a contaminantes y rayos UV.",
+    incluye: ["Descontaminación", "Aplicación de recubrimiento", "Curado", "Revisión final"],
+    beneficios: ["Mayor brillo", "Repelencia al agua", "Protección UV"],
+    productos: "Recubrimiento cerámico profesional",
+    nivel: "Protección",
+    recomendaciones: "Ideal si buscas máxima durabilidad y fácil mantenimiento.",
+    imagen: protectionImg,
+    badge: "Detailing",
+    tags: ["Detailing"],
+    rating: 4.9,
+    reviews: 52
+  },
+  pulido: {
+    nombre: "Pulido Profesional",
+    descripcion: "Corrección de pintura para remover micro-rayones y recuperar el brillo con acabado uniforme.",
+    incluye: ["Inspección de pintura", "Pulido por etapas", "Sellado/Protección", "Revisión final"],
+    beneficios: ["Mejor apariencia", "Superficie uniforme", "Brillo restaurado"],
+    productos: "Compuestos y pads profesionales",
+    nivel: "Detailing",
+    recomendaciones: "Recomendado antes de aplicar protección cerámica.",
+    imagen: pulidoImg,
+    badge: "Detailing",
+    tags: ["Detailing"],
+    rating: 4.8,
+    reviews: 41
   }
 };
 
@@ -77,9 +126,12 @@ const normalizeText = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[
 
 const getServicioKey = (nombre) => {
   const n = normalizeText(nombre);
+  if (n.includes("especial")) return "especial";
   if (n.includes("express")) return "express";
   if (n.includes("premium")) return "premium";
   if (n.includes("motor")) return "motor";
+  if (n.includes("proteccion") || n.includes("ceram")) return "proteccion";
+  if (n.includes("pulido")) return "pulido";
   if (n.includes("profunda")) return "profunda";
   if (n.includes("basico")) return "basico";
   return "basico"; // default fallback
@@ -146,7 +198,7 @@ export default function CardServicio({ servicio, isAdmin, onEdit, onDelete, auto
       descripcion: servicio?.descripcion || localMeta.descripcion || "Sin descripción disponible.",
       incluye: toArray(servicio?.incluye) || localMeta.incluye || [],
       beneficios: toArray(servicio?.beneficios) || localMeta.beneficios || [],
-      imagen: servicio?.imagen || localMeta.imagen || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?auto=format&fit=crop&q=80&w=800",
+      imagen: servicio?.imagen || localMeta.imagen || expressImg,
       badge,
       tags,
       rating,
