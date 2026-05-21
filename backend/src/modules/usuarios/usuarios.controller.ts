@@ -17,6 +17,12 @@ export class UsuariosController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('me')
+  getProfile(@Req() req: any) {
+    return this.usuariosService.findOne(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateData: any, @Req() req: any) {
     // Si se intenta actualizar el rol, validar que el usuario que hace la petición sea admin

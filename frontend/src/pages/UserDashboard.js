@@ -468,6 +468,7 @@ class UserDashboard extends Component {
       onboardingSeen,
       ratings: [],
       activeReportCitaId: null,
+      userProfile: null,
     };
     this.pollingInterval = null;
   }
@@ -475,9 +476,51 @@ class UserDashboard extends Component {
   componentDidMount() {
     this.fetchInitialFormData();
     this.fetchCitas();
+    this.fetchUserProfile();
     // Poll every 12 seconds
-    this.pollingInterval = setInterval(this.fetchCitas, 12000);
+    this.pollingInterval = setInterval(() => {
+      this.fetchCitas();
+      this.fetchUserProfile();
+    }, 12000);
   }
+
+  fetchUserProfile = async () => {
+     const token = localStorage.getItem('token');
+     const userId = localStorage.getItem('userId');
+     if (!token) return;
+ 
+     try {
+       const response = await fetch(`${API_BASE_URL}/usuarios/me`, {
+         headers: { Authorization: `Bearer ${token}` },
+       });
+ 
+       if (response.ok) {
+         const userData = await response.json();
+         const lastSeenLevelKey = `last_seen_level_${userId}`;
+         const lastSeenLevel =
+           parseInt(localStorage.getItem(lastSeenLevelKey), 10) || 1;
+ 
+         // Check for level up (either during session or since last login)
+         if (userData.level > lastSeenLevel) {
+           const newBonus = userData.bonuses?.[userData.bonuses.length - 1];
+           if (newBonus && this.props.showToast) {
+             this.props.showToast(
+               `¡Felicidades! Subiste al Nivel ${userData.level}. Has ganado un bono: ${newBonus.code}`,
+               'success'
+             );
+           }
+           localStorage.setItem(lastSeenLevelKey, userData.level);
+         } else if (!localStorage.getItem(lastSeenLevelKey)) {
+           // First time setting the level
+           localStorage.setItem(lastSeenLevelKey, userData.level);
+         }
+ 
+         this.setState({ userProfile: userData });
+       }
+     } catch (err) {
+       console.error('Error fetching user profile:', err);
+     }
+   };
 
   componentWillUnmount() {
     if (this.pollingInterval) {
@@ -760,7 +803,7 @@ class UserDashboard extends Component {
                     onClick={() => setView('citas')}
                     className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
                   >
-                    <div className="h-10 w-10 rounded-2xl bg-[#2563EB]/15 text-[#60A5FA] flex items-center justify-center border border-[#2563EB]/20">
+                    <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                         <path d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3a.75.75 0 011.5 0v1.5h.75A2.25 2.25 0 0121 6.75v12A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-12A2.25 2.25 0 015.25 4.5H6V3a.75.75 0 01.75-.75zM4.5 9.75h15V6.75a.75.75 0 00-.75-.75H5.25a.75.75 0 00-.75.75v3z" />
                       </svg>
@@ -903,7 +946,11 @@ class UserDashboard extends Component {
                       className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#0b1220] text-left"
                     >
                       <div className="absolute inset-0">
-                        <img src={carHeroImg} alt="" className="w-full h-full object-cover opacity-10" />
+                        <img 
+                          src={v?.imagen || carHeroImg} 
+                          alt="" 
+                          className={`w-full h-full object-cover transition-opacity duration-500 ${v?.imagen ? 'opacity-40' : 'opacity-10'}`} 
+                        />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/80 to-transparent" />
                       </div>
                       <div className="relative z-10 p-4 space-y-2">
@@ -979,21 +1026,29 @@ class UserDashboard extends Component {
                           <path fillRule="evenodd" d="M12 1.5a.75.75 0 01.75.75v.465c0 .41.29.765.69.84a7.501 7.501 0 016.06 6.06c.075.4.43.69.84.69h.465a.75.75 0 010 1.5h-.465a.855.855 0 00-.84.69 7.501 7.501 0 01-6.06 6.06.855.855 0 00-.69.84v.465a.75.75 0 01-1.5 0v-.465a.855.855 0 00-.69-.84 7.501 7.501 0 01-6.06-6.06.855.855 0 00-.84-.69H2.25a.75.75 0 010-1.5h.465a.855.855 0 00.84-.69 7.501 7.501 0 016.06-6.06.855.855 0 00.69-.84V2.25A.75.75 0 0112 1.5z" clipRule="evenodd" />
                         </svg>
                       </span>
-                      Cliente Gold
+                      Cliente {this.state.userProfile?.rank || 'Silver'}
                     </div>
-                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Nivel 3</div>
+                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Nivel {this.state.userProfile?.level || 1}</div>
                   </div>
                   <div className="text-[10px] text-white/60 font-black">
-                    650 / 1000 pts
+                    {this.state.userProfile?.points || 0} / 1000 pts
                   </div>
                 </div>
 
                 <div className="mt-4">
                   <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                    <div className="h-full w-[65%] bg-gradient-to-r from-[#2563EB] to-[#38BDF8]" />
+                    <div
+                      className="h-full bg-gradient-to-r from-[#2563EB] to-[#38BDF8]"
+                      style={{
+                        width: `${
+                          ((this.state.userProfile?.points || 0) / 1000) * 100
+                        }%`,
+                      }}
+                    />
                   </div>
                   <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-[#94A3B8]">
-                    Te faltan 350 pts para llegar a Cliente Platinum
+                    Te faltan {1000 - (this.state.userProfile?.points || 0)} pts
+                    para llegar al siguiente nivel
                   </div>
                 </div>
               </section>

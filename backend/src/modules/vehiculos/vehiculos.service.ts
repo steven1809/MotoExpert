@@ -46,20 +46,21 @@ export class VehiculosService {
     });
   }
 
-  findAll(userId?: number) {
+  async findAll(userId?: number) {
+    const where: any = { estado: 'ACTIVO' };
     if (userId) {
-      return this.repo.find({
-        where: { usuario: { id: userId } },
-        relations: ['usuario'],
-      });
+      where.usuario = { id: userId };
     }
-    return this.repo.find({ relations: ['usuario'] });
+    return this.repo.find({
+      where,
+      relations: ['usuario'],
+    });
   }
 
-  findOne(id: number) {
+  async findOne(id: number) {
     return this.repo.findOne({
-      where: { id },
-      relations: ['usuario'],
+      where: { id, estado: 'ACTIVO' },
+      relations: ['usuario', 'citas'],
     });
   }
 
@@ -68,7 +69,25 @@ export class VehiculosService {
     return this.findOne(id);
   }
 
-  remove(id: number) {
-    return this.repo.delete(id);
+  async remove(id: number) {
+    const vehiculo = await this.repo.findOne({
+      where: { id },
+      relations: ['citas'],
+    });
+
+    if (!vehiculo) {
+      throw new NotFoundException(`Vehículo con ID ${id} no encontrado`);
+    }
+
+    if (vehiculo.citas && vehiculo.citas.length > 0) {
+      // Si tiene citas, hacemos borrado lógico para mantener la integridad referencial
+      vehiculo.estado = 'INACTIVO';
+      await this.repo.save(vehiculo);
+      return { message: 'Vehículo marcado como inactivo debido a citas asociadas' };
+    }
+
+    // Si no tiene citas, podemos eliminarlo físicamente
+    await this.repo.delete(id);
+    return { message: 'Vehículo eliminado correctamente' };
   }
 }

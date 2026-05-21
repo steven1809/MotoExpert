@@ -11,6 +11,9 @@ import {
   Patch,
   UseInterceptors,
   UploadedFile,
+  ForbiddenException,
+  NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { VehiculosService } from './vehiculos.service';
 import { CreateVehiculoDto } from './dto/create-vehiculo.dto';
@@ -19,22 +22,48 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
+import * as fs from 'fs';
+import { join } from 'path';
+
 @Controller('vehiculos')
 @UseGuards(AuthGuard('jwt'))
 export class VehiculosController {
   constructor(private readonly service: VehiculosService) {}
 
   @Post()
-  create(@Body() dto: CreateVehiculoDto, @Request() req) {
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/vehicles',
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  create(
+    @Body() dto: CreateVehiculoDto,
+    @Request() req,
+    @UploadedFile() file?: any,
+  ) {
     const userRole = (req.user.rol || req.user.role)?.toLowerCase();
-    
+
     // Si es admin y se proporciona un usuarioId, usar ese.
     // De lo contrario, usar el del usuario autenticado.
-    const finalUserId = (userRole === 'admin' && dto.usuarioId) 
-      ? dto.usuarioId 
-      : req.user.userId;
-      
-    return this.service.create({ ...dto, usuarioId: finalUserId });
+    const finalUserId =
+      userRole === 'admin' && dto.usuarioId ? dto.usuarioId : req.user.userId;
+
+    const vehicleData = { ...dto, usuarioId: finalUserId };
+
+    if (file) {
+      vehicleData.imagen = `http://localhost:3001/uploads/vehicles/${file.filename}`;
+    }
+
+    return this.service.create(vehicleData);
   }
 
   @Post(':id/upload-image')
@@ -99,24 +128,125 @@ export class VehiculosController {
   }
 
   @Patch(':id')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/vehicles',
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
   async update(
     @Param('id') id: string,
     @Body() updateData: any,
     @Request() req,
+    @UploadedFile() file?: any,
   ) {
-    const vehiculo = await this.service.findOne(+id);
-    if (vehiculo && vehiculo.usuario.id === req.user.userId) {
-      return this.service.update(+id, updateData);
+    try {
+      const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+      const vehiculo = await this.service.findOne(+id);
+
+      if (!vehiculo) {
+        throw new NotFoundException('Vehículo no encontrado');
+      }
+
+      // Comparación segura de IDs (convertir ambos a String)
+      if (
+        userRole !== 'admin' &&
+        String(vehiculo.usuario.id) !== String(req.user.userId)
+      ) {
+        throw new ForbiddenException(
+          'No tienes permiso para actualizar este vehículo',
+        );
+      }
+
+      // 2. Crear el objeto con los datos a actualizar de forma segura
+      const finalUpdateData: any = {};
+      const allowedFields = [
+        'placa',
+        'marca',
+        'modelo',
+        'tipo',
+        'anio',
+        'color',
+      ];
+
+      allowedFields.forEach((field) => {
+        if (updateData[field] !== undefined && updateData[field] !== 'null') {
+          if (field === 'anio') {
+            const anioVal = parseInt(updateData[field], 10);
+            finalUpdateData[field] = isNaN(anioVal) ? null : anioVal;
+          } else {
+            finalUpdateData[field] = updateData[field];
+          }
+        }
+      });
+
+      // 3. VALIDACIÓN CRUCIAL: Solo si el usuario subió una foto nueva
+      if (file) {
+        // (Opcional) Lógica para borrar la imagen anterior del disco
+        if (
+          vehiculo.imagen &&
+          vehiculo.imagen.includes('http://localhost:3001/uploads/vehicles/')
+        ) {
+          const oldFilename = vehiculo.imagen.split('/').pop();
+          const oldPath = join(
+            process.cwd(),
+            'uploads',
+            'vehicles',
+            oldFilename,
+          );
+          if (fs.existsSync(oldPath)) {
+            try {
+              fs.unlinkSync(oldPath);
+            } catch (err) {
+              console.error('Error al eliminar imagen antigua:', err);
+            }
+          }
+        }
+        finalUpdateData.imagen = `http://localhost:3001/uploads/vehicles/${file.filename}`;
+      }
+
+      // 4. Ejecutar la actualización de forma segura
+      return await this.service.update(+id, finalUpdateData);
+    } catch (error) {
+      console.error('❌ ERROR CRÍTICO EN EL BACKEND:', error);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException({
+        message: 'Error interno del servidor',
+        error: error.message,
+      });
     }
-    return { message: 'No tienes permiso para actualizar este vehículo' };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req) {
+    const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+    // Usamos un método del service que no filtre por estado para verificar si existe
     const vehiculo = await this.service.findOne(+id);
-    if (vehiculo && vehiculo.usuario.id === req.user.userId) {
+    
+    if (!vehiculo) {
+      throw new NotFoundException('Vehículo no encontrado');
+    }
+
+    if (
+      userRole === 'admin' ||
+      vehiculo.usuario.id === req.user.userId
+    ) {
       return this.service.remove(+id);
     }
-    return { message: 'No tienes permiso para eliminar este vehículo' };
+    
+    throw new ForbiddenException('No tienes permiso para eliminar este vehículo');
   }
 }
