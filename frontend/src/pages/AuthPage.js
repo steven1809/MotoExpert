@@ -32,6 +32,14 @@ class AuthPage extends Component {
     if (isLogin) {
       console.log('Iniciando sesión con:', { email, password });
     } else {
+      if (password.length < 8) {
+        alert('La contraseña debe tener al menos 8 caracteres');
+        return;
+      }
+      if (!/(?=.*[A-Z])(?=.*\d)/.test(password)) {
+        alert('La contraseña debe contener al menos una mayúscula y un número');
+        return;
+      }
       if (password !== confirmPassword) {
         alert('Las contraseñas no coinciden');
         return;
