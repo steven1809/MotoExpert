@@ -4,10 +4,255 @@ import { useVehicleGuard } from '../hooks/useVehicleGuard';
 import NoVehicleWarning from '../components/NoVehicleWarning';
 import DuplicateBookingWarning from '../components/DuplicateBookingWarning';
 import AppointmentsSearchAndFilter from '../components/AppointmentsSearchAndFilter';
+import CustomSelect from '../components/CustomSelect';
 import { QRCodeCanvas } from 'qrcode.react';
 import carHeroImg from '../assets/images/1.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+const getConditionStyle = (condition) => {
+  switch (condition?.toLowerCase()) {
+    case 'bueno':
+    case 'good':
+      return { className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', label: 'Bueno' };
+    case 'regular':
+    case 'fair':
+      return { className: 'bg-amber-500/10 text-amber-400 border-amber-500/20', label: 'Regular' };
+    case 'critico':
+    case 'critical':
+      return { className: 'bg-red-500/10 text-red-400 border-red-500/20', label: 'Crítico' };
+    default:
+      return { className: 'bg-slate-500/10 text-slate-400 border-slate-500/20', label: 'Finalizado' };
+  }
+};
+
+const formatCompletedDateTime = (dateStr) => {
+  if (!dateStr) return { date: '—', time: '—' };
+  const d = new Date(dateStr);
+  if (!Number.isFinite(d.getTime())) return { date: '—', time: '—' };
+  return {
+    date: d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
+    time: d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+  };
+};
+
+const StarRating = ({ value, onChange, readOnly = false, size = 'sm' }) => {
+  const stars = [1, 2, 3, 4, 5];
+  const sizeClasses = size === 'md' ? 'w-6 h-6' : 'w-4 h-4';
+
+  return (
+    <div className="flex items-center gap-1">
+      {stars.map((s) => (
+        <button
+          key={s}
+          type="button"
+          disabled={readOnly}
+          onClick={() => onChange?.(s)}
+          className={`${readOnly ? 'cursor-default' : 'cursor-pointer hover:scale-110'} transition-transform`}
+        >
+          <svg
+            className={`${sizeClasses} ${s <= value ? 'text-amber-400' : 'text-white/10'}`}
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const ServiceReportModal = ({ report, rating, onClose, onSubmitRating }) => {
+  const [specialistRating, setSpecialistRating] = useState(0);
+  const [serviceRating, setServiceRating] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!report) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const raf = requestAnimationFrame(() => setVisible(true));
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      setVisible(false);
+      setSpecialistRating(0);
+      setServiceRating(0);
+      setIsSubmitting(false);
+    };
+  }, [report, onClose]);
+
+  if (!report) return null;
+
+  const condition = getConditionStyle(report.report?.condition);
+  const { date, time } = formatCompletedDateTime(report.completedAt || report.fecha);
+  const isAlreadyRated = Boolean(rating || report.rated);
+
+  const handleSubmit = async () => {
+    if (!specialistRating || !serviceRating || !onSubmitRating) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmitRating({
+        citaId: report.id,
+        specialistRating,
+        serviceRating,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[150] flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm"
+      onMouseDown={() => onClose?.()}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className={`w-full max-w-[520px] max-h-[90vh] overflow-y-auto rounded-[2.5rem] bg-[#0b1220] border border-white/10 shadow-2xl transform transition-all duration-300 ${
+          visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+        }`}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="p-8">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <h3 className="text-2xl font-black text-[#F8FAFC] truncate italic uppercase tracking-tighter">
+                  {report.servicio?.nombre || 'Servicio'}
+                </h3>
+                <span
+                  className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${condition.className}`}
+                >
+                  {condition.label}
+                </span>
+              </div>
+              <div className="text-sm text-[#94A3B8] font-medium mt-1">
+                {report.vehiculo?.placa || '—'} • {report.vehiculo?.modelo || '—'}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onClose?.()}
+              className="h-10 w-10 inline-flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all"
+              aria-label="Cerrar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                <path fillRule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="h-px bg-white/5 mx-8" />
+
+        <div className="p-8 space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7080]">
+                Trabajo Realizado
+              </div>
+              <div className="text-sm text-[#F8FAFC] leading-relaxed font-medium">
+                {report.report?.workPerformed || '—'}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7080]">
+                Piezas Utilizadas
+              </div>
+              <div className="text-sm text-[#F8FAFC] leading-relaxed font-medium">
+                {report.report?.partsUsed || '—'}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7080]">
+                Observaciones
+              </div>
+              <div className="text-sm text-[#F8FAFC] leading-relaxed font-medium">
+                {report.report?.observations || '—'}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7080]">
+                Fecha y Hora
+              </div>
+              <div className="text-sm text-[#F8FAFC] leading-relaxed font-medium">
+                {date} • {time}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="h-px bg-white/5 mx-8" />
+
+        <div className="p-8 space-y-6">
+          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7080]">
+            Tu Calificación
+          </div>
+
+          {isAlreadyRated ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
+                <div className="text-[11px] font-black uppercase tracking-wider text-[#94A3B8]">
+                  Especialista
+                </div>
+                <StarRating value={rating?.specialistRating || 0} readOnly size="md" />
+              </div>
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
+                <div className="text-[11px] font-black uppercase tracking-wider text-[#94A3B8]">
+                  Calidad del Servicio
+                </div>
+                <StarRating value={rating?.serviceRating || 0} readOnly size="md" />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <div className="text-[11px] font-black uppercase tracking-wider text-[#94A3B8]">
+                    Especialista
+                  </div>
+                  <StarRating value={specialistRating} onChange={setSpecialistRating} size="md" />
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <div className="text-[11px] font-black uppercase tracking-wider text-[#94A3B8]">
+                    Calidad del Servicio
+                  </div>
+                  <StarRating value={serviceRating} onChange={setServiceRating} size="md" />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!specialistRating || !serviceRating || isSubmitting}
+                className="w-full py-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-[#2563EB]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+              >
+                {isSubmitting ? 'Enviando...' : 'Enviar Calificación'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const limpiarTexto = (texto) => {
   if (!texto) return '';
@@ -428,10 +673,36 @@ const Citas = ({
   const [tokenModalCode, setTokenModalCode] = useState('');
   const [paymentByAppointment, setPaymentByAppointment] = useState({});
   const [notes, setNotes] = useState('');
+  const [activeReportCitaId, setActiveReportCitaId] = useState(null);
+  const [ratings, setRatings] = useState([]);
   const formSectionRef = useRef(null);
   const pendingSectionRef = useRef(null);
   const historySectionRef = useRef(null);
   
+  const dedupeServicios = (arr) => {
+    if (!Array.isArray(arr)) return [];
+    const seen = new Set();
+    return arr.filter((s) => {
+      const duplicate = seen.has(s.id);
+      seen.add(s.id);
+      return !duplicate;
+    });
+  };
+
+  const formatRelativeTime = (dateStr) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Ahora';
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    return `${diffDays}d`;
+  };
+
   const [formData, setFormData] = useState({
     fecha: '',
     hora_inicio: '',
@@ -504,6 +775,9 @@ const Citas = ({
         setVehiculos(vehiculosData);
         setServicios(dedupeServicios(serviciosData));
         setEmpleados(empleadosData.filter(e => e.estado === 'activo')); // Solo activos
+        
+        // Cargar calificaciones para el historial
+        fetchRatingsForCitas(citasData, headers);
       } else {
         setError('Error al obtener datos iniciales');
       }
@@ -511,6 +785,59 @@ const Citas = ({
       setError('No se pudo conectar con el servidor');
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchInitialData();
+    };
+    window.addEventListener('motoexpert:refresh_notifications', handleRefresh);
+    return () => {
+      window.removeEventListener('motoexpert:refresh_notifications', handleRefresh);
+    };
+  }, []);
+
+  const fetchRatingsForCitas = async (citasArray, headers) => {
+    const ratingsList = [];
+    for (const cita of citasArray.filter(c => c.estado === 'FINALIZADO')) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/ratings/cita/${cita.id}`, { headers });
+        if (response.ok) {
+          const rating = await response.json();
+          if (rating) ratingsList.push(rating);
+        }
+      } catch (err) {
+        console.error(`Error fetching rating for cita ${cita.id}:`, err);
+      }
+    }
+    setRatings(ratingsList);
+  };
+
+  const submitRating = async ({ citaId, specialistRating, serviceRating, comment }) => {
+    const token = localStorage.getItem('token');
+    const headers = { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    try {
+      const response = await fetch(`${API_BASE_URL}/ratings`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ citaId, specialistRating, serviceRating, comment }),
+      });
+
+      if (response.ok) {
+        const newRating = await response.json();
+        setRatings(prev => [...prev, newRating]);
+        setCitas(prev => prev.map(c => 
+          c.id === citaId ? { ...c, rated: true } : c
+        ));
+        // Si el usuario tiene la función showToast en props (aunque sea un componente funcional, 
+        // a veces se pasan desde el contenedor)
+      }
+    } catch (err) {
+      console.error('Error submitting rating:', err);
     }
   };
 
@@ -658,17 +985,40 @@ const Citas = ({
         ? `${String((h + 1) % 24).padStart(2, '0')}:${m}:00`
         : horaInicio;
 
+      // Validación y conversión robusta de IDs
+      const vehiculoId = parseInt(formData.vehiculoId, 10);
+      const servicioId = parseInt(formData.servicioId, 10);
+      const usuarioId = parseInt(userId, 10);
+      const empleadoId = formData.empleadoId ? parseInt(formData.empleadoId, 10) : null;
+
+      console.log("[DEBUG] Validando IDs antes de enviar:", { vehiculoId, servicioId, usuarioId, empleadoId });
+
+      if (isNaN(vehiculoId) || vehiculoId <= 0) {
+        alert('Por favor, selecciona un vehículo válido.');
+        return;
+      }
+
+      if (isNaN(servicioId) || servicioId <= 0) {
+        alert('Por favor, selecciona un servicio válido.');
+        return;
+      }
+
+      if (isNaN(usuarioId) || usuarioId <= 0) {
+        alert('Tu sesión ha expirado o es inválida. Por favor, inicia sesión de nuevo.');
+        return;
+      }
+
       const payload = {
         fecha: formData.fecha,
         hora_inicio: horaInicio,
         hora_fin: horaFin,
-        vehiculoId: parseInt(formData.vehiculoId, 10),
-        servicioId: parseInt(formData.servicioId, 10),
-        usuarioId: parseInt(userId, 10),
+        vehiculoId,
+        servicioId,
+        usuarioId,
+        ...(empleadoId && !isNaN(empleadoId) && { empleadoId }),
       };
-      if (formData.empleadoId) {
-        payload.empleadoId = parseInt(formData.empleadoId, 10);
-      }
+
+      console.log("[DEBUG] PAYLOAD FINAL ENVIADO AL BACKEND:", payload);
 
       const response = await fetch(`${API_BASE_URL}/citas`, {
         method: 'POST',
@@ -679,9 +1029,11 @@ const Citas = ({
         body: JSON.stringify(payload),
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (response.ok) {
-        const created = await response.json().catch(() => null);
-        const appointmentId = created?.id;
+        console.log("[DEBUG] Cita creada con éxito:", data);
+        const appointmentId = data?.id;
         const selectedVehicle = vehiculos.find(
           (v) => v.id?.toString() === formData.vehiculoId?.toString(),
         );
@@ -716,10 +1068,14 @@ const Citas = ({
           }
         }
       } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Error al agendar cita');
+        console.error("[DEBUG] Error del backend al crear cita:", data);
+        const errorMsg = Array.isArray(data.message) 
+          ? data.message.join(', ') 
+          : (data.message || 'Error al agendar cita');
+        alert(`Error: ${errorMsg}`);
       }
     } catch (err) {
+      console.error('[DEBUG] Error de red al enviar formulario de cita:', err);
       alert('Error de conexión');
     }
   };
@@ -1160,6 +1516,12 @@ const Citas = ({
 
   return (
     <>
+      <ServiceReportModal
+        report={citas.find((c) => c.id === activeReportCitaId)}
+        rating={ratings.find((r) => r.citaId === activeReportCitaId)}
+        onClose={() => setActiveReportCitaId(null)}
+        onSubmitRating={submitRating}
+      />
       {showDuplicateWarning && existingDuplicateBooking && (
         <DuplicateBookingWarning 
           existingBooking={existingDuplicateBooking} 
@@ -1289,16 +1651,6 @@ const Citas = ({
 
                 <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
                   <div className="relative w-full sm:w-[280px]">
-                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                      type="text"
-                      value={filters.searchTerm}
-                      onChange={(e) => setFilters((prev) => ({ ...prev, searchTerm: e.target.value }))}
-                      placeholder="Buscar cita..."
-                      className="w-full h-11 pl-12 pr-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#2563EB]/50 transition-colors"
-                    />
                   </div>
 
                   <button
@@ -1581,18 +1933,16 @@ const Citas = ({
                           </div>
                           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                             <div className="lg:col-span-10">
-                              <select
-                                name="servicioId"
+                              <CustomSelect
                                 value={formData.servicioId}
-                                onChange={handleServicioChange}
-                                className="w-full h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#2563EB]/50 transition-colors"
-                                required
-                              >
-                                <option value="">Selecciona el servicio</option>
-                                {servicios.map((s) => (
-                                  <option key={s.id} value={s.id}>{limpiarTexto(s.nombre)}</option>
-                                ))}
-                              </select>
+                                onChange={(val) => handleServicioChange({ target: { name: 'servicioId', value: val } })}
+                                options={servicios.map(s => ({
+                                  value: s.id,
+                                  label: limpiarTexto(s.nombre),
+                                  sublabel: s.categoria || (s.precio ? `$${Number(s.precio).toLocaleString()}` : '')
+                                }))}
+                                placeholder="Selecciona el servicio"
+                              />
                               {selectedServicio?.descripcion && (
                                 <div className="mt-2 text-xs text-white/50">
                                   {selectedServicio.descripcion}
@@ -2046,7 +2396,7 @@ const Citas = ({
                         <div className="mt-4 flex flex-col sm:flex-row gap-2">
                           <button
                             type="button"
-                            onClick={() => historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                            onClick={() => setActiveReportCitaId(cita.id)}
                             className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
                           >
                             Ver detalles
@@ -2163,7 +2513,7 @@ const Citas = ({
                             <td className="px-6 py-4">
                               <button
                                 type="button"
-                                onClick={() => setView('citas')}
+                                onClick={() => setActiveReportCitaId(cita.id)}
                                 className="h-9 px-4 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
                               >
                                 Ver detalle
@@ -2190,16 +2540,17 @@ const Citas = ({
                   </div>
 
                   <div className="flex items-center gap-3 justify-end">
-                    <select
+                    <CustomSelect
                       value={rowsPerPage}
-                      onChange={handleRowsPerPageChange}
-                      className="h-9 px-3 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-xs font-black"
-                    >
-                      <option value={5}>5</option>
-                      <option value={7}>7</option>
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                    </select>
+                      onChange={(val) => handleRowsPerPageChange({ target: { value: val } })}
+                      options={[
+                        { value: 5, label: '5' },
+                        { value: 7, label: '7' },
+                        { value: 10, label: '10' },
+                        { value: 20, label: '20' }
+                      ]}
+                      className="w-20"
+                    />
 
                     <div className="flex items-center gap-1">
                       <button

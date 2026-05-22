@@ -173,11 +173,27 @@ function App() {
       if (!payload?.appointmentId) return;
       if (processedTimeoutsRef.current.has(payload.appointmentId)) return;
       processedTimeoutsRef.current.add(payload.appointmentId);
+      
+      const serviceName = (payload.serviceName || 'Servicio').toUpperCase();
+      const plate = (payload.vehiclePlate || '—').toUpperCase();
+      const minutes = Number(payload.minutesOverdue || 0);
+      showToast(`CITA ATRASADA: ${serviceName} (${plate}) tiene un retraso de ${minutes} minutos.`, 'error');
+
       addOverdueAlert(payload);
     };
 
     socket.on('appointment_overdue', onOverdue);
     socket.on('appointment_timeout', onOverdue);
+
+    socket.on('appointment_status_changed', (data) => {
+      const { oldCita, newCita } = data;
+      if (!oldCita || !newCita) return;
+      if (oldCita.estado === 'PENDIENTE' && newCita.estado === 'EN PROCESO') {
+        showToast(`Tu servicio ${newCita.servicio?.nombre} ha comenzado. ¡Estamos trabajando en tu vehículo!`, 'info');
+      } else if (oldCita.estado === 'EN PROCESO' && newCita.estado === 'FINALIZADO') {
+        showToast(`Tu servicio ${newCita.servicio?.nombre} ha sido completado. ¡Tu vehículo está listo!`, 'success');
+      }
+    });
 
     const onResolved = (payload) => {
       const appointmentId = payload?.appointmentId;

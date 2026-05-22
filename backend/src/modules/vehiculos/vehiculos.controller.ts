@@ -29,17 +29,39 @@ export class VehiculosController {
   constructor(private readonly service: VehiculosService) {}
 
   @Post()
-  create(@Body() dto: CreateVehiculoDto, @Request() req) {
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/vehicles',
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  create(
+    @Body() dto: CreateVehiculoDto,
+    @Request() req,
+    @UploadedFile() file?: any,
+  ) {
     const userRole = (req.user.rol || req.user.role)?.toLowerCase();
 
     // Si es admin y se proporciona un usuarioId, usar ese.
     // De lo contrario, usar el del usuario autenticado.
     const finalUserId =
-      userRole === 'admin' && dto.usuarioId
-        ? dto.usuarioId
-        : req.user.userId;
+      userRole === 'admin' && dto.usuarioId ? dto.usuarioId : req.user.userId;
 
-    return this.service.create({ ...dto, usuarioId: finalUserId });
+    const vehicleData = { ...dto, usuarioId: finalUserId };
+
+    if (file) {
+      vehicleData.imagen = `http://localhost:3001/uploads/vehicles/${file.filename}`;
+    }
+
+    return this.service.create(vehicleData);
   }
 
   @Post(':id/upload-image')
@@ -142,11 +164,7 @@ export class VehiculosController {
         );
       }
 
-<<<<<<< Updated upstream
-      // Construir objeto de actualización con campos permitidos
-=======
       // Crear el objeto con los datos a actualizar de forma segura
->>>>>>> Stashed changes
       const finalUpdateData: any = {};
       const allowedFields = [
         'placa',
@@ -168,14 +186,8 @@ export class VehiculosController {
         }
       });
 
-      // Solo si el usuario subió una foto nueva
+      // Si el usuario subió una foto nueva, borrar la anterior y asignar la nueva URL
       if (file) {
-        // Borrar imagen anterior del disco si existe
-
-      // VALIDACIÓN CRUCIAL: Solo si el usuario subió una foto nueva
-      if (file) {
-        // Lógica para borrar la imagen anterior del disco
-
         if (
           vehiculo.imagen &&
           vehiculo.imagen.includes('http://localhost:3001/uploads/vehicles/')
@@ -219,19 +231,34 @@ export class VehiculosController {
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req) {
-    const vehiculo = await this.service.findOne(+id);
-    if (!vehiculo) {
-      throw new NotFoundException('Vehículo no encontrado');
+    console.log(`[VehiculosController] Petición DELETE para ID: ${id} por usuario: ${req.user.userId}`);
+
+    try {
+      const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+
+      // Buscamos el vehículo para verificar existencia
+      const vehiculo = await this.service.findOne(+id);
+
+      if (!vehiculo) {
+        throw new NotFoundException(`Vehículo con ID ${id} no encontrado.`);
+      }
+
+      // Validación de permisos: Admin o dueño (comparación segura)
+      if (userRole !== 'admin' && String(vehiculo.usuario.id) !== String(req.user.userId)) {
+        console.warn(`[VehiculosController] Usuario ${req.user.userId} intentó eliminar vehículo ajeno ${id}`);
+        throw new ForbiddenException('No tienes permisos para eliminar este vehículo.');
+      }
+
+      return await this.service.remove(+id);
+    } catch (error) {
+      console.error(`[VehiculosController] Error al eliminar vehículo ${id}:`, error?.message || error);
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      throw new InternalServerErrorException({
+        message: 'Ocurrió un error inesperado al eliminar el vehículo.',
+        error: error?.message || String(error),
+      });
     }
-    const userRole = (req.user.rol || req.user.role)?.toLowerCase();
-    if (
-      userRole !== 'admin' &&
-      vehiculo.usuario.id !== req.user.userId
-    ) {
-      throw new ForbiddenException(
-        'No tienes permiso para eliminar este vehículo',
-      );
-    }
-    return this.service.remove(+id);
   }
 }
