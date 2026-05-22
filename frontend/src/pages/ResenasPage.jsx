@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CustomSelect from '../components/CustomSelect';
 import {
   AreaChart,
   Area,
@@ -591,19 +592,16 @@ const ResenasPage = () => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
                   Selecciona tu servicio completado
                 </label>
-                <select
+                <CustomSelect
                   value={formCitaId}
-                  onChange={(e) => setFormCitaId(e.target.value)}
-                  className="w-full p-4 bg-white dark:bg-[#020617] border border-white/[0.05] rounded-2xl text-slate-900 dark:text-[#F8FAFC] focus:border-[#7b9cff]/50 focus:outline-none transition-all"
-                  required
-                >
-                  <option value="">Selecciona un servicio...</option>
-                  {pendingAppointments.map(cita => (
-                    <option key={cita.id} value={String(cita.id)}>
-                      {cita.servicio?.nombre || 'Servicio'} - {formatDate(cita.fecha)} {cita.hora}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setFormCitaId}
+                  options={pendingAppointments.map(cita => ({
+                    value: String(cita.id),
+                    label: `${cita.servicio?.nombre || 'Servicio'}`,
+                    sublabel: `${formatDate(cita.fecha)} ${cita.hora || ''}`
+                  }))}
+                  placeholder="Selecciona un servicio..."
+                />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
