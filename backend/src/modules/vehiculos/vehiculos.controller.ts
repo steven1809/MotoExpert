@@ -141,12 +141,7 @@ export class VehiculosController {
           'No tienes permiso para actualizar este vehículo',
         );
       }
-
-<<<<<<< Updated upstream
-      // Construir objeto de actualización con campos permitidos
-=======
       // Crear el objeto con los datos a actualizar de forma segura
->>>>>>> Stashed changes
       const finalUpdateData: any = {};
       const allowedFields = [
         'placa',
@@ -168,14 +163,8 @@ export class VehiculosController {
         }
       });
 
-      // Solo si el usuario subió una foto nueva
+      // Si el usuario subió una foto nueva, borrar la anterior y asignar la nueva URL
       if (file) {
-        // Borrar imagen anterior del disco si existe
-
-      // VALIDACIÓN CRUCIAL: Solo si el usuario subió una foto nueva
-      if (file) {
-        // Lógica para borrar la imagen anterior del disco
-
         if (
           vehiculo.imagen &&
           vehiculo.imagen.includes('http://localhost:3001/uploads/vehicles/')
@@ -198,9 +187,7 @@ export class VehiculosController {
         finalUpdateData.imagen = `http://localhost:3001/uploads/vehicles/${file.filename}`;
       }
 
-
       // Ejecutar la actualización de forma segura
-
       return await this.service.update(+id, finalUpdateData);
     } catch (error) {
       console.error('❌ ERROR CRÍTICO EN EL BACKEND:', error);
