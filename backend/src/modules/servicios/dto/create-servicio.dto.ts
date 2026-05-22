@@ -16,4 +16,10 @@ export class CreateServicioDto {
   @IsNumber()
   @Min(1)
   duracion: number; // en minutos
+
+  @IsString()
+  incluye?: string;
+
+  @IsString()
+  beneficios?: string;
 }
