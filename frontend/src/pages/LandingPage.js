@@ -420,13 +420,49 @@ class LandingPage extends Component {
     return errors;
   };
 
-  handleContactSubmit = (e) => {
+  handleContactSubmit = async (e) => {
     e.preventDefault();
     const errors = this.validateContactForm();
     if (Object.keys(errors).length > 0) {
       this.setState({ contactErrors: errors, contactSuccess: false });
       return;
     }
+
+    const f = this.state.contactForm;
+    const payload = {
+      nombre: f.nombre.trim(),
+      email: f.email.trim(),
+      telefono: f.telefono.trim(),
+      tipo_servicio: f.servicio.trim(),
+      mensaje: f.mensaje.trim(),
+    };
+
+    let sent = false;
+    try {
+      const res = await fetch(`${API_BASE_URL}/contacto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) sent = true;
+    } catch {}
+
+    if (!sent) {
+      const subject = `Contacto MotoExpert - ${payload.nombre}`;
+      const body = [
+        `Nombre: ${payload.nombre}`,
+        `Email: ${payload.email}`,
+        `Teléfono: ${payload.telefono}`,
+        `Servicio: ${payload.tipo_servicio}`,
+        `Mensaje: ${payload.mensaje}`,
+      ].join('\r\n');
+      try {
+        window.open(
+          `mailto:pinillvalenciak@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+        );
+      } catch {}
+    }
+
     this.setState({
       contactSuccess: true,
       contactErrors: {},
@@ -619,7 +655,12 @@ class LandingPage extends Component {
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
 
                     <button
-                      onClick={() => this.setActiveView('Login')}
+                      onClick={() => {
+                        try {
+                          localStorage.setItem('motoexpert_post_login_redirect', 'citas');
+                        } catch {}
+                        if (typeof this.props.onEnterLogin === 'function') this.props.onEnterLogin();
+                      }}
                       className="px-8 py-4 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md hover:bg-white/15 transition-all duration-300 shadow-xl shadow-blue-600/20"
                     >
                       Agendar cita
@@ -1345,96 +1386,69 @@ class LandingPage extends Component {
 
                         {contactSuccess && (
                           <div className="text-emerald-300 text-sm mt-2">
-                            ✅ Mensaje enviado, te contactaremos pronto
+                            ✅ Mensaje enviado correctamente. Te contactaremos pronto.
                           </div>
                         )}
                       </form>
                     </div>
 
                     <div className="space-y-6 lg:translate-y-2">
-                      {[
-                        ['📞', 'Teléfono', '+57 316 810 6470'],
-                        ['✉️', 'Email', 'contacto@motoexpert.com'],
-                        ['🕐', 'Horario', 'Lun-Sáb 8:00am - 6:00pm'],
-                      ].map((info, i) => (
-                        <div
-                          key={i}
-                          className="rounded-2xl bg-white/[0.03] p-6 border border-white/10 backdrop-blur-md shadow-lg shadow-blue-900/10 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.14)] transition-all duration-300"
-                        >
-                          <div className="flex items-start gap-4">
-                            <div className="text-2xl">{info[0]}</div>
-                            <div>
-                              <div className="text-white font-semibold">{info[1]}</div>
-                              <div className="text-slate-400 mt-1">{info[2]}</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-
                       <div className="rounded-2xl bg-white/[0.03] p-6 border border-white/10 backdrop-blur-md shadow-lg shadow-blue-900/10 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.14)] transition-all duration-300">
                         <div className="flex items-start gap-4">
-                          <div className="text-2xl">💬</div>
-                          <div className="flex-1">
-                            <div className="text-white font-semibold">WhatsApp</div>
-                            <div className="text-slate-400 mt-1">Escríbenos y te respondemos rápido</div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                try {
-                                  window.open('https://wa.me/573168106470', '_blank', 'noopener,noreferrer');
-                                } catch {}
-                              }}
-                              className="mt-4 inline-flex items-center justify-center px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition-all duration-300 text-white font-semibold"
-                            >
-                              Escribir por WhatsApp
-                            </button>
+                          <div className="text-2xl">📞</div>
+                          <div>
+                            <div className="text-white font-semibold">Teléfono</div>
+                            <div className="text-slate-400 mt-1">+57 316 810 6470</div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="pt-8 text-center">
-                        <div className="section-sep mb-8" />
-                        <h3 className="text-2xl font-semibold text-white">Síguenos en redes</h3>
-                        <p className="text-slate-400 mt-2">Mantente al día con nuestras novedades</p>
-                        <div className="mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
-                          {[
-                            {
-                              name: 'WhatsApp',
-                              href: 'https://wa.me/573168106470',
-                              icon: <FaWhatsapp className="w-7 h-7 text-white" />,
-                              style: { backgroundColor: '#25D366' },
-                            },
-                            {
-                              name: 'Instagram',
-                              href: 'https://www.instagram.com/',
-                              icon: <FaInstagram className="w-7 h-7 text-white" />,
-                              style: { background: 'linear-gradient(135deg, #E1306C 0%, #833AB4 100%)' },
-                            },
-                            {
-                              name: 'Facebook',
-                              href: 'https://www.facebook.com/',
-                              icon: <FaFacebook className="w-7 h-7 text-white" />,
-                              style: { backgroundColor: '#1877F2' },
-                            },
-                            {
-                              name: 'X (Twitter)',
-                              href: 'https://twitter.com/',
-                              icon: <FaTwitter className="w-7 h-7 text-white" />,
-                              style: { backgroundColor: '#1DA1F2' },
-                            },
-                          ].map((social) => (
-                            <a
-                              key={social.name}
-                              href={social.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label={social.name}
-                              style={social.style}
-                              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ease-out hover:scale-105 hover:border-blue-500 hover:shadow-[0_0_16px_rgba(59,130,246,0.18)] ${social.className || 'border border-white/10'}`}
-                            >
-                              {social.icon}
-                            </a>
-                          ))}
+                      <div className="rounded-2xl bg-white/[0.03] p-6 border border-white/10 backdrop-blur-md shadow-lg shadow-blue-900/10 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.14)] transition-all duration-300">
+                        <div className="flex items-start gap-4">
+                          <div className="text-2xl">✉️</div>
+                          <div>
+                            <div className="text-white font-semibold">Email</div>
+                            <div className="text-slate-400 mt-1">pinillvalenciak@gmail.com</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl bg-white/[0.03] p-6 border border-white/10 backdrop-blur-md shadow-lg shadow-blue-900/10 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.14)] transition-all duration-300">
+                        <div className="flex items-start gap-4">
+                          <div className="text-2xl">🕐</div>
+                          <div className="flex-1">
+                            <div className="text-white font-semibold">Horario</div>
+                            <div className="mt-3 space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-400">Lunes</span>
+                                <span className="text-white">8:00am - 6:00pm</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-400">Martes</span>
+                                <span className="text-white">8:00am - 6:00pm</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-400">Miércoles</span>
+                                <span className="text-white">8:00am - 6:00pm</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-400">Jueves</span>
+                                <span className="text-white">8:00am - 6:00pm</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-400">Viernes</span>
+                                <span className="text-white">8:00am - 6:00pm</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-400">Sábado</span>
+                                <span className="text-white">8:00am - 2:00pm</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-400">Domingo</span>
+                                <span className="text-red-400">Cerrado</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1551,25 +1565,6 @@ class LandingPage extends Component {
                   </div>
                   <div className="text-sm text-slate-500">Detailing & Car Care</div>
                 </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-slate-400">
-                {[
-                  ['inicio', 'Inicio'],
-                  ['servicios', 'Servicios'],
-                  ['nosotros', 'Nosotros'],
-                  ['contacto', 'Contacto'],
-                  ['ubicacion', 'Ubicación'],
-                ].map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => this.setActiveView(key)}
-                    className="hover:text-white transition-colors"
-                  >
-                    {label}
-                  </button>
-                ))}
               </div>
 
               <div className="flex items-center justify-center md:justify-end gap-4">

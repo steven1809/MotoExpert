@@ -92,6 +92,18 @@ function App() {
   const handleLoginSuccess = (role) => {
     setIsLoggedIn(true);
     setUserRole(role);
+    let redirect = null;
+    try {
+      redirect = localStorage.getItem('motoexpert_post_login_redirect');
+      localStorage.removeItem('motoexpert_post_login_redirect');
+    } catch {}
+
+    const isStandardUser = role === 'user' || role === 'cliente' || role === 'usuario';
+    if (redirect === 'citas' && isStandardUser) {
+      setView('citas');
+      return;
+    }
+
     setView("dashboard");
   };
 
