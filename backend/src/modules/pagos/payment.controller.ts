@@ -21,7 +21,7 @@ export class UsuarioRoleGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest();
     const role = (req.user?.rol || req.user?.role || '').toLowerCase();
-    if (role === 'cliente' || role === 'usuario') return true;
+    if (role === 'cliente' || role === 'usuario' || role === 'user') return true;
     throw new ForbiddenException('No autorizado');
   }
 }

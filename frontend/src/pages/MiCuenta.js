@@ -208,67 +208,6 @@ class MiCuenta extends Component {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
         <div className="flex">
-          {/* Left Sidebar */}
-          <div className="w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 min-h-screen p-4 space-y-2">
-            {/* Logo or Brand */}
-            <div className="mb-8 px-2">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 dark:text-white">MotoExpert</span>
-              </div>
-            </div>
-
-            {/* User Info */}
-            <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-2xl mb-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-slate-700 flex items-center justify-center text-2xl overflow-hidden">
-                  {fotoPerfil ? (
-                    <img src={fotoPerfil} alt="Perfil" className="w-full h-full object-cover" />
-                  ) : (
-                    '👤'
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="font-bold text-slate-900 dark:text-white">{nombre}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">Cliente Gold</div>
-                </div>
-                <div className="text-yellow-500">⭐</div>
-              </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                850 / 1000 pts
-              </div>
-              <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div className="w-4/5 h-full bg-[#2563eb] rounded-full"></div>
-              </div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                Te faltan 150 pts para llegar a <span className="text-[#7C3AED]">Cliente Platinum</span>
-              </div>
-            </div>
-
-            {/* Nav Items */}
-            {sidebarItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => this.setState({ activeTab: item.id })}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
-                  activeTab === item.id 
-                    ? 'bg-[#2563eb]/10 text-[#2563eb] font-bold' 
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <span>{item.icon}</span>
-                <span className="text-sm">{item.label}</span>
-              </button>
-            ))}
-
-            {/* Logout Button */}
-            <div className="mt-auto pt-4">
-              <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 text-left transition-all">
-                <span>🚪</span>
-                <span className="text-sm font-bold">Cerrar sesión</span>
-              </button>
-            </div>
-          </div>
-
           {/* Main Content */}
           <div className="flex-1 p-6">
             {/* Top Profile Header */}
