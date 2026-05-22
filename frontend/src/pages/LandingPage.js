@@ -11,6 +11,7 @@ import proteccionImg from '../assets/services/proteccionc.jpeg';
 import pulidoImg from '../assets/services/pulidop.jpeg';
 import carwashVideo from '../assets/videos/6872078-hd_1280_720_25fps.mp4';
 import { FaCalendarAlt, FaFacebook, FaInstagram, FaTwitter, FaWhatsapp } from 'react-icons/fa';
+import misionIcon from '../assets/iconos/mision.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -1176,7 +1177,17 @@ class LandingPage extends Component {
 
                     <div className="space-y-5">
                       {[
-                        ['🎯', 'Misión', 'Ofrecer servicios de detailing de clase mundial con atención personalizada, precios justos y resultados que superan las expectativas.', 'border-blue-500'],
+                        [
+                          <img
+                            src={misionIcon}
+                            alt="agendar"
+                            className="w-5 h-5"
+                            style={{ backgroundColor: 'white' }}
+                          />,
+                          'Misión',
+                          'Ofrecer servicios de detailing de clase mundial con atención personalizada, precios justos y resultados que superan las expectativas.',
+                          'border-blue-500'
+                        ],
                         ['👁️', 'Visión', 'Ser el centro de car care más reconocido de Colombia para 2027, expandiendo nuestra presencia a las principales ciudades del país.', 'border-purple-500'],
                         ['💎', 'Valores', 'Calidad · Honestidad · Puntualidad · Pasión · Responsabilidad ambiental', 'border-green-500'],
                       ].map((c, i) => (
