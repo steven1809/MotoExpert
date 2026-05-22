@@ -61,16 +61,6 @@ export class VehiculosService {
     );
 
     return result;
-
-  findAll(userId?: number) {
-    if (userId) {
-      return this.repo.find({
-        where: { usuario: { id: userId } },
-        relations: ['usuario'],
-      });
-    }
-    return this.repo.find({ relations: ['usuario'] });
-
   }
 
   findOne(id: number) {
