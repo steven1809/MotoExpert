@@ -51,7 +51,10 @@ export class Cita {
   @ManyToOne(() => Usuario, { eager: true })
   usuario: Usuario;
 
-  @ManyToOne(() => Vehiculo, { eager: true })
+  @ManyToOne(() => Vehiculo, (vehiculo) => vehiculo.citas, {
+    eager: true,
+    onDelete: 'CASCADE',
+  })
   vehiculo: Vehiculo;
 
   @ManyToOne(() => Servicio, { eager: true })

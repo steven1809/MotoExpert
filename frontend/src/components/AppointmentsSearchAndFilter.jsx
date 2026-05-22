@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import CustomSelect from './CustomSelect';
 
 const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder = "Search by service or vehicle..." }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -199,16 +200,15 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                   <label className="text-[#6b7080] text-[11px] font-bold uppercase tracking-widest">
                     Service type
                   </label>
-                  <select
+                  <CustomSelect
                     value={serviceFilter}
-                    onChange={(e) => setServiceFilter(e.target.value)}
-                    className="w-full h-[42px] px-3 bg-[#1a1d27] border border-[#2a2d3a] rounded-xl text-[#F8FAFC] text-xs focus:border-[#2563eb]/50 focus:outline-none transition-all"
-                  >
-                    <option value="">All services</option>
-                    {uniqueServices.map(service => (
-                      <option key={service} value={service}>{service}</option>
-                    ))}
-                  </select>
+                    onChange={setServiceFilter}
+                    options={[
+                      { value: '', label: 'All services' },
+                      ...uniqueServices.map(service => ({ value: service, label: service }))
+                    ]}
+                    className="h-[42px]"
+                  />
                 </div>
 
                 {/* Vehicle Type */}
