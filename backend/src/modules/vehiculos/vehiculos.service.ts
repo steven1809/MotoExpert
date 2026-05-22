@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Vehiculo } from './entities/vehiculo.entity';
@@ -75,7 +75,38 @@ export class VehiculosService {
     return this.findOne(id);
   }
 
-  remove(id: number) {
-    return this.repo.delete(id);
+  async remove(id: number) {
+    console.log(`[VehiculosService] Intentando eliminar vehículo con ID: ${id}`);
+    
+    try {
+      const vehiculo = await this.repo.findOne({
+        where: { id },
+        relations: ['citas'],
+      });
+
+      if (!vehiculo) {
+        console.warn(`[VehiculosService] Intento de eliminar vehículo inexistente (ID: ${id})`);
+        throw new NotFoundException(`El vehículo con ID ${id} no existe en la base de datos.`);
+      }
+
+      // Al tener ON DELETE CASCADE en la entidad Cita, TypeORM/Postgres
+      // se encargará de eliminar las citas asociadas automáticamente.
+      const result = await this.repo.delete(id);
+      
+      if (result.affected === 0) {
+        throw new InternalServerErrorException('No se pudo eliminar el vehículo de la base de datos.');
+      }
+
+      console.log(`[VehiculosService] Vehículo ${id} eliminado exitosamente.`);
+      return { 
+        success: true, 
+        message: 'Vehículo y sus relaciones eliminados correctamente',
+        id 
+      };
+    } catch (error) {
+      console.error(`[VehiculosService] Error crítico al eliminar vehículo ${id}:`, error);
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException(`Error al procesar la eliminación: ${error.message}`);
+    }
   }
 }

@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import CustomSelect from '../components/CustomSelect';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -48,7 +49,16 @@ class AdminDashboard extends Component {
       fechaIngreso: '',
       
       submittingVehicle: false,
-      submittingAppointment: false
+      submittingAppointment: false,
+
+      // Nuevo Servicio
+      newServicioNombre: '',
+      newServicioDescripcion: '',
+      newServicioPrecio: '',
+      newServicioDuracion: '',
+      newServicioIncluye: '',
+      newServicioBeneficios: '',
+      submittingService: false
     };
   }
 
@@ -341,6 +351,67 @@ class AdminDashboard extends Component {
     }
   };
 
+  handleCreateService = async () => {
+    const { 
+      newServicioNombre, 
+      newServicioDescripcion, 
+      newServicioPrecio, 
+      newServicioDuracion, 
+      newServicioIncluye, 
+      newServicioBeneficios,
+      submittingService 
+    } = this.state;
+
+    if (submittingService || !newServicioNombre || !newServicioDescripcion || !newServicioPrecio || !newServicioDuracion) {
+      alert('Por favor complete los campos obligatorios: Nombre, Descripción, Precio y Duración.');
+      return;
+    }
+
+    this.setState({ submittingService: true });
+    const token = localStorage.getItem('token');
+    const headers = { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+
+    try {
+      const body = {
+        nombre: newServicioNombre,
+        descripcion: newServicioDescripcion,
+        precio: parseFloat(newServicioPrecio),
+        duracion: parseInt(newServicioDuracion),
+        incluye: newServicioIncluye,
+        beneficios: newServicioBeneficios
+      };
+
+      const res = await fetch(`${API_BASE_URL}/servicios`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) {
+        alert('Servicio creado correctamente');
+        this.setState({
+          newServicioNombre: '',
+          newServicioDescripcion: '',
+          newServicioPrecio: '',
+          newServicioDuracion: '',
+          newServicioIncluye: '',
+          newServicioBeneficios: ''
+        });
+        this.fetchFormConfigs(); // Recargar lista de servicios
+      } else {
+        const error = await res.json();
+        alert(error.message || 'Error al crear el servicio');
+      }
+    } catch (error) {
+      alert('Error de conexión');
+    } finally {
+      this.setState({ submittingService: false });
+    }
+  };
+
   render() {
     const { 
       stats, 
@@ -371,7 +442,14 @@ class AdminDashboard extends Component {
       selectedEmpleadoId,
       fechaIngreso,
       submittingVehicle,
-      submittingAppointment
+      submittingAppointment,
+      newServicioNombre,
+      newServicioDescripcion,
+      newServicioPrecio,
+      newServicioDuracion,
+      newServicioIncluye,
+      newServicioBeneficios,
+      submittingService
     } = this.state;
 
     const filteredUsers = this.getFilteredUsers();
@@ -605,15 +683,16 @@ class AdminDashboard extends Component {
                       onChange={(e) => this.setState({ newUserApellido: e.target.value })}
                       className="w-full px-4 py-3 bg-black/40 border border-white/5 rounded-xl text-white text-sm font-bold outline-none focus:border-[#2563EB]/50"
                     />
-                    <select 
+                    <CustomSelect 
                       value={newUserTipoDoc}
-                      onChange={(e) => this.setState({ newUserTipoDoc: e.target.value })}
-                      className="w-full px-4 py-3 bg-black/40 border border-white/5 rounded-xl text-white text-sm font-bold outline-none"
-                    >
-                      <option>Cédula de Ciudadanía</option>
-                      <option>Cédula de Extranjería</option>
-                      <option>Pasaporte</option>
-                    </select>
+                      onChange={(val) => this.setState({ newUserTipoDoc: val })}
+                      options={[
+                        { value: 'Cédula de Ciudadanía', label: 'Cédula de Ciudadanía' },
+                        { value: 'Cédula de Extranjería', label: 'Cédula de Extranjería' },
+                        { value: 'Pasaporte', label: 'Pasaporte' }
+                      ]}
+                      placeholder="Tipo de documento"
+                    />
                     <input 
                       placeholder="Número de Documento" 
                       value={newUserNumDoc}
@@ -667,16 +746,16 @@ class AdminDashboard extends Component {
                 <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
                   Nivel de Detailing
                 </label>
-                <select 
+                <CustomSelect 
                   value={selectedServicioId}
-                  onChange={(e) => this.setState({ selectedServicioId: e.target.value })}
-                  className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#2563EB]/50 transition-all"
-                >
-                  <option value="">Seleccione el tratamiento...</option>
-                  {servicios.map(s => (
-                    <option key={s.id} value={s.id}>{s.nombre} - ${s.precio}</option>
-                  ))}
-                </select>
+                  onChange={(val) => this.setState({ selectedServicioId: val })}
+                  options={servicios.map(s => ({
+                    value: s.id,
+                    label: `${s.nombre} - $${s.precio}`,
+                    sublabel: s.categoria
+                  }))}
+                  placeholder="Seleccione el tratamiento..."
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -684,16 +763,16 @@ class AdminDashboard extends Component {
                   <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
                     Unidad Asignada
                   </label>
-                  <select 
+                  <CustomSelect 
                     value={selectedVehiculoId}
-                    onChange={(e) => this.setState({ selectedVehiculoId: e.target.value })}
-                    className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#2563EB]/50 transition-all"
-                  >
-                    <option value="">Placa...</option>
-                    {vehiculos.map(v => (
-                      <option key={v.id} value={v.id}>{v.placa} – {v.usuario?.nombre}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => this.setState({ selectedVehiculoId: val })}
+                    options={vehiculos.map(v => ({
+                      value: v.id,
+                      label: `${v.placa} – ${v.usuario?.nombre}`,
+                      sublabel: `${v.marca} ${v.modelo}`
+                    }))}
+                    placeholder="Placa..."
+                  />
                 </div>
                 <div>
                   <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
@@ -713,20 +792,19 @@ class AdminDashboard extends Component {
                 <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
                   Empleado Asignado
                 </label>
-                <select 
+                <CustomSelect 
                   value={selectedEmpleadoId}
-                  onChange={(e) => this.setState({ selectedEmpleadoId: e.target.value })}
-                  className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#2563EB]/50 transition-all"
-                >
-                  <option value="">Sin asignar (Auto-asignación)</option>
-                  {empleados.length === 0 ? (
-                    <option disabled>No hay empleados disponibles</option>
-                  ) : (
-                    empleados.map(e => (
-                      <option key={e.id} value={e.id}>{e.usuario?.nombre} ({e.cargo || 'Técnico'})</option>
-                    ))
-                  )}
-                </select>
+                  onChange={(val) => this.setState({ selectedEmpleadoId: val })}
+                  options={[
+                    { value: '', label: 'Sin asignar (Auto-asignación)' },
+                    ...empleados.map(e => ({
+                      value: e.id,
+                      label: `${e.usuario?.nombre} (${e.cargo || 'Técnico'})`,
+                      sublabel: e.especialidad
+                    }))
+                  ]}
+                  placeholder="Seleccionar empleado..."
+                />
               </div>
 
               <button 
@@ -735,6 +813,94 @@ class AdminDashboard extends Component {
                 className={`w-full py-5 ${submittingAppointment ? 'bg-[#8B5CF6]/50' : 'bg-[#8B5CF6] hover:bg-[#7C3AED]'} text-white font-mono text-[10px] uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-[#8B5CF6]/30 transition-all font-black`}
               >
                 {submittingAppointment ? 'PROGRAMANDO...' : 'PROGRAMAR SERVICIO'}
+              </button>
+            </div>
+          </div>
+
+          {/* CARD GESTIONAR SERVICIOS */}
+          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-8 lg:col-span-2">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 bg-[#10B981] rounded-xl flex items-center justify-center shadow-lg shadow-[#10B981]/40">
+                <span className="text-white font-bold">S</span>
+              </div>
+              <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">
+                Agregar Nuevo Servicio
+              </h2>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">Nombre del Servicio</label>
+                    <input 
+                      placeholder="Ej: Lavado Premium" 
+                      value={newServicioNombre}
+                      onChange={(e) => this.setState({ newServicioNombre: e.target.value })}
+                      className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold placeholder:text-[#475569] outline-none focus:border-[#10B981]/50 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">Descripción</label>
+                    <textarea 
+                      placeholder="Descripción detallada del servicio..." 
+                      value={newServicioDescripcion}
+                      onChange={(e) => this.setState({ newServicioDescripcion: e.target.value })}
+                      className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold placeholder:text-[#475569] outline-none focus:border-[#10B981]/50 transition-all min-h-[100px]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">Precio ($)</label>
+                      <input 
+                        type="number"
+                        placeholder="0.00" 
+                        value={newServicioPrecio}
+                        onChange={(e) => this.setState({ newServicioPrecio: e.target.value })}
+                        className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#10B981]/50 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">Duración (min)</label>
+                      <input 
+                        type="number"
+                        placeholder="60" 
+                        value={newServicioDuracion}
+                        onChange={(e) => this.setState({ newServicioDuracion: e.target.value })}
+                        className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#10B981]/50 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">¿Qué incluye? (Separa con comas)</label>
+                    <textarea 
+                      placeholder="Ej: Lavado de motor, Polichado, Limpieza de rines..." 
+                      value={newServicioIncluye}
+                      onChange={(e) => this.setState({ newServicioIncluye: e.target.value })}
+                      className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold placeholder:text-[#475569] outline-none focus:border-[#10B981]/50 transition-all min-h-[100px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">Beneficios (Separa con comas)</label>
+                    <textarea 
+                      placeholder="Ej: Mayor brillo, Protección UV, Acabado profesional..." 
+                      value={newServicioBeneficios}
+                      onChange={(e) => this.setState({ newServicioBeneficios: e.target.value })}
+                      className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold placeholder:text-[#475569] outline-none focus:border-[#10B981]/50 transition-all min-h-[100px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={this.handleCreateService}
+                disabled={submittingService}
+                className={`w-full py-5 ${submittingService ? 'bg-[#10B981]/50' : 'bg-[#10B981] hover:bg-[#059669]'} text-white font-mono text-[10px] uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-[#10B981]/30 transition-all font-black`}
+              >
+                {submittingService ? 'CREANDO...' : 'CREAR SERVICIO'}
               </button>
             </div>
           </div>

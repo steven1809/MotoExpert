@@ -6,6 +6,12 @@ import interiorImg from "../assets/services/limpiezap.jpeg";
 import motorImg from "../assets/services/motor.jpeg";
 import protectionImg from "../assets/services/proteccionc.jpeg";
 import StarRating from '../components/StarRating';
+import agendarIcon from '../assets/iconos/cita.png';
+import vehiculoIcon from '../assets/iconos/coche.png';
+import reseñasIcon from '../assets/iconos/resenas.png';
+import coronaIcon from '../assets/iconos/corona.png';
+import lanzaderaIcon from '../assets/iconos/lanzadera.png';
+import finalizarIcon from '../assets/iconos/finalizar.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -469,6 +475,7 @@ class UserDashboard extends Component {
       ratings: [],
       activeReportCitaId: null,
       userProfile: null,
+      notifications: [],
     };
     this.pollingInterval = null;
   }
@@ -477,12 +484,52 @@ class UserDashboard extends Component {
     this.fetchInitialFormData();
     this.fetchCitas();
     this.fetchUserProfile();
+    this.fetchNotifications();
     // Poll every 12 seconds
     this.pollingInterval = setInterval(() => {
       this.fetchCitas();
       this.fetchUserProfile();
+      this.fetchNotifications();
     }, 12000);
   }
+
+  fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/notificaciones`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        this.setState({ notifications: data });
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  };
+
+  markAsRead = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/notificaciones/${id}/marcar-leida`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        this.setState(prev => ({
+          notifications: prev.notifications.map(n => n.id === id ? { ...n, leida: true } : n)
+        }));
+        // Notify the bell to refresh
+        window.dispatchEvent(new CustomEvent('motoexpert:refresh_notifications'));
+      }
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
+  };
 
   fetchUserProfile = async () => {
      const token = localStorage.getItem('token');
@@ -740,6 +787,20 @@ class UserDashboard extends Component {
       }
     };
 
+    const formatRelativeTime = (dateStr) => {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMins < 1) return 'Ahora';
+      if (diffMins < 60) return `${diffMins}m`;
+      if (diffHours < 24) return `${diffHours}h`;
+      return `${diffDays}d`;
+    };
+
     const upcomingCita = (Array.isArray(citas) ? citas : [])
       .filter(isActiveAppointment)
       .map((cita) => ({ cita, start: parseAppointmentStart(cita) }))
@@ -803,10 +864,8 @@ class UserDashboard extends Component {
                     onClick={() => setView('citas')}
                     className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
                   >
-                    <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3a.75.75 0 011.5 0v1.5h.75A2.25 2.25 0 0121 6.75v12A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-12A2.25 2.25 0 015.25 4.5H6V3a.75.75 0 01.75-.75zM4.5 9.75h15V6.75a.75.75 0 00-.75-.75H5.25a.75.75 0 00-.75.75v3z" />
-                      </svg>
+                    <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">          
+                      <img src={agendarIcon} alt="agendar" className="w-5 h-5" bg="white"/>
                     </div>
                     <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Agendar cita</div>
                     <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Nueva cita</div>
@@ -818,9 +877,7 @@ class UserDashboard extends Component {
                     className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
                   >
                     <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path fillRule="evenodd" d="M6.75 4.5A3 3 0 003.77 7.14l-1.5 9A3 3 0 005.23 19.5h.52a3 3 0 005.5 0h1.5a3 3 0 005.5 0h.52a3 3 0 002.96-3.36l-1.5-9A3 3 0 0017.25 4.5H6.75zm3.75 12a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zm9 0a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" clipRule="evenodd" />
-                      </svg>
+                      <img src={vehiculoIcon} alt="vehiculo" className="w-5 h-5" bg="white"/>
                     </div>
                     <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Mis vehículos</div>
                     <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Ver y gestionar</div>
@@ -846,9 +903,7 @@ class UserDashboard extends Component {
                     className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
                   >
                     <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path d="M12 2.25c5.385 0 9.75 4.03 9.75 9 0 1.79-.57 3.46-1.56 4.86l.6 4.21a.75.75 0 01-1.09.78l-4.02-2.06A10.6 10.6 0 0112 20.25c-5.385 0-9.75-4.03-9.75-9s4.365-9 9.75-9z" />
-                      </svg>
+                      <img src={reseñasIcon} alt="reseñas" className="w-5 h-5" bg="white"/>
                     </div>
                     <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Mis reseñas</div>
                     <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Deja tu opinión</div>
@@ -917,7 +972,7 @@ class UserDashboard extends Component {
                           onClick={() => setView('citas')}
                           className="h-10 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black transition-colors"
                         >
-                          Agendar cita
+                          + Agendar cita
                         </button>
                       </div>
                     </div>
@@ -1021,11 +1076,7 @@ class UserDashboard extends Component {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA]">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                          <path fillRule="evenodd" d="M12 1.5a.75.75 0 01.75.75v.465c0 .41.29.765.69.84a7.501 7.501 0 016.06 6.06c.075.4.43.69.84.69h.465a.75.75 0 010 1.5h-.465a.855.855 0 00-.84.69 7.501 7.501 0 01-6.06 6.06.855.855 0 00-.69.84v.465a.75.75 0 01-1.5 0v-.465a.855.855 0 00-.69-.84 7.501 7.501 0 01-6.06-6.06.855.855 0 00-.84-.69H2.25a.75.75 0 010-1.5h.465a.855.855 0 00.84-.69 7.501 7.501 0 016.06-6.06.855.855 0 00.69-.84V2.25A.75.75 0 0112 1.5z" clipRule="evenodd" />
-                        </svg>
-                      </span>
+                     <img src={coronaIcon} alt="corona" className="w-5 h-5" bg="white"/>
                       Cliente {this.state.userProfile?.rank || 'Silver'}
                     </div>
                     <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Nivel {this.state.userProfile?.level || 1}</div>
@@ -1065,44 +1116,48 @@ class UserDashboard extends Component {
                 </div>
 
                 <div className="p-5 pt-4 space-y-3">
-                  <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="h-10 w-10 rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3a.75.75 0 011.5 0v1.5h.75A2.25 2.25 0 0121 6.75v12A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-12A2.25 2.25 0 015.25 4.5H6V3a.75.75 0 01.75-.75zM4.5 9.75h15V6.75a.75.75 0 00-.75-.75H5.25a.75.75 0 00-.75.75v3z" />
-                      </svg>
+                  {this.state.notifications.length > 0 ? (
+                    this.state.notifications.slice(0, 3).map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={() => !n.leida && this.markAsRead(n.id)}
+                        className={`flex items-start gap-3 rounded-xl border border-white/10 p-3 cursor-pointer transition-colors ${
+                          !n.leida ? 'bg-white/10 border-white/20' : 'bg-white/5'
+                        }`}
+                      >
+                        <div
+                          className={`h-10 w-10 rounded-2xl border flex items-center justify-center flex-shrink-0 ${
+                            n.tipo === 'service_started'
+                              ? 'bg-[#2563EB]/15 border-[#2563EB]/20 text-[#60A5FA]'
+                              : n.tipo === 'service_completed'
+                                ? 'bg-emerald-500/15 border-emerald-500/20 text-emerald-500'
+                                : 'bg-white/10 border-white/10 text-white/70'
+                          }`}
+                        >
+                          {n.tipo === 'service_started' ? (
+                            <img src={lanzaderaIcon} alt="lanzadera" className="w-5 h-5" bg="white"/>
+                          ) : n.tipo === 'service_completed' ? (
+                            <img src={finalizarIcon} alt="finalizar" className="w-5 h-5" bg="white"/>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                              <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-black truncate ${!n.leida ? 'text-white' : 'text-white/70'}`}>
+                            {n.titulo}
+                          </div>
+                          <div className="text-[11px] text-[#94A3B8] truncate">{n.mensaje}</div>
+                        </div>
+                        <div className="text-[10px] text-white/50">{formatRelativeTime(n.createdAt)}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-xs text-[#94A3B8] italic">
+                      No hay notificaciones aún
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-black text-white truncate">Tu cita está confirmada</div>
-                      <div className="text-[11px] text-[#94A3B8] truncate">Revisa los detalles en Mis citas</div>
-                    </div>
-                    <div className="text-[10px] text-white/50">2h</div>
-                  </div>
-
-                  <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="h-10 w-10 rounded-2xl bg-white/10 border border-white/10 text-white/70 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path fillRule="evenodd" d="M12 2.25c.31 0 .6.2.7.5l.86 2.63c.1.3.33.53.63.63l2.63.86c.3.1.5.39.5.7s-.2.6-.5.7l-2.63.86c-.3.1-.53.33-.63.63l-.86 2.63c-.1.3-.39.5-.7.5s-.6-.2-.7-.5l-.86-2.63a.87.87 0 00-.63-.63l-2.63-.86a.75.75 0 010-1.4l2.63-.86c.3-.1.53-.33.63-.63l.86-2.63c.1-.3.39-.5.7-.5z" clipRule="evenodd" />
-                      </svg>
-                    </div>  
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-black text-white truncate">Promoción especial disponible</div>
-                      <div className="text-[11px] text-[#94A3B8] truncate">20% OFF en Lavado premium</div>
-                    </div>
-                    <div className="text-[10px] text-white/50">1d</div>
-                  </div>
-
-                  <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div className="h-10 w-10 rounded-2xl bg-white/10 border border-white/10 text-white/70 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path d="M11.48 3.499a.75.75 0 011.04 0l2.12 1.985c.2.187.46.289.73.289h2.52a.75.75 0 01.72.958l-.8 2.49a.75.75 0 00.15.73l1.99 2.12a.75.75 0 010 1.04l-1.99 2.12a.75.75 0 00-.15.73l.8 2.49a.75.75 0 01-.72.958h-2.52a1.06 1.06 0 00-.73.289l-2.12 1.985a.75.75 0 01-1.04 0l-2.12-1.985a1.06 1.06 0 00-.73-.289H5.19a.75.75 0 01-.72-.958l.8-2.49a.75.75 0 00-.15-.73L3.13 13.5a.75.75 0 010-1.04l1.99-2.12a.75.75 0 00.15-.73l-.8-2.49a.75.75 0 01.72-.958h2.52c.27 0 .53-.102.73-.289l2.12-1.985z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-black text-white truncate">¡Gracias por tu reseña!</div>
-                      <div className="text-[11px] text-[#94A3B8] truncate">Tu opinión nos ayuda a mejorar</div>
-                    </div>
-                    <div className="text-[10px] text-white/50">2d</div>
-                  </div>
+                  )}
                 </div>
               </section>
 
@@ -1124,7 +1179,6 @@ class UserDashboard extends Component {
                       Reservar ahora
                     </button>
                   </div>
-                  <img src={carHeroImg} alt="" className="h-20 w-auto opacity-80" />
                 </div>
               </section>
 
