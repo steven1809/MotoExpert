@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import UserDashboard from './UserDashboard';
 import AdminDashboard from './AdminDashboard';
-import EmployeeDashboard from './EmployeeDashboard';
+import EmployeeDashboard from './EmployeeDashboard.jsx';
 
 class DashboardAdmin extends Component {
   render() {

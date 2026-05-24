@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Empleado } from './entities/empleado.entity';
+import { Usuario } from '../usuarios/entities/usuario.entity';
 import { CreateEmpleadoDto } from './dto/create-empleado.dto';
 import { UpdateEmpleadoDto } from './dto/update-empleado.dto';
 
@@ -10,10 +11,39 @@ export class EmpleadosService {
   constructor(
     @InjectRepository(Empleado)
     private readonly repo: Repository<Empleado>,
+    @InjectRepository(Usuario)
+    private readonly usuarioRepo: Repository<Usuario>,
   ) {}
 
-  findAll() {
+  async findAll() {
+    // Sincronización proactiva: Buscar usuarios con rol 'empleado' que no tengan registro de empleado
+    const usuariosEmpleados = await this.usuarioRepo
+      .createQueryBuilder('usuario')
+      .where('LOWER(usuario.role) = :role', { role: 'empleado' })
+      .getMany();
+
+    for (const usuario of usuariosEmpleados) {
+      const exists = await this.repo.findOne({ where: { usuarioId: usuario.id } });
+      if (!exists) {
+        console.log(`[EmpleadosService] Sync: Creating missing employee record for user ${usuario.id}`);
+        await this.create({
+          usuarioId: usuario.id,
+          documento: usuario.documento || undefined,
+          cargo: 'Mecánico',
+          especialidad: 'Mecánica General',
+          estado: 'activo',
+        });
+      }
+    }
+
     return this.repo.find({ relations: ['usuario', 'citas'] });
+  }
+
+  findByUsuarioId(usuarioId: number) {
+    return this.repo.findOne({
+      where: { usuarioId },
+      relations: ['usuario', 'citas'],
+    });
   }
 
   findOne(id: number) {
