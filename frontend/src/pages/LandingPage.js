@@ -11,7 +11,7 @@ import proteccionImg from '../assets/services/proteccionc.jpeg';
 import pulidoImg from '../assets/services/pulidop.jpeg';
 import carwashVideo from '../assets/videos/6872078-hd_1280_720_25fps.mp4';
 import { FaCalendarAlt, FaFacebook, FaInstagram, FaTwitter, FaWhatsapp } from 'react-icons/fa';
-import misionIcon from '../assets/iconos/mision.png';
+import QuickBookingSection from '../components/QuickBookingSection';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -559,6 +559,7 @@ class LandingPage extends Component {
                 ['servicios', 'Servicios'],
                 ['nosotros', 'Nosotros'],
                 ['contacto', 'Contacto'],
+                ['agendado', 'Agendar'],
                 ['ubicacion', 'Ubicación'],
               ].map(([key, label]) => {
                 const isActive = activeView === key;
@@ -678,7 +679,6 @@ class LandingPage extends Component {
 
                   {/* STATS */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-24">
-
                     {[
                       ['+15K', 'Servicios realizados'],
                       ['10+', 'Años de experiencia'],
@@ -1177,19 +1177,9 @@ class LandingPage extends Component {
 
                     <div className="space-y-5">
                       {[
-                        [
-                          <img
-                            src={misionIcon}
-                            alt="agendar"
-                            className="w-5 h-5"
-                            style={{ backgroundColor: 'white' }}
-                          />,
-                          'Misión',
-                          'Ofrecer servicios de detailing de clase mundial con atención personalizada, precios justos y resultados que superan las expectativas.',
-                          'border-blue-500'
-                        ],
-                        ['👁️', 'Visión', 'Ser el centro de car care más reconocido de Colombia para 2027, expandiendo nuestra presencia a las principales ciudades del país.', 'border-purple-500'],
-                        ['💎', 'Valores', 'Calidad · Honestidad · Puntualidad · Pasión · Responsabilidad ambiental', 'border-green-500'],
+                        [,'Misión','Ofrecer servicios de detailing de clase mundial con atención personalizada, precios justos y resultados que superan las expectativas.','border-blue-500'],
+                        [, 'Visión', 'Ser el centro de car care más reconocido de Colombia para 2027, expandiendo nuestra presencia a las principales ciudades del país.', 'border-purple-500'],
+                        [, 'Valores', 'Calidad · Honestidad · Puntualidad · Pasión · Responsabilidad ambiental', 'border-green-500'],
                       ].map((c, i) => (
                         <div
                           key={i}
@@ -1217,7 +1207,7 @@ class LandingPage extends Component {
                     </p>
                   </div>
 
-                  <div className="max-w-3xl mx-auto rounded-2xl shadow-[0_40px_80px_rgba(59,130,246,0.2)]">
+                  <div className="max-w-3xl mx-auto rounded-2xl ">
                     <Car3D />
                   </div>
                 </div>
@@ -1279,10 +1269,10 @@ class LandingPage extends Component {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
-                      ['✅', 'Certificación internacional en detailing'],
-                      ['🌿', 'Productos biodegradables y eco-friendly'],
-                      ['🔒', 'Garantía en todos nuestros servicios'],
-                      ['🏅', 'Técnicos con formación continua'],
+                      [, 'Certificación internacional en detailing'],
+                      [, 'Productos biodegradables y eco-friendly'],
+                      [, 'Garantía en todos nuestros servicios'],
+                      [, 'Técnicos con formación continua'],
                     ].map((c, i) => (
                       <div
                         key={i}
@@ -1318,6 +1308,7 @@ class LandingPage extends Component {
                     <div className="rounded-3xl bg-white/[0.03] p-8 border border-white/[0.08] backdrop-blur-md shadow-2xl shadow-blue-900/10 lg:-translate-y-1">
                       <form onSubmit={this.handleContactSubmit} className="space-y-5">
                         <div>
+                        <h1 className="text-white text-center  mb-10">Escribenos Aquí</h1>
                           <label className="block text-white font-semibold mb-2">Nombre completo</label>
                           <input
                             type="text"
@@ -1338,7 +1329,7 @@ class LandingPage extends Component {
                             value={contactForm.email}
                             onChange={this.handleContactChange}
                             className={`w-full bg-gray-800/40 rounded-lg px-4 py-3 border text-white placeholder:text-slate-500 transition-all duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 ${contactErrors.email ? 'border-red-500' : 'border-gray-600'}`}
-                            placeholder="tuemail@correo.com"
+                            placeholder="tu email@correo.com"
                           />
                           {contactErrors.email && <div className="text-red-400 text-sm mt-2">{contactErrors.email}</div>}
                         </div>
@@ -1351,7 +1342,7 @@ class LandingPage extends Component {
                             value={contactForm.telefono}
                             onChange={this.handleContactChange}
                             className={`w-full bg-gray-800/40 rounded-lg px-4 py-3 border text-white placeholder:text-slate-500 transition-all duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 ${contactErrors.telefono ? 'border-red-500' : 'border-gray-600'}`}
-                            placeholder="+57 316 810 6470"
+                            placeholder="+57 300 000 0000"
                           />
                           {contactErrors.telefono && <div className="text-red-400 text-sm mt-2">{contactErrors.telefono}</div>}
                         </div>
@@ -1466,6 +1457,12 @@ class LandingPage extends Component {
                   </div>
                 </div>
               </section>
+            </div>
+          )}
+
+          {activeView === 'agendado' && (
+            <div className="pt-32 animate-in fade-in duration-200">
+              <QuickBookingSection />
             </div>
           )}
 

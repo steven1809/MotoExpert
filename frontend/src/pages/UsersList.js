@@ -24,6 +24,7 @@ const UsersList = () => {
   const [empleados, setEmpleados] = useState([]);
   const [citasGenerales, setCitasGenerales] = useState([]);
   const [filtroEstadoCita, setFiltroEstadoCita] = useState('TODAS');
+  const [loadingAdmin, setLoadingAdmin] = useState(false);
 
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [userToEditRole, setUserToEditRole] = useState(null);
@@ -106,16 +107,24 @@ const UsersList = () => {
   }, []);
 
   const fetchAdminData = async (token) => {
+    setLoadingAdmin(true);
     try {
+      console.log('[UsersList] Fetching admin data (employees and appointments)...');
       const headers = { 'Authorization': `Bearer ${token}` };
       const [empRes, citasRes] = await Promise.all([
         fetch(`${API_BASE_URL}/empleados`, { headers }),
         fetch(`${API_BASE_URL}/citas`, { headers })
       ]);
-      if (empRes.ok) setEmpleados(await empRes.json());
+      if (empRes.ok) {
+        const data = await empRes.json();
+        console.log('[UsersList] Employees fetched:', data);
+        setEmpleados(data);
+      }
       if (citasRes.ok) setCitasGenerales(await citasRes.json());
     } catch (err) {
       console.error('Error al cargar datos de admin:', err);
+    } finally {
+      setLoadingAdmin(false);
     }
   };
 
@@ -259,6 +268,10 @@ const UsersList = () => {
       if (response.ok) {
         // Actualizar estado local
         setUsers(prev => prev.map(u => u.id === userToEditRole.id ? { ...u, role: newRole } : u));
+        
+        // Refrescar lista de empleados para que aparezca el nuevo registro en la pestaña correspondiente
+        fetchAdminData(token);
+        
         setShowRoleModal(false);
         alert('Rol actualizado con éxito');
       } else {
@@ -307,6 +320,18 @@ const UsersList = () => {
       </div>
     );
   }
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    const token = localStorage.getItem('token');
+    if (token) {
+      if (tab === 'empleados' || tab === 'citas') {
+        fetchAdminData(token);
+      } else if (tab === 'usuarios') {
+        fetchUsers(token);
+      }
+    }
+  };
 
   return (
     <div className="p-6 relative">
@@ -561,19 +586,19 @@ const UsersList = () => {
           </h1>
           <div className="flex space-x-2 bg-slate-900 p-1 rounded-2xl border border-slate-800 w-fit">
             <button 
-              onClick={() => setActiveTab('usuarios')}
+              onClick={() => handleTabChange('usuarios')}
               className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'usuarios' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
             >
               👥 Usuarios
             </button>
             <button 
-              onClick={() => setActiveTab('empleados')}
+              onClick={() => handleTabChange('empleados')}
               className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'empleados' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
             >
               🛠️ Empleados
             </button>
             <button 
-              onClick={() => setActiveTab('citas')}
+              onClick={() => handleTabChange('citas')}
               className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'citas' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
             >
               📅 Citas Globales
@@ -713,48 +738,61 @@ const UsersList = () => {
 
       {activeTab === 'empleados' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {empleados.map(emp => {
-            const completedServices = emp.citas?.filter(c => c.estado === 'FINALIZADO').length || 0;
-            const fechaRegistro = emp.usuario?.createdAt ? new Date(emp.usuario.createdAt) : null;
-            const formattedFechaRegistro = fechaRegistro 
-              ? `Desde ${fechaRegistro.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}`
-              : 'N/A';
-            
-            return (
-              <div key={emp.id} className="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-[#7b9cff]/10 flex items-center justify-center text-[#7b9cff] font-bold text-xl uppercase">
-                    {emp.usuario?.nombre?.charAt(0) || 'E'}
+          {loadingAdmin ? (
+            <div className="col-span-full py-20 flex flex-col items-center justify-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+              <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Actualizando nómina...</p>
+            </div>
+          ) : empleados.length > 0 ? (
+            empleados.map(emp => {
+              const completedServices = emp.citas?.filter(c => c.estado === 'FINALIZADO').length || 0;
+              const fechaRegistro = emp.usuario?.createdAt ? new Date(emp.usuario.createdAt) : null;
+              const formattedFechaRegistro = fechaRegistro 
+                ? `Desde ${fechaRegistro.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}`
+                : 'N/A';
+              
+              return (
+                <div key={emp.id} className="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[#7b9cff]/10 flex items-center justify-center text-[#7b9cff] font-bold text-xl uppercase">
+                      {emp.usuario?.nombre?.charAt(0) || 'E'}
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                      emp.estado === 'activo' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                    }`}>
+                      {emp.estado === 'activo' ? 'ACTIVO' : 'INACTIVO'}
+                    </span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                    emp.estado === 'activo' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
-                  }`}>
-                    {emp.estado === 'activo' ? 'ACTIVO' : 'INACTIVO'}
-                  </span>
+                  <h3 className="text-xl font-bold text-white mb-1">
+                    {emp.usuario?.nombre} {emp.usuario?.apellidos}
+                  </h3>
+                  <p className="text-slate-500 text-xs uppercase font-bold tracking-widest mb-2">{emp.cargo || 'Técnico Especialista'}</p>
+                  <p className="text-slate-400 text-xs mb-1">{emp.usuario?.email}</p>
+                  {emp.usuario?.telefono && <p className="text-slate-500 text-xs mb-4">{emp.usuario?.telefono}</p>}
+                  <div className="space-y-3 pt-4 border-t border-slate-800">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-600 font-bold uppercase">Especialidad</span>
+                      <span className="text-xs text-[#7b9cff] font-bold">{emp.especialidad || 'Mecánica General'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-600 font-bold uppercase">Registro</span>
+                      <span className="text-xs text-slate-400">{formattedFechaRegistro}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-600 font-bold uppercase">Servicios completados</span>
+                      <span className="text-xs text-slate-400">{completedServices}</span>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-1">
-                  {emp.usuario?.nombre} {emp.usuario?.apellidos}
-                </h3>
-                <p className="text-slate-500 text-xs uppercase font-bold tracking-widest mb-2">{emp.cargo || 'Técnico Especialista'}</p>
-                <p className="text-slate-400 text-xs mb-1">{emp.usuario?.email}</p>
-                {emp.usuario?.telefono && <p className="text-slate-500 text-xs mb-4">{emp.usuario?.telefono}</p>}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-slate-600 font-bold uppercase">Especialidad</span>
-                    <span className="text-xs text-[#7b9cff] font-bold">{emp.especialidad || 'Mecánica General'}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-slate-600 font-bold uppercase">Registro</span>
-                    <span className="text-xs text-slate-400">{formattedFechaRegistro}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-slate-600 font-bold uppercase">Servicios completados</span>
-                    <span className="text-xs text-slate-400">{completedServices}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            <div className="col-span-full py-20 text-center flex flex-col items-center justify-center space-y-3">
+              <span className="text-5xl grayscale opacity-20">🛠️</span>
+              <p className="text-slate-500 font-bold uppercase tracking-widest">No hay empleados registrados</p>
+              <p className="text-slate-600 text-xs italic text-center max-w-xs">Asegúrate de asignar el rol de 'empleado' a los usuarios desde la pestaña de Usuarios.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -797,7 +835,7 @@ const UsersList = () => {
                       </td>
                       <td className="p-5">
                         <span className="bg-slate-800 px-3 py-1 rounded-lg text-slate-300 font-bold">
-                          {c.empleado?.nombre || 'Sin asignar'}
+                          {c.empleado?.usuario?.nombre || 'Sin asignar'}
                         </span>
                       </td>
                       <td className="p-5">
