@@ -11,7 +11,7 @@ import proteccionImg from '../assets/services/proteccionc.jpeg';
 import pulidoImg from '../assets/services/pulidop.jpeg';
 import carwashVideo from '../assets/videos/6872078-hd_1280_720_25fps.mp4';
 import { FaCalendarAlt, FaFacebook, FaInstagram, FaTwitter, FaWhatsapp } from 'react-icons/fa';
-import QuickBookingSection from '../components/QuickBookingSection';
+import AgendamientoPublico from '../components/agendamiento/AgendamientoPublico';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -1443,7 +1443,7 @@ class LandingPage extends Component {
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-400">Sábado</span>
-                                <span className="text-white">8:00am - 2:00pm</span>
+                                <span className="text-white">8:00am - 6:00pm</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-400">Domingo</span>
@@ -1462,7 +1462,21 @@ class LandingPage extends Component {
 
           {activeView === 'agendado' && (
             <div className="pt-32 animate-in fade-in duration-200">
-              <QuickBookingSection />
+              <section className="relative py-16 overflow-hidden"> 
+                <div className="pointer-events-none absolute inset-0 opacity-25 carbon-fiber" /> 
+                <div className="container mx-auto px-6"> 
+                  <div className="text-center max-w-3xl mx-auto mb-12"> 
+                    <span className="text-blue-400 text-sm">Reserva en línea</span> 
+                    <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-4 tracking-tight"> 
+                      Agenda tu servicio 
+                    </h2> 
+                    <p className="text-slate-400 text-lg leading-relaxed"> 
+                      Rápido, fácil y sin filas. Tu cita confirmada en minutos. 
+                    </p> 
+                  </div> 
+                  <AgendamientoPublico /> 
+                </div> 
+              </section>
             </div>
           )}
 

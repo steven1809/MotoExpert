@@ -9,26 +9,56 @@ import {
   Request,
   Query,
   Patch,
+  SetMetadata,
+  Injectable,
 } from '@nestjs/common';
 import { CitasService } from './citas.service';
 import { CreateCitaDto } from './dto/create-cita.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { AppointmentChatsService } from './appointment-chats.service';
+import { ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+
+// Decorador para rutas públicas
+export const Public = () => SetMetadata('isPublic', true);
+
+// Guard personalizado que respeta @Public()
+@Injectable()
+export class JwtAuthGuardPublic extends AuthGuard('jwt') {
+  constructor(private reflector: Reflector) {
+    super();
+  }
+
+  canActivate(context: ExecutionContext) {
+    const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      return true;
+    }
+    return super.canActivate(context);
+  }
+}
 
 @Controller('citas')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(JwtAuthGuardPublic)
 export class CitasController {
   constructor(
     private readonly service: CitasService,
     private readonly chatsService: AppointmentChatsService,
   ) {}
 
+  @Public()
   @Post()
   create(@Body() dto: CreateCitaDto, @Request() req) {
     console.log('[DEBUG] Recibiendo DTO para crear cita:', dto);
-    // Forzamos que la cita sea para el usuario autenticado
-    const finalDto = { ...dto, usuarioId: req.user.userId };
-    console.log('[DEBUG] DTO Final con usuarioId del JWT:', finalDto);
+    // Si hay usuario en el request (JWT válido), lo usamos. Si no, dejamos que el service maneje el guest.
+    const finalDto = { ...dto };
+    if (req.user && req.user.userId) {
+      finalDto.usuarioId = req.user.userId;
+    }
+    console.log('[DEBUG] DTO Final para service:', finalDto);
     return this.service.create(finalDto);
   }
   @Get()
@@ -57,6 +87,7 @@ export class CitasController {
     return this.service.findAll(req.user.userId, 'usuario');
   }
 
+  @Public()
   @Get('disponibilidad')
   checkAvailability(
     @Query('fecha') fecha: string,

@@ -33,6 +33,13 @@ export class Empleado {
   @Column({ nullable: true })
   usuarioId: number;
 
+  @Column({ type: 'json', nullable: true })
+  horarioConfig: {
+    lunesViernes: { inicio: string; fin: string };
+    sabado: { inicio: string; fin: string };
+    domingo?: { inicio: string; fin: string };
+  };
+
   @OneToMany(() => Cita, (cita) => cita.empleado)
   citas: Cita[];
 }

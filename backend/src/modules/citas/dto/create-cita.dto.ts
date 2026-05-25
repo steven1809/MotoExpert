@@ -19,10 +19,10 @@ export class CreateCitaDto {
   @Type(() => Number)
   usuarioId?: number;
 
-  @IsNotEmpty({ message: 'El vehículo es obligatorio' })
+  @IsOptional()
   @IsNumber({}, { message: 'El ID de vehículo debe ser un número' })
   @Type(() => Number)
-  vehiculoId: number;
+  vehiculoId?: number;
 
   @IsNotEmpty({ message: 'El servicio es obligatorio' })
   @IsNumber({}, { message: 'El ID de servicio debe ser un número' })
@@ -33,4 +33,11 @@ export class CreateCitaDto {
   @IsNumber({}, { message: 'El ID de empleado debe ser un número' })
   @Type(() => Number)
   empleadoId?: number;
+
+  @IsOptional()
+  guestData?: {
+    nombre: string;
+    telefono: string;
+    placa: string;
+  };
 }
