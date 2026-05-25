@@ -12,6 +12,7 @@ import reseñasIcon from '../assets/iconos/resenas.png';
 import coronaIcon from '../assets/iconos/corona.png';
 import lanzaderaIcon from '../assets/iconos/lanzadera.png';
 import finalizarIcon from '../assets/iconos/finalizar.png';
+import notificacionIcon from '../assets/iconos/notificacion.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -1139,9 +1140,7 @@ class UserDashboard extends Component {
                           ) : n.tipo === 'service_completed' ? (
                             <img src={finalizarIcon} alt="finalizar" className="w-5 h-5" bg="white"/>
                           ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                              <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                            </svg>
+                            <img src={notificacionIcon} alt="notificacion" className="w-5 h-5" bg="white"/>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -1165,20 +1164,6 @@ class UserDashboard extends Component {
                 <div className="absolute inset-0">
                   <img src={premiumImg} alt="" className="w-full h-full object-cover opacity-20" />
                   <div className="absolute inset-0 bg-gradient-to-r from-[#0b1220] via-[#0b1220]/90 to-transparent" />
-                </div>
-                <div className="relative z-10 p-5 flex items-end justify-between gap-4">
-                  <div>
-                    <div className="text-lg font-black text-[#60A5FA]">20% OFF</div>
-                    <div className="text-sm font-black text-white">en Detailing Premium</div>
-                    <div className="text-xs text-[#94A3B8] mt-1">Válido hasta el 31 de mayo</div>
-                    <button
-                      type="button"
-                      onClick={() => setView('servicios')}
-                      className="mt-4 h-10 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black transition-colors"
-                    >
-                      Reservar ahora
-                    </button>
-                  </div>
                 </div>
               </section>
 

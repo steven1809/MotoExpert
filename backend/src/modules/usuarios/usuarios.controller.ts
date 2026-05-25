@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, Param, UseGuards, Post, UseInterceptors, UploadedFile, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Param, UseGuards, Post, UseInterceptors, UploadedFile, ForbiddenException, SetMetadata } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -7,9 +7,18 @@ import { extname } from 'path';
 import { Request } from 'express';
 import { Req } from '@nestjs/common';
 
+// Definimos un decorador simple para marcar rutas como públicas
+const Public = () => SetMetadata('isPublic', true);
+
 @Controller('usuarios')
 export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
+
+  @Public()
+  @Get('empleados')
+  findEmployees() {
+    return this.usuariosService.findEmployees();
+  }
 
   @Get()
   findAll() {

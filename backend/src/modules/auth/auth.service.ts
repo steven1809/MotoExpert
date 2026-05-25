@@ -55,7 +55,7 @@ export class AuthService {
         ...userData,
         email: email.toLowerCase().trim(),
         password: hashedPassword,
-        role: createUserDto.role || 'user',
+        role: (createUserDto.role || 'user').toLowerCase(),
       });
 
       await this.userRepository.save(user);

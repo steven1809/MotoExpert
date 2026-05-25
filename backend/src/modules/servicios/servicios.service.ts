@@ -202,6 +202,13 @@ export class ServiciosService implements OnModuleInit {
     });
   }
 
+  async findPublicList() {
+    return this.repo.find({
+      select: ['id', 'nombre', 'precio', 'duracion', 'descripcion'],
+      order: { id: 'DESC' },
+    });
+  }
+
   findOne(id: number) {
     return this.repo.findOneBy({ id });
   }

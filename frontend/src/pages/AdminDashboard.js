@@ -178,8 +178,9 @@ class AdminDashboard extends Component {
           documentNumber: newUserNumDoc,
           telefono: newUserTelefono,
           email: newUserEmail,
-          password: newUserNumDoc,
-          role: 'usuario'
+          password: `MotoExpert${newUserNumDoc}`,
+          role: 'usuario',
+          aceptaTerminos: true
         };
         console.log('Registrando nuevo usuario:', userPayload);
 
@@ -715,7 +716,7 @@ class AdminDashboard extends Component {
                   
                   <div className="mt-4 p-3 bg-black/20 rounded-xl border border-white/5">
                     <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">Contraseña generada</div>
-                    <div className="text-white font-bold">{newUserNumDoc || '[Esperando número de documento]'}</div>
+                    <div className="text-white font-bold">{newUserNumDoc ? `MotoExpert${newUserNumDoc}` : '[Esperando número de documento]'}</div>
                   </div>
                 </div>
               )}

@@ -163,6 +163,7 @@ export class VehiculosController {
           'No tienes permiso para actualizar este vehículo',
         );
       }
+
       // Crear el objeto con los datos a actualizar de forma segura
       const finalUpdateData: any = {};
       const allowedFields = [

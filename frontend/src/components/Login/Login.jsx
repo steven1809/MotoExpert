@@ -382,6 +382,15 @@ class Login extends Component {
   handleResetPassword = async (e) => {
     e.preventDefault();
     const { recoveryUserId, otp, password, confirmPassword } = this.state;
+
+    if (password.length < 8) {
+      this.showMsg("La contraseña debe tener al menos 8 caracteres.", true);
+      return;
+    }
+    if (!/(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      this.showMsg("La contraseña debe contener al menos una mayúscula y un número.", true);
+      return;
+    }
     if (password !== confirmPassword) {
       this.showMsg("Las contraseñas no coinciden", true);
       return;
@@ -430,14 +439,26 @@ class Login extends Component {
   handleSubmit = async (e) => {
     e.preventDefault();
     const { nombre, apellidos, documento, email, telefono, password, confirmPassword, aceptaTerminos, isLogin } = this.state;
-    if (!isLogin && password !== confirmPassword) {
-      this.showMsg("Las contraseñas no coinciden.", true);
-      return;
+    
+    if (!isLogin) {
+      if (password.length < 8) {
+        this.showMsg("La contraseña debe tener al menos 8 caracteres.", true);
+        return;
+      }
+      if (!/(?=.*[A-Z])(?=.*\d)/.test(password)) {
+        this.showMsg("La contraseña debe contener al menos una mayúscula y un número.", true);
+        return;
+      }
+      if (password !== confirmPassword) {
+        this.showMsg("Las contraseñas no coinciden.", true);
+        return;
+      }
+      if (!aceptaTerminos) {
+        this.showMsg("Debes aceptar los términos.", true);
+        return;
+      }
     }
-    if (!isLogin && !aceptaTerminos) {
-      this.showMsg("Debes aceptar los términos.", true);
-      return;
-    }
+    
     this.setState({ loading: true });
     const endpoint = isLogin ? "/auth/login" : "/auth/register";
     const payload = isLogin

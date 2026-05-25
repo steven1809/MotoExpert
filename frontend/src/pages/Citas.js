@@ -7,6 +7,10 @@ import AppointmentsSearchAndFilter from '../components/AppointmentsSearchAndFilt
 import CustomSelect from '../components/CustomSelect';
 import { QRCodeCanvas } from 'qrcode.react';
 import carHeroImg from '../assets/images/1.png';
+import citaIcon from '../assets/iconos/cita.png';
+import monedaIcon from '../assets/iconos/moneda.png';
+import proximoIcon from '../assets/iconos/proximo.png';
+import finalizarIcon from '../assets/iconos/finalizar.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -1637,9 +1641,7 @@ const Citas = ({
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="h-11 w-11 rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                      <path d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3a.75.75 0 011.5 0v1.5h.75A2.25 2.25 0 0121 6.75v12A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-12A2.25 2.25 0 015.25 4.5H6V3a.75.75 0 01.75-.75zM4.5 9.75h15V6.75a.75.75 0 00-.75-.75H5.25a.75.75 0 00-.75.75v3z" />
-                    </svg>
+                    <img src={citaIcon} alt="cita" className="w-6 h-6" />
                   </div>
                   <div>
                     <div className="text-lg font-black text-slate-900 dark:text-white">Mis citas</div>
@@ -1679,15 +1681,13 @@ const Citas = ({
                       Citas pendientes
                     </div>
                     <div className="h-9 w-9 rounded-2xl bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3a.75.75 0 011.5 0v1.5h.75A2.25 2.25 0 0121 6.75v12A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-12A2.25 2.25 0 015.25 4.5H6V3a.75.75 0 01.75-.75z" />
-                      </svg>
+                      <img src={citaIcon} alt="cita" className="w-6 h-6" />
                     </div>
                   </div>
                   <div className="mt-3 text-3xl font-black text-slate-900 dark:text-white">
                     {filteredPendientes.length}
                   </div>
-                  <div className="mt-2 text-xs text-slate-600 dark:text-[#94A3B8]">Ver todas →</div>
+                  <div className="mt-2 text-xs text-slate-600 dark:text-[#94A3B8]"></div>
                 </button>
 
                 <button
@@ -1700,15 +1700,13 @@ const Citas = ({
                       Servicios realizados
                     </div>
                     <div className="h-9 w-9 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path fillRule="evenodd" d="M2.25 12a9.75 9.75 0 1119.5 0 9.75 9.75 0 01-19.5 0zm13.36-1.47a.75.75 0 10-1.22-.9l-3.2 4.33-1.6-1.6a.75.75 0 10-1.06 1.06l2.25 2.25a.75.75 0 001.14-.08l3.69-4.96z" clipRule="evenodd" />
-                      </svg>
+                      <img src={finalizarIcon} alt="finalizar" className="w-6 h-6" />
                     </div>
                   </div>
                   <div className="mt-3 text-3xl font-black text-slate-900 dark:text-white">
                     {completedCitas.length}
                   </div>
-                  <div className="mt-2 text-xs text-slate-600 dark:text-[#94A3B8]">Ver historial →</div>
+                  <div className="mt-2 text-xs text-slate-600 dark:text-[#94A3B8]"></div>
                 </button>
 
                 <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5">
@@ -1717,10 +1715,7 @@ const Citas = ({
                       Próxima cita
                     </div>
                     <div className="h-9 w-9 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-300 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path d="M12 8.25a.75.75 0 01.75.75v3.69l2.28 1.32a.75.75 0 11-.76 1.3l-2.65-1.54a.75.75 0 01-.37-.65V9a.75.75 0 01.75-.75z" />
-                        <path fillRule="evenodd" d="M12 2.25c5.385 0 9.75 4.365 9.75 9.75S17.385 21.75 12 21.75 2.25 17.385 2.25 12 6.615 2.25 12 2.25zm0 1.5A8.25 8.25 0 1012 20.25 8.25 8.25 0 0012 3.75z" clipRule="evenodd" />
-                      </svg>
+                      <img src={proximoIcon} alt="proximo" className="w-6 h-6" />
                     </div>
                   </div>
                   <div className="mt-3 text-sm font-black text-slate-900 dark:text-white">
@@ -1738,9 +1733,7 @@ const Citas = ({
                       Total gastado
                     </div>
                     <div className="h-9 w-9 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path fillRule="evenodd" d="M12 2.25c5.385 0 9.75 4.365 9.75 9.75S17.385 21.75 12 21.75 2.25 17.385 2.25 12 6.615 2.25 12 2.25zm0 1.5A8.25 8.25 0 1012 20.25 8.25 8.25 0 0012 3.75zm.75 4.5a.75.75 0 00-1.5 0v.44c-.95.22-1.75.93-1.75 2.06 0 1.21.8 1.82 1.75 2.13l.43.14c.84.28 1.07.47 1.07.93 0 .52-.44.86-1.14.86-.73 0-1.18-.32-1.45-.57a.75.75 0 00-1.02 1.1c.34.31.86.64 1.61.83v.47a.75.75 0 001.5 0v-.41c1.14-.2 2-.97 2-2.28 0-1.33-.92-1.9-1.97-2.25l-.44-.14c-.78-.26-.84-.47-.84-.79 0-.4.34-.68.93-.68.6 0 .98.24 1.2.43a.75.75 0 10.98-1.13 3.1 3.1 0 00-1.4-.66v-.5z" clipRule="evenodd" />
-                      </svg>
+                      <img src={monedaIcon} alt="moneda" className="w-6 h-6" />
                     </div>
                   </div>
                   <div className="mt-3 text-sm font-black text-slate-900 dark:text-white">
@@ -1756,7 +1749,7 @@ const Citas = ({
                       }
                     })()}
                   </div>
-                  <div className="mt-1 text-xs text-slate-600 dark:text-[#94A3B8]">Ver detalle →</div>
+                  <div className="mt-1 text-xs text-slate-600 dark:text-[#94A3B8]"></div>
                 </div>
               </div>
 
