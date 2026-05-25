@@ -22,4 +22,7 @@ export class CreateServicioDto {
 
   @IsString()
   beneficios?: string;
+
+  @IsString()
+  tipoVehiculo?: string;
 }
