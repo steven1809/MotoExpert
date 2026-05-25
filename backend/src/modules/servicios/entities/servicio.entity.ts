@@ -25,4 +25,7 @@ export class Servicio {
 
   @Column({ type: 'text', nullable: true })
   beneficios: string;
+
+  @Column({ type: 'text', nullable: true, default: 'Moto' })
+  tipoVehiculo: string;
 }

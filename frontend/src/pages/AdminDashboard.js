@@ -48,17 +48,23 @@ class AdminDashboard extends Component {
       selectedEmpleadoId: '',
       fechaIngreso: '',
       
-      submittingVehicle: false,
-      submittingAppointment: false,
+      // Nuevos estados para refactorización Programar Servicio
+      selectedVehicleType: '', // 'Moto', 'Carro', 'Camioneta'
+      showServiceModal: false,
+      tempService: null,
+      vehicleSearchTerm: '',
+      availableSlots: [],
+      selectedTimeSlot: '',
+      loadingSlots: false,
 
-      // Nuevo Servicio
-      newServicioNombre: '',
-      newServicioDescripcion: '',
-      newServicioPrecio: '',
-      newServicioDuracion: '',
-      newServicioIncluye: '',
-      newServicioBeneficios: '',
-      submittingService: false
+      // Nuevos estados para disponibilidad de especialistas
+      showSpecialistModal: false,
+      specialistSlotTime: '',
+      appointmentsAtSelectedDate: [], // Todas las citas del día para calcular disponibilidad local
+      loadingAppointments: false,
+
+      submittingVehicle: false,
+      submittingAppointment: false
     };
   }
 
@@ -66,6 +72,102 @@ class AdminDashboard extends Component {
     this.fetchDashboardData();
     this.fetchFormConfigs();
   }
+
+  componentDidUpdate(prevProps, prevState) {
+    // Si cambia la fecha, cargar todas las citas de ese día para el modal de especialistas
+    if (this.state.fechaIngreso && prevState.fechaIngreso !== this.state.fechaIngreso) {
+      this.fetchAppointmentsByDate();
+    }
+
+    // Si cambia la fecha o el servicio o el empleado, recargar slots de disponibilidad general
+    if (
+      (this.state.fechaIngreso && this.state.selectedServicioId) &&
+      (prevState.fechaIngreso !== this.state.fechaIngreso || 
+       prevState.selectedServicioId !== this.state.selectedServicioId ||
+       prevState.selectedEmpleadoId !== this.state.selectedEmpleadoId)
+    ) {
+      this.fetchAvailableSlots();
+    }
+  }
+
+  fetchAppointmentsByDate = async () => {
+    const { fechaIngreso } = this.state;
+    if (!fechaIngreso) return;
+
+    this.setState({ loadingAppointments: true });
+    const token = localStorage.getItem('token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    
+    try {
+      // Obtenemos todas las citas para verificar disponibilidad de especialistas localmente
+      const res = await fetch(`${API_BASE_URL}/citas`, { headers });
+      if (res.ok) {
+        const allAppointments = await res.json();
+        const filtered = allAppointments.filter(a => a.fecha === fechaIngreso && a.estado !== 'CANCELADO');
+        this.setState({ appointmentsAtSelectedDate: filtered, loadingAppointments: false });
+      }
+    } catch (error) {
+      console.error('Error fetching appointments for date:', error);
+      this.setState({ loadingAppointments: false });
+    }
+  };
+
+  fetchAvailableSlots = async () => {
+    const { fechaIngreso, selectedServicioId, selectedEmpleadoId } = this.state;
+    if (!fechaIngreso || !selectedServicioId) return;
+
+    this.setState({ loadingSlots: true });
+    const token = localStorage.getItem('token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    
+    try {
+      // Definimos los slots de negocio
+      const businessSlots = [
+        '08:00:00', '09:00:00', '10:00:00', '11:00:00', '12:00:00',
+        '14:00:00', '15:00:00', '16:00:00', '17:00:00', '18:00:00'
+      ];
+
+      let url = `${API_BASE_URL}/citas/slots?fecha=${fechaIngreso}&servicioId=${selectedServicioId}`;
+      if (selectedEmpleadoId) {
+        url += `&empleadoId=${selectedEmpleadoId}`;
+      }
+      
+      const res = await fetch(url, { headers });
+      let finalSlots = [];
+      
+      if (res.ok) {
+        const apiSlots = await res.json();
+        // Mapeamos los slots del negocio con la disponibilidad de la API
+        finalSlots = businessSlots.map(time => {
+          const apiSlot = apiSlots.find(s => s.hora === time);
+          return {
+            hora: time,
+            disponible: apiSlot ? apiSlot.disponible : true
+          };
+        });
+      } else {
+        // Fallback a slots de negocio todos disponibles si la API falla
+        finalSlots = businessSlots.map(time => ({ hora: time, disponible: true }));
+      }
+      
+      this.setState({ availableSlots: finalSlots, loadingSlots: false });
+    } catch (error) {
+      console.error('Error fetching slots:', error);
+      this.setState({ availableSlots: [], loadingSlots: false });
+    }
+  };
+
+  handleTimeSlotClick = (slot) => {
+    if (!slot.disponible) return;
+    this.setState({ specialistSlotTime: slot.hora, showSpecialistModal: true });
+  };
+
+  confirmTimeSlot = () => {
+    this.setState({ 
+      selectedTimeSlot: this.state.specialistSlotTime, 
+      showSpecialistModal: false 
+    });
+  };
 
   fetchDashboardData = async () => {
     const token = localStorage.getItem('token');
@@ -145,17 +247,29 @@ class AdminDashboard extends Component {
 
     // Validaciones básicas
     if (!placa || !marca || !modelo || !anio || !tipo || !color) {
-      alert('Por favor complete todos los campos obligatorios del vehículo.');
+      if (this.props.showToast) {
+        this.props.showToast('Por favor complete todos los campos obligatorios del vehículo.', 'error');
+      } else {
+        alert('Por favor complete todos los campos obligatorios del vehículo.');
+      }
       return;
     }
 
     if (!showQuickUser && !userId) {
-      alert('Por favor seleccione un propietario o registre uno nuevo.');
+      if (this.props.showToast) {
+        this.props.showToast('Por favor seleccione un propietario o registre uno nuevo.', 'error');
+      } else {
+        alert('Por favor seleccione un propietario o registre uno nuevo.');
+      }
       return;
     }
 
     if (showQuickUser && (!newUserNombre || !newUserApellido || !newUserNumDoc || !newUserTelefono || !newUserEmail)) {
-      alert('Por favor complete todos los campos del nuevo usuario.');
+      if (this.props.showToast) {
+        this.props.showToast('Por favor complete todos los campos del nuevo usuario.', 'error');
+      } else {
+        alert('Por favor complete todos los campos del nuevo usuario.');
+      }
       return;
     }
 
@@ -185,7 +299,7 @@ class AdminDashboard extends Component {
         console.log('Registrando nuevo usuario:', userPayload);
 
         const userRes = await fetch(`${API_BASE_URL}/auth/register`, {
-          method: 'POST', // 1. Registrar usuario si es necesario
+          method: 'POST', 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userPayload)
         });
@@ -261,7 +375,12 @@ class AdminDashboard extends Component {
         }
       }
 
-      alert('Vehículo y propietario procesados correctamente.');
+      if (this.props.showToast) {
+        this.props.showToast('Vehículo y propietario procesados correctamente.', 'success');
+      } else {
+        alert('Vehículo y propietario procesados correctamente.');
+      }
+      
       this.setState({
         placa: '', marca: '', modelo: '', anio: new Date().getFullYear(),
         tipo: 'Moto', color: '', imagenFile: null, imagenPreview: null,
@@ -273,7 +392,11 @@ class AdminDashboard extends Component {
       this.fetchFormConfigs();
     } catch (error) {
       console.error('Error general en handleSyncVehicle:', error);
-      alert(error.message);
+      if (this.props.showToast) {
+        this.props.showToast(error.message, 'error');
+      } else {
+        alert(error.message);
+      }
     } finally {
       this.setState({ submittingVehicle: false });
     }
@@ -291,10 +414,14 @@ class AdminDashboard extends Component {
   };
 
   handleScheduleService = async () => {
-    const { selectedServicioId, selectedVehiculoId, selectedEmpleadoId, fechaIngreso, submittingAppointment } = this.state;
+    const { selectedServicioId, selectedVehiculoId, selectedEmpleadoId, fechaIngreso, selectedTimeSlot, submittingAppointment } = this.state;
     
-    if (submittingAppointment || !selectedServicioId || !selectedVehiculoId || !fechaIngreso) {
-      alert('Complete los campos obligatorios: Servicio, Unidad y Fecha.');
+    if (submittingAppointment || !selectedServicioId || !selectedVehiculoId || !fechaIngreso || !selectedTimeSlot) {
+      if (this.props.showToast) {
+        this.props.showToast('Complete los campos obligatorios: Servicio, Unidad, Fecha y Hora.', 'error');
+      } else {
+        alert('Complete los campos obligatorios: Servicio, Unidad, Fecha y Hora.');
+      }
       return;
     }
 
@@ -303,7 +430,11 @@ class AdminDashboard extends Component {
     const today = new Date();
     today.setHours(0,0,0,0);
     if (selectedDate < today) {
-      alert('La fecha no puede ser anterior a hoy.');
+      if (this.props.showToast) {
+        this.props.showToast('La fecha no puede ser anterior a hoy.', 'error');
+      } else {
+        alert('La fecha no puede ser anterior a hoy.');
+      }
       return;
     }
 
@@ -319,7 +450,7 @@ class AdminDashboard extends Component {
         servicioId: parseInt(selectedServicioId),
         vehiculoId: parseInt(selectedVehiculoId),
         fecha: fechaIngreso,
-        hora_inicio: '08:00:00', // Valor por defecto para dashboard rápido
+        hora_inicio: selectedTimeSlot,
       };
 
       if (selectedEmpleadoId) {
@@ -333,84 +464,54 @@ class AdminDashboard extends Component {
       });
 
       if (res.ok) {
-        alert('Servicio programado correctamente');
+        if (this.props.showToast) {
+          this.props.showToast('Servicio programado correctamente', 'success');
+        } else {
+          alert('Servicio programado correctamente');
+        }
+        
         this.setState({
           selectedServicioId: '',
           selectedVehiculoId: '',
           selectedEmpleadoId: '',
-          fechaIngreso: ''
+          fechaIngreso: '',
+          selectedTimeSlot: '',
+          selectedVehicleType: '',
+          availableSlots: []
         });
         this.fetchDashboardData();
       } else {
         const error = await res.json();
-        alert(error.message || 'Error al programar servicio');
+        if (this.props.showToast) {
+          this.props.showToast(error.message || 'Error al programar servicio', 'error');
+        } else {
+          alert(error.message || 'Error al programar servicio');
+        }
       }
     } catch (error) {
-      alert('Error de conexión');
+      if (this.props.showToast) {
+        this.props.showToast('Error de conexión', 'error');
+      } else {
+        alert('Error de conexión');
+      }
     } finally {
       this.setState({ submittingAppointment: false });
     }
   };
 
-  handleCreateService = async () => {
-    const { 
-      newServicioNombre, 
-      newServicioDescripcion, 
-      newServicioPrecio, 
-      newServicioDuracion, 
-      newServicioIncluye, 
-      newServicioBeneficios,
-      submittingService 
-    } = this.state;
-
-    if (submittingService || !newServicioNombre || !newServicioDescripcion || !newServicioPrecio || !newServicioDuracion) {
-      alert('Por favor complete los campos obligatorios: Nombre, Descripción, Precio y Duración.');
-      return;
+  handleServiceSelect = (serviceId) => {
+    const service = this.state.servicios.find(s => s.id === parseInt(serviceId));
+    if (service) {
+      this.setState({ tempService: service, showServiceModal: true });
     }
+  };
 
-    this.setState({ submittingService: true });
-    const token = localStorage.getItem('token');
-    const headers = { 
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-
-    try {
-      const body = {
-        nombre: newServicioNombre,
-        descripcion: newServicioDescripcion,
-        precio: parseFloat(newServicioPrecio),
-        duracion: parseInt(newServicioDuracion),
-        incluye: newServicioIncluye,
-        beneficios: newServicioBeneficios
-      };
-
-      const res = await fetch(`${API_BASE_URL}/servicios`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body)
-      });
-
-      if (res.ok) {
-        alert('Servicio creado correctamente');
-        this.setState({
-          newServicioNombre: '',
-          newServicioDescripcion: '',
-          newServicioPrecio: '',
-          newServicioDuracion: '',
-          newServicioIncluye: '',
-          newServicioBeneficios: ''
-        });
-        this.fetchFormConfigs(); // Recargar lista de servicios
-      } else {
-        const error = await res.json();
-        alert(error.message || 'Error al crear el servicio');
-      }
-    } catch (error) {
-      alert('Error de conexión');
-    } finally {
-      this.setState({ submittingService: false });
-    }
+  confirmService = () => {
+    this.setState({ 
+      selectedServicioId: this.state.tempService.id, 
+      showServiceModal: false,
+      tempService: null 
+    });
   };
 
   render() {
@@ -442,19 +543,56 @@ class AdminDashboard extends Component {
       selectedVehiculoId,
       selectedEmpleadoId,
       fechaIngreso,
+      selectedVehicleType,
+      showServiceModal,
+      tempService,
+      vehicleSearchTerm,
+      availableSlots,
+      selectedTimeSlot,
+      loadingSlots,
+      showSpecialistModal,
+      specialistSlotTime,
+      appointmentsAtSelectedDate,
+      loadingAppointments,
       submittingVehicle,
-      submittingAppointment,
-      newServicioNombre,
-      newServicioDescripcion,
-      newServicioPrecio,
-      newServicioDuracion,
-      newServicioIncluye,
-      newServicioBeneficios,
-      submittingService
+      submittingAppointment
     } = this.state;
 
     const filteredUsers = this.getFilteredUsers();
     const selectedUser = users.find(u => u.id === parseInt(userId));
+
+    // Filtrar servicios según tipo de vehículo seleccionado
+    const filteredServices = servicios.filter(s => {
+      if (!selectedVehicleType) return false;
+      if (!s.tipoVehiculo) return true; // Si no tiene tipo, se asume compatible o legacy
+      const types = s.tipoVehiculo.split(',').map(t => t.trim().toLowerCase());
+      return types.includes(selectedVehicleType.toLowerCase());
+    });
+
+    // Filtrar vehículos según búsqueda de placa/unidad
+    const filteredVehiculos = vehiculos.filter(v => {
+      const search = vehicleSearchTerm.toLowerCase();
+      return (
+        v.placa?.toLowerCase().includes(search) ||
+        v.marca?.toLowerCase().includes(search) ||
+        v.modelo?.toLowerCase().includes(search)
+      );
+    });
+
+    const isFormComplete = selectedServicioId && selectedVehiculoId && fechaIngreso && selectedTimeSlot;
+
+    // Calcular disponibilidad de especialistas para el slot seleccionado
+    const morningSlots = availableSlots.filter(s => parseInt(s.hora.split(':')[0]) < 13);
+    const afternoonSlots = availableSlots.filter(s => parseInt(s.hora.split(':')[0]) >= 13);
+
+    const specialistsAvailability = showSpecialistModal ? empleados.map(emp => {
+      const isOccupied = appointmentsAtSelectedDate.some(app => 
+        app.empleado?.id === emp.id && app.hora_inicio === specialistSlotTime
+      );
+      return { ...emp, isOccupied };
+    }) : [];
+
+    const anySpecialistAvailable = specialistsAvailability.some(s => !s.isOccupied);
     
     if (loading) {
       return (
@@ -477,7 +615,10 @@ class AdminDashboard extends Component {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-6">
+          <div 
+            onClick={() => this.props.setView('users')}
+            className="bg-[#0B1220] border border-white/5 rounded-3xl p-6 cursor-pointer hover:scale-[1.02] hover:border-blue-500/30 transition-all duration-300"
+          >
             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">Usuarios</div>
             <div className="mt-2 text-3xl font-black text-white">{stats.usuarios}</div>
           </div>
@@ -485,11 +626,17 @@ class AdminDashboard extends Component {
             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">Ingresos</div>
             <div className="mt-2 text-3xl font-black text-white">${stats.ingresos}</div>
           </div>
-          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-6">
+          <div 
+            onClick={() => this.props.setView('citas')}
+            className="bg-[#0B1220] border border-white/5 rounded-3xl p-6 cursor-pointer hover:scale-[1.02] hover:border-blue-500/30 transition-all duration-300"
+          >
             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">En proceso</div>
             <div className="mt-2 text-3xl font-black text-white">{stats.vehiculosEnProceso}</div>
           </div>
-          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-6">
+          <div 
+            onClick={() => this.props.setView('users')}
+            className="bg-[#0B1220] border border-white/5 rounded-3xl p-6 cursor-pointer hover:scale-[1.02] hover:border-blue-500/30 transition-all duration-300"
+          >
             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">Empleados</div>
             <div className="mt-2 text-3xl font-black text-white">{stats.trabajadoresActivos}</div>
           </div>
@@ -743,169 +890,305 @@ class AdminDashboard extends Component {
             </div>
             
             <div className="space-y-6">
+              {/* PASO 1: Selector de tipo de vehículo */}
               <div>
+                <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-3">
+                  Paso 1: Tipo de Vehículo
+                </label>
+                <div className="flex gap-3">
+                  {['MOTO', 'CARRO', 'CAMIONETA'].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => this.setState({ selectedVehicleType: type, selectedServicioId: '', selectedTimeSlot: '' })}
+                      className={`flex-1 py-3 px-4 rounded-xl border transition-all duration-300 font-black text-[10px] tracking-widest ${
+                        selectedVehicleType === type 
+                        ? 'border-[#8B5CF6] bg-[#8B5CF6]/20 text-white shadow-lg shadow-[#8B5CF6]/10' 
+                        : 'border-white/10 bg-black/40 text-[#64748B] hover:border-white/20'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* PASO 2: Nivel de Detailing (Servicios) */}
+              <div className={!selectedVehicleType ? 'opacity-40 pointer-events-none' : ''}>
                 <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
-                  Nivel de Detailing
+                  Paso 2: Nivel de Detailing
                 </label>
                 <CustomSelect 
                   value={selectedServicioId}
-                  onChange={(val) => this.setState({ selectedServicioId: val })}
-                  options={servicios.map(s => ({
+                  onChange={this.handleServiceSelect}
+                  options={filteredServices.map(s => ({
                     value: s.id,
                     label: `${s.nombre} - $${s.precio}`,
                     sublabel: s.categoria
                   }))}
-                  placeholder="Seleccione el tratamiento..."
+                  placeholder={selectedVehicleType ? "Seleccione el tratamiento..." : "Primero elija tipo de vehículo"}
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className={`grid grid-cols-2 gap-4 ${!selectedServicioId ? 'opacity-40 pointer-events-none' : ''}`}>
+                {/* PASO 3: Unidad Asignada (Searchable) */}
+                <div className="relative">
                   <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
-                    Unidad Asignada
+                    Paso 3: Unidad Asignada
                   </label>
-                  <CustomSelect 
-                    value={selectedVehiculoId}
-                    onChange={(val) => this.setState({ selectedVehiculoId: val })}
-                    options={vehiculos.map(v => ({
-                      value: v.id,
-                      label: `${v.placa} – ${v.usuario?.nombre}`,
-                      sublabel: `${v.marca} ${v.modelo}`
-                    }))}
-                    placeholder="Placa..."
-                  />
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      placeholder="Buscar placa o marca..."
+                      value={selectedVehiculoId ? vehiculos.find(v => v.id === parseInt(selectedVehiculoId))?.placa : vehicleSearchTerm}
+                      onChange={(e) => this.setState({ vehicleSearchTerm: e.target.value, selectedVehiculoId: '' })}
+                      className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#8B5CF6]/50 transition-all"
+                    />
+                    {selectedVehiculoId && (
+                      <button 
+                        onClick={() => this.setState({ selectedVehiculoId: '', vehicleSearchTerm: '' })}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Dropdown de búsqueda de vehículos */}
+                  {!selectedVehiculoId && vehicleSearchTerm && (
+                    <div className="absolute left-0 right-0 top-full mt-2 bg-[#161b27] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-48 overflow-y-auto">
+                      {filteredVehiculos.length > 0 ? (
+                        filteredVehiculos.map(v => (
+                          <button 
+                            key={v.id}
+                            onClick={() => this.setState({ selectedVehiculoId: v.id, vehicleSearchTerm: '' })}
+                            className="w-full px-5 py-3 text-left hover:bg-white/5 transition-all border-b border-white/5 last:border-0"
+                          >
+                            <div className="text-sm font-bold text-white">{v.placa}</div>
+                            <div className="text-[10px] text-slate-500 font-mono">{v.marca} {v.modelo} - {v.usuario?.nombre}</div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-5 py-3 text-sm text-slate-500 italic">No se encontraron unidades</div>
+                      )}
+                    </div>
+                  )}
                 </div>
+
+                {/* PASO 4: Fecha de Ingreso */}
                 <div>
                   <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
-                    Fecha de Ingreso
+                    Paso 4: Fecha
                   </label>
                   <input 
                     type="date" 
                     value={fechaIngreso}
-                    onChange={(e) => this.setState({ fechaIngreso: e.target.value })}
+                    onChange={(e) => this.setState({ fechaIngreso: e.target.value, selectedTimeSlot: '' })}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#2563EB]/50 transition-all"
+                    className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#8B5CF6]/50 transition-all"
                   />
                 </div>
               </div>
 
-              <div>
+              {/* PASO 4 CONTINUACIÓN: Slots de Hora */}
+              {fechaIngreso && selectedServicioId && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                  <div className="flex flex-col gap-4">
+                    {/* Bloque Mañana */}
+                    <div>
+                      <label className="text-[9px] font-black text-[#64748B] uppercase tracking-[0.3em] mb-2 block">Mañana</label>
+                      <div className="grid grid-cols-5 gap-2">
+                        {morningSlots.map((slot) => (
+                          <button
+                            key={slot.hora}
+                            onClick={() => this.handleTimeSlotClick(slot)}
+                            className={`relative py-3 rounded-xl text-[11px] font-black transition-all duration-300 ${
+                              selectedTimeSlot === slot.hora
+                              ? 'bg-[#8B5CF6] text-white shadow-lg shadow-[#8B5CF6]/30'
+                              : slot.disponible
+                                ? 'bg-black/40 border border-white/5 text-white hover:border-[#8B5CF6]/50'
+                                : 'bg-black/10 border border-white/5 text-slate-600 opacity-40 cursor-not-allowed'
+                            }`}
+                          >
+                            {slot.hora.slice(0, 5)}
+                            {!slot.disponible && <div className="text-[7px] font-normal uppercase tracking-tighter mt-0.5">Ocupado</div>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Bloque Tarde */}
+                    <div>
+                      <label className="text-[9px] font-black text-[#64748B] uppercase tracking-[0.3em] mb-2 block">Tarde</label>
+                      <div className="grid grid-cols-5 gap-2">
+                        {afternoonSlots.map((slot) => (
+                          <button
+                            key={slot.hora}
+                            onClick={() => this.handleTimeSlotClick(slot)}
+                            className={`relative py-3 rounded-xl text-[11px] font-black transition-all duration-300 ${
+                              selectedTimeSlot === slot.hora
+                              ? 'bg-[#8B5CF6] text-white shadow-lg shadow-[#8B5CF6]/30'
+                              : slot.disponible
+                                ? 'bg-black/40 border border-white/5 text-white hover:border-[#8B5CF6]/50'
+                                : 'bg-black/10 border border-white/5 text-slate-600 opacity-40 cursor-not-allowed'
+                            }`}
+                          >
+                            {slot.hora.slice(0, 5)}
+                            {!slot.disponible && <div className="text-[7px] font-normal uppercase tracking-tighter mt-0.5">Ocupado</div>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PASO 5: Empleado Asignado */}
+              <div className={!isFormComplete ? 'opacity-40 pointer-events-none' : ''}>
                 <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
-                  Empleado Asignado
+                  Paso 5: Especialista (Opcional)
                 </label>
                 <CustomSelect 
                   value={selectedEmpleadoId}
                   onChange={(val) => this.setState({ selectedEmpleadoId: val })}
                   options={[
-                    { value: '', label: 'Sin asignar (Auto-asignación)' },
+                    { value: '', label: 'Auto-asignación (Primer disponible)' },
                     ...empleados.map(e => ({
                       value: e.id,
                       label: `${e.usuario?.nombre} (${e.cargo || 'Técnico'})`,
                       sublabel: e.especialidad
                     }))
                   ]}
-                  placeholder="Seleccionar empleado..."
+                  placeholder="Seleccionar especialista..."
                 />
               </div>
 
               <button 
                 onClick={this.handleScheduleService}
-                disabled={submittingAppointment}
-                className={`w-full py-5 ${submittingAppointment ? 'bg-[#8B5CF6]/50' : 'bg-[#8B5CF6] hover:bg-[#7C3AED]'} text-white font-mono text-[10px] uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-[#8B5CF6]/30 transition-all font-black`}
+                disabled={submittingAppointment || !isFormComplete}
+                className={`w-full py-5 ${(!isFormComplete || submittingAppointment) ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-[#8B5CF6] hover:bg-[#7C3AED] text-white shadow-xl shadow-[#8B5CF6]/30'} font-mono text-[10px] uppercase tracking-[0.3em] rounded-2xl transition-all font-black`}
               >
-                {submittingAppointment ? 'PROGRAMANDO...' : 'PROGRAMAR SERVICIO'}
-              </button>
-            </div>
-          </div>
-
-          {/* CARD GESTIONAR SERVICIOS */}
-          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-8 lg:col-span-2">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-[#10B981] rounded-xl flex items-center justify-center shadow-lg shadow-[#10B981]/40">
-                <span className="text-white font-bold">S</span>
-              </div>
-              <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">
-                Agregar Nuevo Servicio
-              </h2>
-            </div>
-            
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">Nombre del Servicio</label>
-                    <input 
-                      placeholder="Ej: Lavado Premium" 
-                      value={newServicioNombre}
-                      onChange={(e) => this.setState({ newServicioNombre: e.target.value })}
-                      className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold placeholder:text-[#475569] outline-none focus:border-[#10B981]/50 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">Descripción</label>
-                    <textarea 
-                      placeholder="Descripción detallada del servicio..." 
-                      value={newServicioDescripcion}
-                      onChange={(e) => this.setState({ newServicioDescripcion: e.target.value })}
-                      className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold placeholder:text-[#475569] outline-none focus:border-[#10B981]/50 transition-all min-h-[100px]"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">Precio ($)</label>
-                      <input 
-                        type="number"
-                        placeholder="0.00" 
-                        value={newServicioPrecio}
-                        onChange={(e) => this.setState({ newServicioPrecio: e.target.value })}
-                        className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#10B981]/50 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">Duración (min)</label>
-                      <input 
-                        type="number"
-                        placeholder="60" 
-                        value={newServicioDuracion}
-                        onChange={(e) => this.setState({ newServicioDuracion: e.target.value })}
-                        className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#10B981]/50 transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">¿Qué incluye? (Separa con comas)</label>
-                    <textarea 
-                      placeholder="Ej: Lavado de motor, Polichado, Limpieza de rines..." 
-                      value={newServicioIncluye}
-                      onChange={(e) => this.setState({ newServicioIncluye: e.target.value })}
-                      className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold placeholder:text-[#475569] outline-none focus:border-[#10B981]/50 transition-all min-h-[100px]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">Beneficios (Separa con comas)</label>
-                    <textarea 
-                      placeholder="Ej: Mayor brillo, Protección UV, Acabado profesional..." 
-                      value={newServicioBeneficios}
-                      onChange={(e) => this.setState({ newServicioBeneficios: e.target.value })}
-                      className="w-full px-5 py-3.5 bg-black/30 border border-white/5 rounded-2xl text-white font-bold placeholder:text-[#475569] outline-none focus:border-[#10B981]/50 transition-all min-h-[100px]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button 
-                onClick={this.handleCreateService}
-                disabled={submittingService}
-                className={`w-full py-5 ${submittingService ? 'bg-[#10B981]/50' : 'bg-[#10B981] hover:bg-[#059669]'} text-white font-mono text-[10px] uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-[#10B981]/30 transition-all font-black`}
-              >
-                {submittingService ? 'CREANDO...' : 'CREAR SERVICIO'}
+                {submittingAppointment ? 'PROCESANDO...' : 'PROGRAMAR SERVICIO'}
               </button>
             </div>
           </div>
         </div>
+
+        {/* MODAL DE DETALLES DEL SERVICIO */}
+        {showServiceModal && tempService && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-[#020617]/90 backdrop-blur-sm" onClick={() => this.setState({ showServiceModal: false, tempService: null })}></div>
+            <div className="relative w-full max-w-lg bg-[#0B1220] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-300">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-[#8B5CF6]/20 rounded-2xl flex items-center justify-center">
+                  <span className="text-2xl">✨</span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">{tempService.nombre}</h3>
+                  <p className="text-[#8B5CF6] font-bold text-sm">${tempService.precio} • {tempService.duration_minutes || tempService.duracion} min</p>
+                </div>
+              </div>
+
+              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                <div>
+                  <label className="text-[9px] font-black text-[#64748B] uppercase tracking-[0.3em] mb-2 block">Descripción</label>
+                  <p className="text-slate-300 text-sm leading-relaxed">{tempService.descripcion}</p>
+                </div>
+
+                {tempService.incluye && (
+                  <div>
+                    <label className="text-[9px] font-black text-[#64748B] uppercase tracking-[0.3em] mb-2 block">¿Qué incluye?</label>
+                    <div className="flex flex-wrap gap-2">
+                      {tempService.incluye.split(',').map((item, idx) => (
+                        <span key={idx} className="px-3 py-1.5 bg-white/5 rounded-lg text-[10px] text-slate-400 font-bold border border-white/5 italic">
+                          ✓ {item.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {tempService.beneficios && (
+                  <div>
+                    <label className="text-[9px] font-black text-[#64748B] uppercase tracking-[0.3em] mb-2 block">Beneficios</label>
+                    <div className="flex flex-wrap gap-2">
+                      {tempService.beneficios.split(',').map((item, idx) => (
+                        <span key={idx} className="px-3 py-1.5 bg-[#8B5CF6]/10 rounded-lg text-[10px] text-[#8B5CF6] font-bold border border-[#8B5CF6]/10 italic">
+                          ✦ {item.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-8 pt-6 border-t border-white/5">
+                <button 
+                  onClick={() => this.setState({ showServiceModal: false, tempService: null })}
+                  className="py-4 bg-white/5 hover:bg-white/10 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
+                >
+                  Elegir otro
+                </button>
+                <button 
+                  onClick={this.confirmService}
+                  className="py-4 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg shadow-[#8B5CF6]/20 transition-all"
+                >
+                  Seleccionar este servicio
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL DE DISPONIBILIDAD DE ESPECIALISTAS */}
+        {showSpecialistModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-[#020617]/90 backdrop-blur-sm" onClick={() => this.setState({ showSpecialistModal: false })}></div>
+            <div className="relative w-full max-w-md bg-[#0B1220] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-300">
+              <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-6">
+                Disponibilidad para las {specialistSlotTime.slice(0, 5)}
+              </h3>
+
+              <div className="space-y-4 mb-8">
+                {specialistsAvailability.map(spec => (
+                  <div key={spec.id} className="flex items-center justify-between p-4 bg-black/20 rounded-2xl border border-white/5">
+                    <div className="flex flex-col">
+                      <span className={`font-bold text-sm ${spec.isOccupied ? 'text-slate-500 line-through' : 'text-white'}`}>
+                        {spec.usuario?.nombre}
+                      </span>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-widest">{spec.cargo || 'Técnico'}</span>
+                    </div>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${spec.isOccupied ? 'text-red-500' : 'text-emerald-500'}`}>
+                      {spec.isOccupied ? '✗ Ocupado' : '✓ Disponible'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {anySpecialistAvailable ? (
+                <button 
+                  onClick={this.confirmTimeSlot}
+                  className="w-full py-4 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg shadow-[#8B5CF6]/20 transition-all"
+                >
+                  Confirmar esta hora
+                </button>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-center">
+                    <p className="text-red-500 text-[10px] font-bold uppercase tracking-widest">
+                      No hay especialistas disponibles para este horario. Elige otra hora.
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => this.setState({ showSpecialistModal: false })}
+                    className="w-full py-4 bg-white/5 hover:bg-white/10 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

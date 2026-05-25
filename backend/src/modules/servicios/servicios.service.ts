@@ -110,6 +110,9 @@ export class ServiciosService implements OnModuleInit {
   }
 
   private getTiposVehiculo(servicio: Servicio) {
+    if (servicio?.tipoVehiculo) {
+      return servicio.tipoVehiculo.split(',').map((t) => t.trim());
+    }
     const name = this.normalize(servicio?.nombre || '');
     if (name.includes('express')) {
       return ['Auto', 'Moto', 'Camioneta', 'SUV'];
