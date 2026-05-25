@@ -1177,9 +1177,9 @@ class LandingPage extends Component {
 
                     <div className="space-y-5">
                       {[
-                        [,'Misión','Ofrecer servicios de detailing de clase mundial con atención personalizada, precios justos y resultados que superan las expectativas.','border-blue-500'],
-                        [, 'Visión', 'Ser el centro de car care más reconocido de Colombia para 2027, expandiendo nuestra presencia a las principales ciudades del país.', 'border-purple-500'],
-                        [, 'Valores', 'Calidad · Honestidad · Puntualidad · Pasión · Responsabilidad ambiental', 'border-green-500'],
+                        ['🎯','Misión','Ofrecer servicios de detailing de clase mundial con atención personalizada, precios justos y resultados que superan las expectativas.','border-blue-500'],
+                        ['🔭', 'Visión', 'Ser el centro de car care más reconocido de Colombia para 2027, expandiendo nuestra presencia a las principales ciudades del país.', 'border-purple-500'],
+                        ['💎', 'Valores', 'Calidad · Honestidad · Puntualidad · Pasión · Responsabilidad ambiental', 'border-green-500'],
                       ].map((c, i) => (
                         <div
                           key={i}
@@ -1269,10 +1269,10 @@ class LandingPage extends Component {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
-                      [, 'Certificación internacional en detailing'],
-                      [, 'Productos biodegradables y eco-friendly'],
-                      [, 'Garantía en todos nuestros servicios'],
-                      [, 'Técnicos con formación continua'],
+                      ['🏆', 'Certificación internacional en detailing'],
+                      ['🌿', 'Productos biodegradables y eco-friendly'],
+                      ['🛡️', 'Garantía en todos nuestros servicios'],
+                      ['👨‍🔧', 'Técnicos con formación continua'],
                     ].map((c, i) => (
                       <div
                         key={i}

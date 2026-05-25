@@ -49,7 +49,7 @@ class Navbar extends Component {
 
     if (role === "empleado" || role === "trabajador") {
       return [
-        { key: "dashboard", label: "Dashboard", view: "dashboard" },
+        { key: "dashboard", label: "Inicio", view: "dashboard" },
         { key: "panel_empleado", label: "Panel", view: "panel_empleado"},
         { key: "servicios", label: "Servicios", view: "servicios" },
         { key: "cuenta", label: "Cuenta", view: "cuenta" },
@@ -196,7 +196,7 @@ class Navbar extends Component {
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <div className="h-[1px] w-4 bg-[#7b9cff]/50" />
-                  <div className="text-slate-500 text-[9px] font-mono tracking-[0.2em] uppercase">Control Panel</div>
+                  <div className="text-slate-500 text-[9px] font-mono tracking-[0.2em] uppercase">Panel de Control</div>
                 </div>
               </button>
             </div>
@@ -299,7 +299,7 @@ class Navbar extends Component {
                                 )}
                               </span>
                               <span className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-300 group-hover:text-white">
-                                {isDark ? 'Light Mode' : 'Dark Mode'}
+                                {isDark ? 'Modo Claro' : 'Modo Oscuro'}
                               </span>
                             </div>
                             <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${isDark ? 'bg-[#7b9cff]/20' : 'bg-slate-700'}`}>
@@ -380,7 +380,7 @@ class Navbar extends Component {
                 <div className="text-white font-black text-2xl tracking-tighter">
                   MOTO<span className="text-[#7b9cff]">EXPERT</span>
                 </div>
-                <div className="text-slate-500 text-[10px] font-mono tracking-[0.2em] uppercase mt-1">Mobile Access</div>
+                <div className="text-slate-500 text-[10px] font-mono tracking-[0.2em] uppercase mt-1">Acceso Móvil</div>
               </div>
               
               <nav className="px-4 py-8 flex-1 space-y-2 overflow-y-auto">
