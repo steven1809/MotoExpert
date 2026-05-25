@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not, In } from 'typeorm';
 import { Cita } from './entities/cita.entity';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 import { Vehiculo } from '../vehiculos/entities/vehiculo.entity';
@@ -40,31 +40,77 @@ export class CitasService {
   ) {}
 
   async create(dto: CreateCitaDto) {
-    const vehiculo = await this.vehiculoRepo.findOne({
-      where: { id: dto.vehiculoId },
-      relations: ['usuario'],
-    });
+    let vehiculo: Vehiculo | null = null;
+    let usuario: Usuario | null = null;
+
+    // 1. Identificar Usuario y Vehículo
+    if (dto.vehiculoId) {
+      vehiculo = await this.vehiculoRepo.findOne({
+        where: { id: dto.vehiculoId },
+        relations: ['usuario'],
+      });
+    }
+
+    if (dto.usuarioId) {
+      usuario = await this.usuarioRepo.findOne({
+        where: { id: dto.usuarioId },
+      });
+    }
+
+    // Lógica para GUEST si no hay usuario/vehículo autenticado
+    if (!vehiculo && dto.guestData) {
+      // Buscar vehículo por placa
+      vehiculo = await this.vehiculoRepo.findOne({
+        where: { placa: dto.guestData.placa },
+        relations: ['usuario'],
+      });
+
+      if (!vehiculo) {
+        // Si no existe el vehículo, necesitamos un usuario para asociarlo
+        if (!usuario) {
+          // Intentar buscar usuario por teléfono
+          usuario = await this.usuarioRepo.findOne({
+            where: { telefono: dto.guestData.telefono },
+          });
+
+          if (!usuario) {
+            // Crear usuario temporal/guest
+            usuario = this.usuarioRepo.create({
+              nombre: dto.guestData.nombre,
+              telefono: dto.guestData.telefono,
+              role: 'cliente',
+            });
+            usuario = await this.usuarioRepo.save(usuario);
+          }
+        }
+
+        // Crear vehículo
+        vehiculo = this.vehiculoRepo.create({
+          placa: dto.guestData.placa,
+          usuario: usuario,
+          marca: 'Genérico',
+          modelo: 'Unidad',
+        });
+        vehiculo = await this.vehiculoRepo.save(vehiculo);
+      }
+    }
+
+    if (!usuario && vehiculo?.usuario) {
+      usuario = vehiculo.usuario;
+    }
+
+    if (!vehiculo || !usuario) {
+      throw new BadRequestException(
+        'Datos inválidos: vehículo o usuario no encontrado',
+      );
+    }
+
     const servicio = await this.servicioRepo.findOne({
       where: { id: dto.servicioId },
     });
 
-    if (!vehiculo || !servicio) {
-      throw new BadRequestException(
-        'Datos inválidos: vehículo o servicio no encontrado',
-      );
-    }
-
-    const finalUsuarioId = dto.usuarioId || vehiculo.usuario?.id;
-    if (!finalUsuarioId) {
-      throw new BadRequestException('El vehículo no tiene un propietario asignado');
-    }
-
-    const usuario = await this.usuarioRepo.findOne({
-      where: { id: finalUsuarioId },
-    });
-
-    if (!usuario) {
-      throw new BadRequestException('Usuario no encontrado');
+    if (!servicio) {
+      throw new BadRequestException('Servicio no encontrado');
     }
 
     // Aseguramos formato YYYY-MM-DD para la fecha
@@ -76,26 +122,47 @@ export class CitasService {
         ? Number(servicio.duration_minutes ?? servicio.duracion)
         : 60;
 
-    const startDateTime = new Date(`${formattedFecha}T${dto.hora_inicio}`);
-    if (!Number.isFinite(startDateTime.getTime())) {
-      throw new BadRequestException('Fecha u hora de inicio inválida');
+    // Corregimos el parsing de la hora para evitar "Invalid Date"
+    // Esperamos HH:mm o HH:mm:ss
+    const timeRegex = /^(\d{1,2}):(\d{2})/;
+    const match = dto.hora_inicio.match(timeRegex);
+    if (!match) {
+      throw new BadRequestException('Formato de hora de inicio inválido (se espera HH:mm)');
     }
+
+    const hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+
+    const startDateTime = new Date(formattedFecha);
+    startDateTime.setHours(hours, minutes, 0, 0);
 
     const expectedEndDateTime = new Date(
       startDateTime.getTime() + durationMinutes * 60_000,
     );
+    
+    // Formatear hora_inicio y hora_fin como HH:mm:ss para PostgreSQL time type
+    const computedHoraInicio = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
     const computedHoraFin = expectedEndDateTime.toTimeString().slice(0, 8);
 
     let empleadoAsignado: Empleado | null;
 
     // Si el usuario seleccionó un empleado, usarlo
     if (dto.empleadoId) {
+      // Primero intentamos buscar en la tabla de empleados por el ID del usuario (que es lo que manda el frontend)
       empleadoAsignado = await this.empleadoRepo.findOne({
-        where: { id: dto.empleadoId, estado: 'activo' },
+        where: { usuarioId: dto.empleadoId },
       });
+
+      // Si no se encuentra, intentamos buscar por el ID de la propia tabla empleados
+      if (!empleadoAsignado) {
+        empleadoAsignado = await this.empleadoRepo.findOne({
+          where: { id: dto.empleadoId },
+        });
+      }
+
       if (!empleadoAsignado) {
         throw new BadRequestException(
-          'El especialista seleccionado no está disponible',
+          'El especialista seleccionado no existe en el sistema de empleados',
         );
       }
 
@@ -103,8 +170,8 @@ export class CitasService {
       const citasEmpleado = await this.repo.find({
         where: {
           fecha: formattedFecha,
-          hora_inicio: dto.hora_inicio,
-          empleado: { id: dto.empleadoId },
+          hora_inicio: computedHoraInicio,
+          empleado: { id: empleadoAsignado.id },
         },
       });
       if (citasEmpleado.length > 0) {
@@ -114,15 +181,13 @@ export class CitasService {
       }
     } else {
       // Lógica de Asignación Automática: Buscar empleado disponible
-      const todosLosEmpleados = await this.empleadoRepo.find({
-        where: { estado: 'activo' },
-      });
+      const todosLosEmpleados = await this.empleadoRepo.find();
 
       // Obtenemos todas las citas de ese bloque de fecha y hora
       const citasOcupadas = await this.repo.find({
         where: {
           fecha: formattedFecha,
-          hora_inicio: dto.hora_inicio,
+          hora_inicio: computedHoraInicio,
         },
         relations: ['empleado'],
       });
@@ -145,7 +210,7 @@ export class CitasService {
 
     const cita = this.repo.create({
       fecha: formattedFecha,
-      hora_inicio: dto.hora_inicio,
+      hora_inicio: computedHoraInicio,
       hora_fin: computedHoraFin,
       expected_end_time: expectedEndDateTime,
       usuario,
@@ -264,54 +329,112 @@ export class CitasService {
     });
     if (!servicio) throw new NotFoundException('Servicio no encontrado');
 
-    // Horario Maestro: 8:00 AM a 12:00 PM y 2:00 PM a 6:00 PM
-    const masterSchedule = [
-      '08:00:00',
-      '09:00:00',
-      '10:00:00',
-      '11:00:00',
-      '14:00:00',
-      '15:00:00',
-      '16:00:00',
-      '17:00:00',
-    ];
+    // Horario fijo del negocio
+    const HORARIO_NEGOCIO = {
+      1: { inicio: 8, fin: 18 }, // Lunes
+      2: { inicio: 8, fin: 18 }, // Martes
+      3: { inicio: 8, fin: 18 }, // Miércoles
+      4: { inicio: 8, fin: 18 }, // Jueves
+      5: { inicio: 8, fin: 18 }, // Viernes
+      6: { inicio: 8, fin: 14 }, // Sábado
+      0: null                    // Domingo - CERRADO
+    };
 
-    // Obtenemos todas las citas de ese día (asegurando formato YYYY-MM-DD)
-    const formattedFecha = new Date(fecha).toISOString().split('T')[0];
+    const dateObj = new Date(fecha + 'T12:00:00');
+    const formattedFecha = dateObj.toISOString().split('T')[0];
+    const dayOfWeek = dateObj.getDay();
 
-    let citasDelDia;
+    console.log(`[DEBUG] Fecha seleccionada: ${formattedFecha} (Día: ${dayOfWeek})`);
+
+    const horario = HORARIO_NEGOCIO[dayOfWeek as keyof typeof HORARIO_NEGOCIO];
+    if (!horario) {
+      console.log(`[DEBUG] Negocio cerrado para el día: ${dayOfWeek}`);
+      return [];
+    }
+
+    // BYPASS DE DESARROLLO: Permitir pruebas en festivos
+    const IS_DEV_MODE = true; 
+
+    // Determinar ID real del empleado
+    let actualEmpleadoId = empleadoId;
     if (empleadoId) {
-      // Si hay empleadoId, filtramos citas solo para ese empleado
+      let empleado = await this.empleadoRepo.findOne({ where: { usuarioId: empleadoId } });
+      if (!empleado) {
+        empleado = await this.empleadoRepo.findOne({ where: { id: empleadoId } });
+      }
+      if (empleado) {
+        actualEmpleadoId = empleado.id;
+      }
+    }
+
+    // Generar Master Schedule basado en HORARIO_NEGOCIO
+    const masterSchedule: string[] = [];
+    for (let h = horario.inicio; h < horario.fin; h++) {
+      masterSchedule.push(`${h.toString().padStart(2, '0')}:00:00`);
+    }
+    console.log(`[DEBUG] Master Schedule generado:`, masterSchedule);
+
+    // 3. Validar Horas Pasadas (Si es hoy)
+    const bogotaTimeStr = new Date().toLocaleString("en-US", { timeZone: "America/Bogota" });
+    const nowBogota = new Date(bogotaTimeStr);
+    const todayStr = nowBogota.getFullYear() + '-' + 
+                    String(nowBogota.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(nowBogota.getDate()).padStart(2, '0');
+
+    const esHoy = formattedFecha === todayStr;
+
+    let citasDelDia: Cita[] = [];
+    if (actualEmpleadoId) {
       citasDelDia = await this.repo.find({
         where: {
           fecha: formattedFecha,
-          empleado: { id: empleadoId },
+          empleado: { id: actualEmpleadoId },
+          estado: Not(In(['CANCELADO', 'FINALIZADO']))
         },
-        relations: ['empleado'],
       });
     } else {
-      // Sin empleadoId, obtenemos todas las citas del día
       citasDelDia = await this.repo.find({
-        where: { fecha: formattedFecha },
-        relations: ['empleado'],
+        where: { 
+          fecha: formattedFecha,
+          estado: Not(In(['CANCELADO', 'FINALIZADO']))
+        },
       });
     }
 
-    // Generamos los slots basados en el Horario Maestro y marcamos disponibilidad
     const slots = masterSchedule.map((horaStr) => {
-      // Verificamos si hay alguna cita en este horario
+      const [h] = horaStr.split(':').map(Number);
       const citaExistente = citasDelDia.find((c) => c.hora_inicio === horaStr);
+      
+      let disponible = !citaExistente;
+
+      if (esHoy) {
+        const horaActual = nowBogota.getHours();
+        // Si el slot es menor o igual a la hora actual
+        if (h <= horaActual) {
+          disponible = false;
+        }
+      }
+
+      // En modo dev, si no hay cita existente, forzamos disponible para slots futuros
+      if (IS_DEV_MODE && !citaExistente) {
+        if (esHoy) {
+          const horaActual = nowBogota.getHours();
+          if (h > horaActual) disponible = true;
+        } else {
+          disponible = true;
+        }
+      }
 
       return {
-        hora: horaStr,
-        disponible: !citaExistente,
+        hora: horaStr.substring(0, 5), // Formato HH:mm
+        disponible,
       };
     });
 
     return slots;
   }
 
-  async findAll(userId?: number, rol?: string) {
+  async findAll(userId?: number, rol?: string): Promise<Cita[]> {
     // SI ES EMPLEADO
     if (userId && rol === 'empleado') {
       const empleado = await this.empleadoRepo

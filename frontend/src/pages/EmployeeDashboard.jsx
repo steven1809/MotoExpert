@@ -43,7 +43,7 @@ const EmpleadoDashboard = ({ showToast, activeTab: propActiveTab }) => {
 
   const fetchDashboardData = async () => {
     const token = localStorage.getItem('token');
-    const employeeId = localStorage.getItem('userId');
+    const employeeUserId = localStorage.getItem('userId');
     const headers = { 'Authorization': `Bearer ${token}` };
 
     try {
@@ -51,14 +51,23 @@ const EmpleadoDashboard = ({ showToast, activeTab: propActiveTab }) => {
       if (response.ok) {
         const data = await response.json();
         
-        // Filter appointments for this specific employee
-        const myAppointments = data.filter(c => c.empleado?.usuario?.id === parseInt(employeeId) || c.empleadoId === parseInt(employeeId));
+        // El backend ya debería filtrar por empleado si el rol es correcto, 
+        // pero aseguramos que tenemos los datos del usuario logueado.
+        const myAppointments = data;
         
-        const today = new Date().toISOString().split('T')[0];
-        const todayApts = myAppointments.filter(c => c.fecha.split('T')[0] === today);
+        // Usamos la fecha local para filtrar "hoy"
+        const now = new Date();
+        const todayStr = now.getFullYear() + '-' + 
+                        String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                        String(now.getDate()).padStart(2, '0');
+        
+        const todayApts = myAppointments.filter(c => {
+          const citaFecha = c.fecha.includes('T') ? c.fecha.split('T')[0] : c.fecha;
+          return citaFecha === todayStr;
+        });
         
         const completed = todayApts.filter(c => c.estado === 'FINALIZADO').length;
-        const pending = todayApts.filter(c => c.estado !== 'FINALIZADO').length;
+        const pending = todayApts.filter(c => c.estado === 'PENDIENTE' || c.estado === 'PENDIENTE_PAGO').length;
         const total = todayApts.length;
 
         setStats({
@@ -83,21 +92,22 @@ const EmpleadoDashboard = ({ showToast, activeTab: propActiveTab }) => {
             duracion: `${inProgress.servicio?.duration_minutes || 60} min`,
             vehiculoImagen: inProgress.vehiculo?.foto_url,
             tasks: [
-              { name: 'Lavado exterior', status: 'completed' },
-              { name: 'Aspirado interior', status: 'completed' },
-              { name: 'Encerado', status: 'in-progress' },
-              { name: 'Limpieza de vidrios', status: 'pending' },
-              { name: 'Limpieza de rines y llantas', status: 'pending' },
-              { name: 'Revisión final', status: 'pending' }
+              { name: 'Diagnóstico inicial', status: 'completed' },
+              { name: 'Desarmado / Limpieza', status: 'in-progress' },
+              { name: 'Reparación / Cambio de piezas', status: 'pending' },
+              { name: 'Prueba de funcionamiento', status: 'pending' },
+              { name: 'Limpieza final', status: 'pending' }
             ]
           });
+        } else {
+          setCurrentService(null);
         }
 
         // Set timeline for today
         setTodayAppointments(todayApts.map(c => ({
           time: c.hora_inicio.substring(0, 5),
           service: c.servicio?.nombre || 'Servicio',
-          vehicle: `${inProgress?.vehiculo?.marca || ''} ${c.vehiculo?.modelo || ''}`,
+          vehicle: `${c.vehiculo?.marca || ''} ${c.vehiculo?.modelo || ''}`,
           status: c.estado === 'EN PROCESO' ? 'in-progress' : 'pending'
         })));
 
@@ -106,8 +116,8 @@ const EmpleadoDashboard = ({ showToast, activeTab: propActiveTab }) => {
           time: c.hora_inicio.substring(0, 5),
           name: c.servicio?.nombre || 'Servicio',
           vehicle: c.vehiculo?.modelo || 'Unidad',
-          countdown: 'En 1h 6m', // Simplified for demo
-          image: "https://images.unsplash.com/photo-1558981403-c5f91cbba527?auto=format&fit=crop&q=80&w=200"
+          countdown: 'Próximamente',
+          image: c.vehiculo?.foto_url || "https://images.unsplash.com/photo-1558981403-c5f91cbba527?auto=format&fit=crop&q=80&w=200"
         })));
 
         // Recent history
