@@ -22,6 +22,16 @@ const Register = ({ onSuccess }) => {
     e.preventDefault();
     setMessage({ text: '', isError: false });
 
+    if (formData.password.length < 8) {
+      setMessage({ text: 'La contraseña debe tener al menos 8 caracteres', isError: true });
+      return;
+    }
+
+    if (!/(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      setMessage({ text: 'La contraseña debe contener al menos una mayúscula y un número', isError: true });
+      return;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',

@@ -1,13 +1,13 @@
-import { IsString, IsNotEmpty, IsOptional, IsIn } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsIn, IsNumber } from 'class-validator';
 
 export class CreateEmpleadoDto {
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  nombre: string;
+  usuarioId: number;
 
   @IsString()
-  @IsNotEmpty()
-  documento: string;
+  @IsOptional()
+  documento?: string;
 
   @IsString()
   @IsOptional()
@@ -17,4 +17,8 @@ export class CreateEmpleadoDto {
   @IsString()
   @IsOptional()
   cargo?: string;
+
+  @IsString()
+  @IsOptional()
+  especialidad?: string;
 }

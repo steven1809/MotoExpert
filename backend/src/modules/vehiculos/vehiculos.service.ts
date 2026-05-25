@@ -46,7 +46,6 @@ export class VehiculosService {
     });
   }
 
-
   async findAll(userId?: number) {
     const where = userId ? { usuario: { id: userId } } : {};
 

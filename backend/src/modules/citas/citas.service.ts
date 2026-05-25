@@ -158,6 +158,35 @@ export class CitasService {
     return this.repo.save(cita);
   }
 
+  async forceCancel(id: number, userRole: string) {
+    if (userRole !== 'admin') {
+      throw new ForbiddenException('Only administrators can force cancellation');
+    }
+
+    const cita = await this.repo.findOne({
+      where: { id },
+      relations: ['usuario', 'vehiculo', 'servicio'],
+    });
+    if (!cita) throw new NotFoundException('Cita no encontrada');
+
+    if (cita.estado === 'FINALIZADO' || cita.estado === 'CANCELADO') {
+      throw new BadRequestException('Cannot cancel a completed or already cancelled appointment');
+    }
+
+    cita.estado = 'CANCELADO';
+    const savedCita = await this.repo.save(cita);
+
+    // Notificar al usuario
+    await this.notificacionesService.create(
+      cita.usuario,
+      'service_cancelled',
+      'Tu cita ha sido cancelada por el administrador',
+      `Tu servicio de ${cita.servicio.nombre} para el vehículo ${cita.vehiculo.placa} ha sido cancelado por el administrador.`,
+    );
+
+    return savedCita;
+  }
+
   async updateEstado(
     id: number,
     nuevoEstado: string,
@@ -301,7 +330,14 @@ export class CitasService {
             id: empleado.id,
           },
         },
-        relations: ['usuario', 'vehiculo', 'servicio', 'empleado', 'payment'],
+        relations: [
+          'usuario',
+          'vehiculo',
+          'servicio',
+          'empleado',
+          'empleado.usuario',
+          'payment',
+        ],
       });
     }
 
@@ -313,20 +349,41 @@ export class CitasService {
             id: userId,
           },
         },
-        relations: ['usuario', 'vehiculo', 'servicio', 'empleado', 'payment'],
+        relations: [
+          'usuario',
+          'vehiculo',
+          'servicio',
+          'empleado',
+          'empleado.usuario',
+          'payment',
+        ],
       });
     }
 
     // ADMIN
     return this.repo.find({
-      relations: ['usuario', 'vehiculo', 'servicio', 'empleado', 'payment'],
+      relations: [
+        'usuario',
+        'vehiculo',
+        'servicio',
+        'empleado',
+        'empleado.usuario',
+        'payment',
+      ],
     });
   }
 
   findOne(id: number) {
     return this.repo.findOne({
       where: { id },
-      relations: ['usuario', 'vehiculo', 'servicio', 'empleado', 'payment'],
+      relations: [
+        'usuario',
+        'vehiculo',
+        'servicio',
+        'empleado',
+        'empleado.usuario',
+        'payment',
+      ],
     });
   }
 
