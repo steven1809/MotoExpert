@@ -11,6 +11,8 @@ import citaIcon from '../assets/iconos/cita.png';
 import monedaIcon from '../assets/iconos/moneda.png';
 import proximoIcon from '../assets/iconos/proximo.png';
 import finalizarIcon from '../assets/iconos/finalizar.png';
+import relojIcon from '../assets/iconos/reloj.png';
+import ubicIcon from '../assets/iconos/ubicacion.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -1866,7 +1868,7 @@ const Citas = ({
                       <form onSubmit={handleSubmit} className="px-5 py-5 space-y-5">
                         <div className="space-y-3">
                           <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
-                            Vehículo
+                            1. Vehículo
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {vehiculos.slice(0, 3).map((v) => {
@@ -1922,7 +1924,7 @@ const Citas = ({
 
                         <div className="space-y-3">
                           <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
-                            Servicio
+                            2. Servicio
                           </div>
                           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                             <div className="lg:col-span-10">
@@ -1952,7 +1954,7 @@ const Citas = ({
 
                         <div className="space-y-3">
                           <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
-                            Trabajador
+                            3. Trabajador
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {empleados.slice(0, 4).map((e) => {
@@ -2000,7 +2002,7 @@ const Citas = ({
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-3">
                             <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
-                              Horario
+                              4. Horario
                             </div>
                             <div className="text-xs text-white/50 truncate">
                               {selectedEmpleado?.nombre ? `Horarios disponibles con ${selectedEmpleado.nombre}` : ''}
@@ -2193,12 +2195,12 @@ const Citas = ({
                                     </div>
                                     <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600 dark:text-[#94A3B8]">
                                       <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
-                                        <span className="text-[#60A5FA]">⏰</span>
+                                        <span className="text-[#60A5FA]"><img src={relojIcon} alt="reloj" className="w-6 h-6" /></span>
                                         <span className="font-bold">{time}</span>
                                       </div>
                                       <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
-                                        <span className="text-[#60A5FA]">📍</span>
-                                        <span className="font-bold">AutoClean Center</span>
+                                        <span className="text-[#60A5FA]"><img src={ubicIcon} alt="ubicacion" className="w-6 h-6" /></span>
+                                        <span className="font-bold">MotoExpert</span>
                                       </div>
                                     </div>
                                   </div>

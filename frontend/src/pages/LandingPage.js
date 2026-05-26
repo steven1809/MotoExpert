@@ -12,6 +12,9 @@ import pulidoImg from '../assets/services/pulidop.jpeg';
 import carwashVideo from '../assets/videos/6872078-hd_1280_720_25fps.mp4';
 import { FaCalendarAlt, FaFacebook, FaInstagram, FaTwitter, FaWhatsapp } from 'react-icons/fa';
 import AgendamientoPublico from '../components/agendamiento/AgendamientoPublico';
+import telefonoIcon from '../assets/iconos/telefono.png';
+import ubicIcon from '../assets/iconos/ubicacion.png';
+import relojIcon from '../assets/iconos/reloj.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -1501,21 +1504,27 @@ class LandingPage extends Component {
                       <h3 className="text-2xl font-semibold mb-6">Nuestra sede</h3>
                       <div className="space-y-4 text-slate-300">
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg">📍</div>
+                          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg">
+                            <img src={ubicIcon} alt="ubicacion" className="w-6 h-6" />
+                          </div>
                           <div>
                             <div className="font-semibold text-white">Dirección</div>
                             <div className="text-slate-400">Ibagué, Tolima, Colombia</div>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg">🕐</div>
+                          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg">
+                            <img src={relojIcon} alt="reloj" className="w-6 h-6" />
+                          </div>
                           <div>
                             <div className="font-semibold text-white">Horario de atención</div>
                             <div className="text-slate-400">Lun-Sáb 8:00am - 6:00pm</div>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg">📞</div>
+                          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-lg">
+                            <img src={telefonoIcon} alt="telefono" className="w-6 h-6" />
+                          </div>
                           <div>
                             <div className="font-semibold text-white">Teléfono</div>
                             <div className="text-slate-400">+57 316 810 6470</div>
@@ -1585,7 +1594,7 @@ class LandingPage extends Component {
                   <div className="text-lg font-semibold tracking-tight">
                     Moto<span className="text-blue-400">Expert</span>
                   </div>
-                  <div className="text-sm text-slate-500">Detailing & Car Care</div>
+                  <div className="text-sm text-slate-500">Lavado del mas alto nivel</div>
                 </div>
               </div>
 
