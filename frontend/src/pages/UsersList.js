@@ -31,6 +31,10 @@ const UsersList = () => {
   const [newRole, setNewRole] = useState('');
   const [updatingRole, setUpdatingRole] = useState(false);
 
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 10;
+
   const exportUsers = (format) => {
     const list = filteredUsers;
     if (!Array.isArray(list) || list.length === 0) {
@@ -137,6 +141,7 @@ const UsersList = () => {
       user.id.toString().includes(searchTerm)
     );
     setFilteredUsers(results);
+    setCurrentPage(1); // Reiniciar a la primera página al buscar
   }, [searchTerm, users]);
 
   // Carga forzada de datos cuando cambia el usuario seleccionado
@@ -323,6 +328,7 @@ const UsersList = () => {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
+    setCurrentPage(1);
     const token = localStorage.getItem('token');
     if (token) {
       if (tab === 'empleados' || tab === 'citas') {
@@ -332,6 +338,11 @@ const UsersList = () => {
       }
     }
   };
+
+  const totalPages = Math.ceil(filteredUsers.length / recordsPerPage);
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredUsers.slice(indexOfFirstRecord, indexOfLastRecord);
 
   return (
     <div className="p-6 relative">
@@ -347,7 +358,7 @@ const UsersList = () => {
 
             <div className="space-y-4 mb-8">
               <label className="block text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 ml-1">Seleccionar Nivel de Acceso</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button 
                   onClick={() => setNewRole('admin')}
                   className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
@@ -359,7 +370,7 @@ const UsersList = () => {
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 2.944V12m0 0l4.5 4.5M12 12l-4.5 4.5" />
                   </svg>
-                  <span className="font-mono text-[10px] uppercase tracking-widest font-bold">Administrador</span>
+                  <span className="font-mono text-[9px] uppercase tracking-widest font-bold">Administrador</span>
                 </button>
 
                 <button 
@@ -373,7 +384,21 @@ const UsersList = () => {
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  <span className="font-mono text-[10px] uppercase tracking-widest font-bold">Empleado</span>
+                  <span className="font-mono text-[9px] uppercase tracking-widest font-bold">Empleado</span>
+                </button>
+
+                <button 
+                  onClick={() => setNewRole('usuario')}
+                  className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
+                    newRole === 'usuario' 
+                      ? 'bg-emerald-600/20 border-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.2)]' 
+                      : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/10'
+                  }`}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="font-mono text-[9px] uppercase tracking-widest font-bold">Usuario</span>
                 </button>
               </div>
             </div>
@@ -642,9 +667,27 @@ const UsersList = () => {
         )}
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Total Usuarios</p>
+          <p className="text-3xl font-black text-white italic">{users.length}</p>
+        </div>
+        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Total Empleados</p>
+          <p className="text-3xl font-black text-purple-500 italic">{empleados.length}</p>
+        </div>
+        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Citas Pendientes</p>
+          <p className="text-3xl font-black text-amber-500 italic">{citasGenerales.filter(c => c.estado === 'PENDIENTE').length}</p>
+        </div>
+        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Citas Finalizadas</p>
+          <p className="text-3xl font-black text-emerald-500 italic">{citasGenerales.filter(c => c.estado === 'FINALIZADO').length}</p>
+        </div>
+      </div>
+
       {activeTab === 'usuarios' && (
         <div className="overflow-x-auto bg-slate-900/50 border border-slate-800 rounded-3xl backdrop-blur-sm shadow-2xl">
-          {/* ... tabla de usuarios existente ... */}
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-900/80">
@@ -657,8 +700,8 @@ const UsersList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
+              {currentRecords.length > 0 ? (
+                currentRecords.map((user) => (
                   <tr key={user.id} className="hover:bg-slate-800/30 transition-colors group">
                     <td className="p-5 text-sm font-mono text-slate-500">#{user.id}</td>
                     <td className="p-5">
@@ -683,7 +726,9 @@ const UsersList = () => {
                       <span className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase tracking-widest ${
                         user.role === 'admin' 
                           ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
-                          : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                          : user.role === 'empleado'
+                          ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                          : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                       }`}>
                         {user.role}
                       </span>
@@ -733,6 +778,56 @@ const UsersList = () => {
               )}
             </tbody>
           </table>
+
+          {/* Controles de Paginación */}
+          {filteredUsers.length > recordsPerPage && (
+            <div className="p-6 border-t border-slate-800 bg-slate-900/80 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                Mostrando <span className="text-white font-bold">{indexOfFirstRecord + 1}</span> a <span className="text-white font-bold">{Math.min(indexOfLastRecord, filteredUsers.length)}</span> de <span className="text-white font-bold">{filteredUsers.length}</span> usuarios
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={`p-2 rounded-xl border transition-all ${
+                    currentPage === 1 
+                      ? 'bg-slate-800/50 border-slate-700 text-slate-600 cursor-not-allowed' 
+                      : 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+
+                <div className="flex items-center space-x-1">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`w-8 h-8 rounded-xl text-[10px] font-bold transition-all ${
+                        currentPage === i + 1
+                          ? 'bg-purple-600 text-white shadow-lg'
+                          : 'bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className={`p-2 rounded-xl border transition-all ${
+                    currentPage === totalPages 
+                      ? 'bg-slate-800/50 border-slate-700 text-slate-600 cursor-not-allowed' 
+                      : 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

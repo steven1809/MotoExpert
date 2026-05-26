@@ -57,6 +57,13 @@ class AdminDashboard extends Component {
       selectedTimeSlot: '',
       loadingSlots: false,
 
+      // Nuevo estado para selección de cliente
+      selectedClientId: '',
+      clientSearchTerm: '',
+      selectedPaymentMethod: '', // 'Efectivo', 'Tarjeta', 'Transferencia'
+      showQR: false,
+      validationErrors: {}, // Para resaltar campos faltantes
+
       // Nuevos estados para disponibilidad de especialistas
       showSpecialistModal: false,
       specialistSlotTime: '',
@@ -64,14 +71,109 @@ class AdminDashboard extends Component {
       loadingAppointments: false,
 
       submittingVehicle: false,
-      submittingAppointment: false
+      submittingAppointment: false,
+
+      // Citas Globales
+      globalCitas: [],
+      selectedCitaForIntervention: null,
+      showInterventionModal: false,
+      newAppointmentDate: '',
+      newAppointmentTime: '',
+      currentGlobalCitasPage: 1,
+      globalCitasPerPage: 10
     };
   }
 
   componentDidMount() {
     this.fetchDashboardData();
     this.fetchFormConfigs();
+    this.fetchGlobalCitas();
   }
+
+  fetchGlobalCitas = async () => {
+    const token = localStorage.getItem('token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    try {
+      const res = await fetch(`${API_BASE_URL}/citas`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        this.setState({ globalCitas: Array.isArray(data) ? data : [] });
+      }
+    } catch (error) {
+      console.error('Error fetching global appointments:', error);
+    }
+  };
+
+  handleIntervention = (cita) => {
+    this.setState({
+      selectedCitaForIntervention: cita,
+      showInterventionModal: true,
+      newAppointmentDate: cita.fecha,
+      newAppointmentTime: cita.hora_inicio?.substring(0, 5)
+    });
+  };
+
+  updateAppointmentStatus = async (status) => {
+    const { selectedCitaForIntervention } = this.state;
+    if (!selectedCitaForIntervention) return;
+
+    const token = localStorage.getItem('token');
+    const headers = { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/citas/${selectedCitaForIntervention.id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ estado: status })
+      });
+
+      if (res.ok) {
+        if (this.props.showToast) {
+          this.props.showToast(`Cita ${status.toLowerCase()} correctamente`, 'success');
+        }
+        this.setState({ showInterventionModal: false, selectedCitaForIntervention: null });
+        this.fetchGlobalCitas();
+        this.fetchDashboardData();
+      }
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+    }
+  };
+
+  rescheduleAppointment = async () => {
+    const { selectedCitaForIntervention, newAppointmentDate, newAppointmentTime } = this.state;
+    if (!selectedCitaForIntervention || !newAppointmentDate || !newAppointmentTime) return;
+
+    const token = localStorage.getItem('token');
+    const headers = { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/citas/${selectedCitaForIntervention.id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ 
+          fecha: newAppointmentDate,
+          hora_inicio: newAppointmentTime.length === 5 ? `${newAppointmentTime}:00` : newAppointmentTime
+        })
+      });
+
+      if (res.ok) {
+        if (this.props.showToast) {
+          this.props.showToast('Cita reprogramada correctamente', 'success');
+        }
+        this.setState({ showInterventionModal: false, selectedCitaForIntervention: null });
+        this.fetchGlobalCitas();
+      }
+    } catch (error) {
+      console.error('Error rescheduling appointment:', error);
+    }
+  };
 
   componentDidUpdate(prevProps, prevState) {
     // Si cambia la fecha, cargar todas las citas de ese día para el modal de especialistas
@@ -162,10 +264,12 @@ class AdminDashboard extends Component {
     this.setState({ specialistSlotTime: slot.hora, showSpecialistModal: true });
   };
 
-  confirmTimeSlot = () => {
+  confirmTimeSlot = (employeeId) => {
     this.setState({ 
       selectedTimeSlot: this.state.specialistSlotTime, 
-      showSpecialistModal: false 
+      selectedEmpleadoId: employeeId || '',
+      showSpecialistModal: false,
+      validationErrors: { ...this.state.validationErrors, datetime: false }
     });
   };
 
@@ -414,31 +518,78 @@ class AdminDashboard extends Component {
   };
 
   handleScheduleService = async () => {
-    const { selectedServicioId, selectedVehiculoId, selectedEmpleadoId, fechaIngreso, selectedTimeSlot, submittingAppointment } = this.state;
+    const { 
+      selectedServicioId, 
+      selectedVehiculoId, 
+      selectedEmpleadoId, 
+      fechaIngreso, 
+      selectedTimeSlot, 
+      selectedVehicleType,
+      selectedClientId,
+      clientSearchTerm,
+      selectedPaymentMethod,
+      submittingAppointment 
+    } = this.state;
     
-    if (submittingAppointment || !selectedServicioId || !selectedVehiculoId || !fechaIngreso || !selectedTimeSlot) {
+    // VALIDACIÓN DE CAMPOS OBLIGATORIOS
+    const errors = {};
+    let firstErrorStepId = null;
+
+    if (!selectedVehicleType) {
+      errors.vehicleType = true;
+      if (!firstErrorStepId) firstErrorStepId = 'step-1';
+    }
+    if (!selectedServicioId) {
+      errors.service = true;
+      if (!firstErrorStepId) firstErrorStepId = 'step-2';
+    }
+    if (!selectedClientId) {
+      errors.client = true;
+      if (!firstErrorStepId) firstErrorStepId = 'step-3';
+    }
+    if (!selectedVehiculoId) {
+      errors.vehicle = true;
+      if (!firstErrorStepId) firstErrorStepId = 'step-4';
+    }
+    if (!fechaIngreso || !selectedTimeSlot) {
+      errors.datetime = true;
+      if (!firstErrorStepId) firstErrorStepId = 'step-5';
+    }
+    if (!selectedPaymentMethod) {
+      errors.payment = true;
+      if (!firstErrorStepId) firstErrorStepId = 'step-6';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      this.setState({ validationErrors: errors });
+      
+      const messages = {
+        vehicleType: 'Debes seleccionar el tipo de vehículo.',
+        service: 'Debes elegir un nivel de detailing.',
+        client: 'Debes seleccionar un cliente de la base de datos.',
+        vehicle: 'Debes asignar una unidad al cliente.',
+        datetime: 'Falta seleccionar la fecha y hora del servicio.',
+        payment: 'Debes elegir un método de pago.'
+      };
+
+      const firstErrorKey = Object.keys(errors)[0];
       if (this.props.showToast) {
-        this.props.showToast('Complete los campos obligatorios: Servicio, Unidad, Fecha y Hora.', 'error');
+        this.props.showToast(messages[firstErrorKey], 'error');
       } else {
-        alert('Complete los campos obligatorios: Servicio, Unidad, Fecha y Hora.');
+        alert(messages[firstErrorKey]);
+      }
+
+      // Scroll automático al primer error
+      if (firstErrorStepId) {
+        const element = document.getElementById(firstErrorStepId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
       return;
     }
 
-    // Validar fecha mínima hoy
-    const selectedDate = new Date(fechaIngreso);
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    if (selectedDate < today) {
-      if (this.props.showToast) {
-        this.props.showToast('La fecha no puede ser anterior a hoy.', 'error');
-      } else {
-        alert('La fecha no puede ser anterior a hoy.');
-      }
-      return;
-    }
-
-    this.setState({ submittingAppointment: true });
+    this.setState({ submittingAppointment: true, validationErrors: {} });
     const token = localStorage.getItem('token');
     const headers = { 
       'Authorization': `Bearer ${token}`,
@@ -449,8 +600,10 @@ class AdminDashboard extends Component {
       const body = {
         servicioId: parseInt(selectedServicioId),
         vehiculoId: parseInt(selectedVehiculoId),
+        usuarioId: parseInt(selectedClientId),
         fecha: fechaIngreso,
         hora_inicio: selectedTimeSlot,
+        metodoPago: selectedPaymentMethod
       };
 
       if (selectedEmpleadoId) {
@@ -465,11 +618,15 @@ class AdminDashboard extends Component {
 
       if (res.ok) {
         if (this.props.showToast) {
-          this.props.showToast('Servicio programado correctamente', 'success');
+          this.props.showToast('Servicio programado correctamente. Código de entrega enviado.', 'success');
         } else {
-          alert('Servicio programado correctamente');
+          alert('Servicio programado correctamente. Código de entrega enviado.');
         }
         
+        if (selectedPaymentMethod === 'Transferencia') {
+          this.setState({ showQR: true });
+        }
+
         this.setState({
           selectedServicioId: '',
           selectedVehiculoId: '',
@@ -477,7 +634,10 @@ class AdminDashboard extends Component {
           fechaIngreso: '',
           selectedTimeSlot: '',
           selectedVehicleType: '',
-          availableSlots: []
+          selectedClientId: '',
+          selectedPaymentMethod: '',
+          availableSlots: [],
+          validationErrors: {}
         });
         this.fetchDashboardData();
       } else {
@@ -554,6 +714,18 @@ class AdminDashboard extends Component {
       specialistSlotTime,
       appointmentsAtSelectedDate,
       loadingAppointments,
+      selectedClientId,
+      clientSearchTerm,
+      selectedPaymentMethod,
+      validationErrors,
+      showQR,
+      globalCitas,
+      selectedCitaForIntervention,
+      showInterventionModal,
+      newAppointmentDate,
+      newAppointmentTime,
+      currentGlobalCitasPage,
+      globalCitasPerPage,
       submittingVehicle,
       submittingAppointment
     } = this.state;
@@ -561,12 +733,33 @@ class AdminDashboard extends Component {
     const filteredUsers = this.getFilteredUsers();
     const selectedUser = users.find(u => u.id === parseInt(userId));
 
+    // Paginación Citas Globales
+    const totalGlobalPages = Math.ceil((globalCitas || []).length / globalCitasPerPage);
+    const indexOfLastGlobal = currentGlobalCitasPage * globalCitasPerPage;
+    const indexOfFirstGlobal = indexOfLastGlobal - globalCitasPerPage;
+    const currentGlobalRecords = (globalCitas || []).slice(indexOfFirstGlobal, indexOfLastGlobal);
+
     // Filtrar servicios según tipo de vehículo seleccionado
     const filteredServices = servicios.filter(s => {
       if (!selectedVehicleType) return false;
-      if (!s.tipoVehiculo) return true; // Si no tiene tipo, se asume compatible o legacy
+      
+      const vehicleTypeLower = selectedVehicleType.toLowerCase();
+      
+      // El servicio de "Cadena" es exclusivo de Motos
+      if (s.nombre?.toLowerCase().includes('cadena')) {
+        return vehicleTypeLower === 'moto';
+      }
+
+      if (!s.tipoVehiculo) return true; // Si no tiene tipo, se asume compatible (legacy)
+
       const types = s.tipoVehiculo.split(',').map(t => t.trim().toLowerCase());
-      return types.includes(selectedVehicleType.toLowerCase());
+      
+      // Mapeo flexible para Carro -> Auto/Carro
+      if (vehicleTypeLower === 'carro') {
+        return types.includes('carro') || types.includes('auto');
+      }
+      
+      return types.includes(vehicleTypeLower);
     });
 
     // Filtrar vehículos según búsqueda de placa/unidad
@@ -579,7 +772,7 @@ class AdminDashboard extends Component {
       );
     });
 
-    const isFormComplete = selectedServicioId && selectedVehiculoId && fechaIngreso && selectedTimeSlot;
+    const isFormComplete = selectedServicioId && selectedVehiculoId && fechaIngreso && selectedTimeSlot && selectedClientId && selectedPaymentMethod;
 
     // Calcular disponibilidad de especialistas para el slot seleccionado
     const morningSlots = availableSlots.filter(s => parseInt(s.hora.split(':')[0]) < 13);
@@ -593,6 +786,26 @@ class AdminDashboard extends Component {
     }) : [];
 
     const anySpecialistAvailable = specialistsAvailability.some(s => !s.isOccupied);
+
+    // Filtrar clientes para el Paso 3
+    const filteredClients = clientSearchTerm ? users.filter(u => 
+      u.nombre?.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+      u.apellidos?.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+      u.email?.toLowerCase().includes(clientSearchTerm.toLowerCase())
+    ).slice(0, 5) : [];
+
+    // Filtrar vehículos según cliente seleccionado (Paso 4)
+    const filteredVehiculosForProgramar = vehiculos.filter(v => {
+      if (selectedClientId) {
+        return v.usuario?.id === parseInt(selectedClientId);
+      }
+      const search = vehicleSearchTerm.toLowerCase();
+      return (
+        v.placa?.toLowerCase().includes(search) ||
+        v.marca?.toLowerCase().includes(search) ||
+        v.modelo?.toLowerCase().includes(search)
+      );
+    });
     
     if (loading) {
       return (
@@ -603,7 +816,7 @@ class AdminDashboard extends Component {
     }
 
     return (
-      <div className="min-h-screen bg-[#020617] p-6">
+      <div className="min-h-screen bg-[#020617] p-6 relative">
         <div className="mb-8">
           <div className="bg-gradient-to-br from-slate-900 to-[#111827] rounded-[3rem] p-12 text-center">
            
@@ -642,8 +855,36 @@ class AdminDashboard extends Component {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {/* CARD REGISTRAR VEHÍCULO */}
+        {/* PESTAÑAS DEL DASHBOARD */}
+        <div className="flex gap-4 mb-8">
+          <button 
+            onClick={() => this.setState({ activeDashboardTab: 'programar' })}
+            className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+              (!this.state.activeDashboardTab || this.state.activeDashboardTab === 'programar') 
+              ? 'bg-[#2563EB] text-white shadow-lg shadow-[#2563EB]/20' 
+              : 'bg-[#0B1220] border border-white/5 text-slate-500 hover:border-white/10'
+            }`}
+          >
+            Programar Servicio
+          </button>
+          <button 
+            onClick={() => {
+              this.setState({ activeDashboardTab: 'globales' });
+              this.fetchGlobalCitas();
+            }}
+            className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+              this.state.activeDashboardTab === 'globales' 
+              ? 'bg-[#8B5CF6] text-white shadow-lg shadow-[#8B5CF6]/20' 
+              : 'bg-[#0B1220] border border-white/5 text-slate-500 hover:border-white/10'
+            }`}
+          >
+            Citas Globales
+          </button>
+        </div>
+
+        {(!this.state.activeDashboardTab || this.state.activeDashboardTab === 'programar') && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start animate-in fade-in duration-500">
+            {/* CARD REGISTRAR VEHÍCULO */}
           <div className="bg-[#0B1220] border border-white/5 rounded-[2.5rem] p-8 transition-all duration-500">
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 bg-[#2563EB] rounded-xl flex items-center justify-center shadow-lg shadow-[#2563EB]/40">
@@ -891,7 +1132,7 @@ class AdminDashboard extends Component {
             
             <div className="space-y-6">
               {/* PASO 1: Selector de tipo de vehículo */}
-              <div>
+              <div id="step-1" className={`p-1 rounded-2xl transition-all duration-300 ${validationErrors.vehicleType ? 'ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
                 <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-3">
                   Paso 1: Tipo de Vehículo
                 </label>
@@ -899,7 +1140,7 @@ class AdminDashboard extends Component {
                   {['MOTO', 'CARRO', 'CAMIONETA'].map((type) => (
                     <button
                       key={type}
-                      onClick={() => this.setState({ selectedVehicleType: type, selectedServicioId: '', selectedTimeSlot: '' })}
+                      onClick={() => this.setState({ selectedVehicleType: type, selectedServicioId: '', selectedTimeSlot: '', validationErrors: { ...validationErrors, vehicleType: false } })}
                       className={`flex-1 py-3 px-4 rounded-xl border transition-all duration-300 font-black text-[10px] tracking-widest ${
                         selectedVehicleType === type 
                         ? 'border-[#8B5CF6] bg-[#8B5CF6]/20 text-white shadow-lg shadow-[#8B5CF6]/10' 
@@ -913,13 +1154,16 @@ class AdminDashboard extends Component {
               </div>
 
               {/* PASO 2: Nivel de Detailing (Servicios) */}
-              <div className={!selectedVehicleType ? 'opacity-40 pointer-events-none' : ''}>
+              <div id="step-2" className={`transition-all duration-300 ${!selectedVehicleType ? 'opacity-40 pointer-events-none' : ''} ${validationErrors.service ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
                 <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
                   Paso 2: Nivel de Detailing
                 </label>
                 <CustomSelect 
                   value={selectedServicioId}
-                  onChange={this.handleServiceSelect}
+                  onChange={(val) => {
+                    this.handleServiceSelect(val);
+                    this.setState({ validationErrors: { ...validationErrors, service: false } });
+                  }}
                   options={filteredServices.map(s => ({
                     value: s.id,
                     label: `${s.nombre} - $${s.precio}`,
@@ -928,17 +1172,61 @@ class AdminDashboard extends Component {
                   placeholder={selectedVehicleType ? "Seleccione el tratamiento..." : "Primero elija tipo de vehículo"}
                 />
               </div>
-              
-              <div className={`grid grid-cols-2 gap-4 ${!selectedServicioId ? 'opacity-40 pointer-events-none' : ''}`}>
-                {/* PASO 3: Unidad Asignada (Searchable) */}
+
+              {/* PASO 3: Selección de Cliente */}
+              <div id="step-3" className={`relative transition-all duration-300 ${!selectedServicioId ? 'opacity-40 pointer-events-none' : ''} ${validationErrors.client ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
+                <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
+                  Paso 3: Cliente
+                </label>
                 <div className="relative">
+                  <input 
+                    type="text"
+                    placeholder="Buscar cliente por nombre o email..."
+                    value={selectedClientId ? users.find(u => u.id === parseInt(selectedClientId))?.nombre + ' ' + (users.find(u => u.id === parseInt(selectedClientId))?.apellidos || '') : clientSearchTerm}
+                    onChange={(e) => this.setState({ clientSearchTerm: e.target.value, selectedClientId: '', selectedVehiculoId: '' })}
+                    className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#8B5CF6]/50 transition-all"
+                  />
+                  {selectedClientId && (
+                    <button 
+                      onClick={() => this.setState({ selectedClientId: '', clientSearchTerm: '', selectedVehiculoId: '' })}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                
+                {/* Dropdown de búsqueda de clientes */}
+                {!selectedClientId && clientSearchTerm && (
+                  <div className="absolute left-0 right-0 top-full mt-2 bg-[#161b27] border border-white/10 rounded-2xl shadow-2xl z-[60] overflow-hidden max-h-48 overflow-y-auto">
+                    {filteredClients.length > 0 ? (
+                      filteredClients.map(u => (
+                        <button 
+                          key={u.id}
+                          onClick={() => this.setState({ selectedClientId: u.id, clientSearchTerm: '', validationErrors: { ...validationErrors, client: false } })}
+                          className="w-full px-5 py-3 text-left hover:bg-white/5 transition-all border-b border-white/5 last:border-0"
+                        >
+                          <div className="text-sm font-bold text-white">{u.nombre} {u.apellidos}</div>
+                          <div className="text-[10px] text-slate-500 font-mono">{u.email}</div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-5 py-3 text-sm text-slate-500 italic">No se encontraron clientes</div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {/* PASO 4: Unidad Asignada (Searchable) */}
+                <div id="step-4" className={`relative transition-all duration-300 ${!selectedClientId ? 'opacity-40 pointer-events-none' : ''} ${validationErrors.vehicle ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
                   <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
-                    Paso 3: Unidad Asignada
+                    Paso 4: Unidad
                   </label>
                   <div className="relative">
                     <input 
                       type="text"
-                      placeholder="Buscar placa o marca..."
+                      placeholder={selectedClientId ? "Buscar placa..." : "Selecciona cliente primero"}
                       value={selectedVehiculoId ? vehiculos.find(v => v.id === parseInt(selectedVehiculoId))?.placa : vehicleSearchTerm}
                       onChange={(e) => this.setState({ vehicleSearchTerm: e.target.value, selectedVehiculoId: '' })}
                       className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#8B5CF6]/50 transition-all"
@@ -954,42 +1242,44 @@ class AdminDashboard extends Component {
                   </div>
                   
                   {/* Dropdown de búsqueda de vehículos */}
-                  {!selectedVehiculoId && vehicleSearchTerm && (
+                  {!selectedVehiculoId && (vehicleSearchTerm || selectedClientId) && (
                     <div className="absolute left-0 right-0 top-full mt-2 bg-[#161b27] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-48 overflow-y-auto">
-                      {filteredVehiculos.length > 0 ? (
-                        filteredVehiculos.map(v => (
+                      {filteredVehiculosForProgramar.length > 0 ? (
+                        filteredVehiculosForProgramar.map(v => (
                           <button 
                             key={v.id}
-                            onClick={() => this.setState({ selectedVehiculoId: v.id, vehicleSearchTerm: '' })}
+                            onClick={() => this.setState({ selectedVehiculoId: v.id, vehicleSearchTerm: '', validationErrors: { ...validationErrors, vehicle: false } })}
                             className="w-full px-5 py-3 text-left hover:bg-white/5 transition-all border-b border-white/5 last:border-0"
                           >
                             <div className="text-sm font-bold text-white">{v.placa}</div>
-                            <div className="text-[10px] text-slate-500 font-mono">{v.marca} {v.modelo} - {v.usuario?.nombre}</div>
+                            <div className="text-[10px] text-slate-500 font-mono">{v.marca} {v.modelo}</div>
                           </button>
                         ))
                       ) : (
-                        <div className="px-5 py-3 text-sm text-slate-500 italic">No se encontraron unidades</div>
+                        <div className="px-5 py-3 text-sm text-red-400 italic">
+                          {selectedClientId ? "Este usuario no tiene vehículos registrados." : "No se encontraron unidades"}
+                        </div>
                       )}
                     </div>
                   )}
                 </div>
 
-                {/* PASO 4: Fecha de Ingreso */}
-                <div>
+                {/* PASO 5: Fecha de Ingreso */}
+                <div id="step-5" className={`transition-all duration-300 ${!selectedVehiculoId ? 'opacity-40 pointer-events-none' : ''} ${validationErrors.datetime ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
                   <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
-                    Paso 4: Fecha
+                    Paso 5: Fecha
                   </label>
                   <input 
                     type="date" 
                     value={fechaIngreso}
-                    onChange={(e) => this.setState({ fechaIngreso: e.target.value, selectedTimeSlot: '' })}
+                    onChange={(e) => this.setState({ fechaIngreso: e.target.value, selectedTimeSlot: '', validationErrors: { ...validationErrors, datetime: false } })}
                     min={new Date().toISOString().split('T')[0]}
                     className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#8B5CF6]/50 transition-all"
                   />
                 </div>
               </div>
 
-              {/* PASO 4 CONTINUACIÓN: Slots de Hora */}
+              {/* PASO 5 CONTINUACIÓN: Slots de Hora */}
               {fechaIngreso && selectedServicioId && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
                   <div className="flex flex-col gap-4">
@@ -1042,36 +1332,79 @@ class AdminDashboard extends Component {
                 </div>
               )}
 
-              {/* PASO 5: Empleado Asignado */}
-              <div className={!isFormComplete ? 'opacity-40 pointer-events-none' : ''}>
-                <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
-                  Paso 5: Especialista (Opcional)
+              {/* PASO 6: Método de Pago */}
+              <div id="step-6" className={`transition-all duration-300 ${!selectedTimeSlot ? 'opacity-40 pointer-events-none' : ''} ${validationErrors.payment ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
+                <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-3">
+                  Paso 6: Método de Pago
                 </label>
-                <CustomSelect 
-                  value={selectedEmpleadoId}
-                  onChange={(val) => this.setState({ selectedEmpleadoId: val })}
-                  options={[
-                    { value: '', label: 'Auto-asignación (Primer disponible)' },
-                    ...empleados.map(e => ({
-                      value: e.id,
-                      label: `${e.usuario?.nombre} (${e.cargo || 'Técnico'})`,
-                      sublabel: e.especialidad
-                    }))
-                  ]}
-                  placeholder="Seleccionar especialista..."
-                />
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { id: 'Efectivo', label: 'Efectivo', icon: '💵' },
+                    { id: 'Tarjeta', label: 'Tarjeta', icon: '💳' },
+                    { id: 'Transferencia', label: 'QR', icon: '📱' }
+                  ].map((method) => (
+                    <button
+                      key={method.id}
+                      onClick={() => this.setState({ selectedPaymentMethod: method.id, validationErrors: { ...validationErrors, payment: false } })}
+                      className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 ${
+                        selectedPaymentMethod === method.id 
+                        ? 'border-[#8B5CF6] bg-[#8B5CF6]/20 text-white shadow-lg shadow-[#8B5CF6]/10' 
+                        : 'border-white/10 bg-black/40 text-[#64748B] hover:border-white/20'
+                      }`}
+                    >
+                      <span className="text-xl mb-1">{method.icon}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest">{method.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* RESUMEN DE CONFIRMACIÓN */}
+              {isFormComplete && (
+                <div className="p-6 bg-[#8B5CF6]/5 border border-[#8B5CF6]/20 rounded-3xl animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <div className="text-[10px] font-black text-[#8B5CF6] uppercase tracking-[0.4em] mb-4">Resumen de Cita</div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] text-slate-500 font-bold uppercase">Servicio:</span>
+                      <span className="text-[11px] text-white font-black">{servicios.find(s => s.id === parseInt(selectedServicioId))?.nombre}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] text-slate-500 font-bold uppercase">Cliente:</span>
+                      <span className="text-[11px] text-white font-black">{users.find(u => u.id === parseInt(selectedClientId))?.nombre} {users.find(u => u.id === parseInt(selectedClientId))?.apellidos}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] text-slate-500 font-bold uppercase">Unidad:</span>
+                      <span className="text-[11px] text-white font-black">{vehiculos.find(v => v.id === parseInt(selectedVehiculoId))?.placa} ({vehiculos.find(v => v.id === parseInt(selectedVehiculoId))?.marca})</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] text-slate-500 font-bold uppercase">Horario:</span>
+                      <span className="text-[11px] text-[#8B5CF6] font-black">{fechaIngreso} • {selectedTimeSlot.slice(0, 5)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] text-slate-500 font-bold uppercase">Especialista:</span>
+                      <span className="text-[11px] text-emerald-500 font-black">
+                        {selectedEmpleadoId ? empleados.find(e => e.id === parseInt(selectedEmpleadoId))?.usuario?.nombre : 'Auto-asignación'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                      <span className="text-[11px] text-slate-500 font-bold uppercase">Pago:</span>
+                      <span className="text-[11px] text-white font-black">{selectedPaymentMethod}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <button 
                 onClick={this.handleScheduleService}
-                disabled={submittingAppointment || !isFormComplete}
-                className={`w-full py-5 ${(!isFormComplete || submittingAppointment) ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-[#8B5CF6] hover:bg-[#7C3AED] text-white shadow-xl shadow-[#8B5CF6]/30'} font-mono text-[10px] uppercase tracking-[0.3em] rounded-2xl transition-all font-black`}
+                disabled={submittingAppointment}
+                className={`w-full py-5 ${submittingAppointment ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-[#8B5CF6] hover:bg-[#7C3AED] text-white shadow-xl shadow-[#8B5CF6]/30'} font-mono text-[10px] uppercase tracking-[0.3em] rounded-2xl transition-all font-black`}
               >
-                {submittingAppointment ? 'PROCESANDO...' : 'PROGRAMAR SERVICIO'}
+                {submittingAppointment ? 'PROCESANDO...' : 'CONFIRMAR Y PROGRAMAR'}
               </button>
             </div>
           </div>
         </div>
+      )}
 
         {/* MODAL DE DETALLES DEL SERVICIO */}
         {showServiceModal && tempService && (
@@ -1145,12 +1478,33 @@ class AdminDashboard extends Component {
             <div className="absolute inset-0 bg-[#020617]/90 backdrop-blur-sm" onClick={() => this.setState({ showSpecialistModal: false })}></div>
             <div className="relative w-full max-w-md bg-[#0B1220] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-300">
               <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-6">
-                Disponibilidad para las {specialistSlotTime.slice(0, 5)}
+                Seleccionar Especialista para las {specialistSlotTime.slice(0, 5)}
               </h3>
 
               <div className="space-y-4 mb-8">
+                {/* Opción de Auto-asignación */}
+                <button 
+                  onClick={() => this.confirmTimeSlot('')}
+                  className="w-full flex items-center justify-between p-4 bg-[#8B5CF6]/10 rounded-2xl border border-[#8B5CF6]/20 hover:bg-[#8B5CF6]/20 transition-all text-left"
+                >
+                  <div className="flex flex-col">
+                    <span className="font-bold text-sm text-white">Auto-asignación</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest">Primer disponible</span>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#8B5CF6]">Seleccionar</span>
+                </button>
+
                 {specialistsAvailability.map(spec => (
-                  <div key={spec.id} className="flex items-center justify-between p-4 bg-black/20 rounded-2xl border border-white/5">
+                  <button 
+                    key={spec.id}
+                    disabled={spec.isOccupied}
+                    onClick={() => this.confirmTimeSlot(spec.id)}
+                    className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-left ${
+                      spec.isOccupied 
+                      ? 'bg-black/10 border-white/5 opacity-50 cursor-not-allowed' 
+                      : 'bg-black/20 border-white/5 hover:border-[#8B5CF6]/50 hover:bg-black/40'
+                    }`}
+                  >
                     <div className="flex flex-col">
                       <span className={`font-bold text-sm ${spec.isOccupied ? 'text-slate-500 line-through' : 'text-white'}`}>
                         {spec.usuario?.nombre}
@@ -1160,32 +1514,122 @@ class AdminDashboard extends Component {
                     <span className={`text-[10px] font-black uppercase tracking-widest ${spec.isOccupied ? 'text-red-500' : 'text-emerald-500'}`}>
                       {spec.isOccupied ? '✗ Ocupado' : '✓ Disponible'}
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
 
-              {anySpecialistAvailable ? (
-                <button 
-                  onClick={this.confirmTimeSlot}
-                  className="w-full py-4 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg shadow-[#8B5CF6]/20 transition-all"
-                >
-                  Confirmar esta hora
-                </button>
-              ) : (
-                <div className="space-y-4">
-                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-center">
-                    <p className="text-red-500 text-[10px] font-bold uppercase tracking-widest">
-                      No hay especialistas disponibles para este horario. Elige otra hora.
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => this.setState({ showSpecialistModal: false })}
-                    className="w-full py-4 bg-white/5 hover:bg-white/10 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
-                  >
-                    Cerrar
-                  </button>
+              {!anySpecialistAvailable && (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-center mb-4">
+                  <p className="text-red-500 text-[10px] font-bold uppercase tracking-widest">
+                    No hay especialistas disponibles para este horario.
+                  </p>
                 </div>
               )}
+
+              <button 
+                onClick={() => this.setState({ showSpecialistModal: false })}
+                className="w-full py-4 bg-white/5 hover:bg-white/10 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL QR TRANSFERENCIA */}
+        {showQR && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-md" onClick={() => this.setState({ showQR: false })}></div>
+            <div className="relative w-full max-w-sm bg-[#0B1220] border border-white/10 rounded-[3rem] p-10 shadow-2xl text-center animate-in zoom-in-95 duration-300">
+              <div className="w-20 h-20 bg-emerald-500/20 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <span className="text-4xl">📱</span>
+              </div>
+              <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">Pago por Transferencia</h3>
+              <p className="text-slate-400 text-sm mb-8">Escanea el código QR para realizar el pago del servicio.</p>
+              
+              <div className="bg-white p-6 rounded-[2.5rem] mb-8 shadow-xl shadow-white/5 inline-block">
+                <img 
+                  src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=MotoExpert-Pago-Servicio" 
+                  alt="QR Code" 
+                  className="w-48 h-48"
+                />
+              </div>
+
+              <button 
+                onClick={() => this.setState({ showQR: false })}
+                className="w-full py-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL DE INTERVENCIÓN ADMINISTRATIVA */}
+        {showInterventionModal && selectedCitaForIntervention && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-md" onClick={() => this.setState({ showInterventionModal: false, selectedCitaForIntervention: null })}></div>
+            <div className="relative w-full max-w-lg bg-[#0B1220] border border-white/10 rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95 duration-300">
+              <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-6">Intervención Administrativa</h3>
+              
+              <div className="space-y-6 mb-8">
+                {/* Código de entrega (Solo lectura) */}
+                <div className="p-4 bg-slate-800/50 rounded-2xl border border-white/5">
+                  <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Código de Entrega (Seguridad)</label>
+                  <div className="text-xl font-black text-[#8B5CF6] tracking-[0.2em]">{selectedCitaForIntervention.codigoEntrega || 'NO GENERADO'}</div>
+                </div>
+
+                {/* Cambio de Fecha y Hora */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-2">Nueva Fecha</label>
+                    <input 
+                      type="date"
+                      value={newAppointmentDate}
+                      onChange={(e) => this.setState({ newAppointmentDate: e.target.value })}
+                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white font-bold outline-none focus:border-[#8B5CF6]/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-2">Nueva Hora</label>
+                    <input 
+                      type="time"
+                      value={newAppointmentTime}
+                      onChange={(e) => this.setState({ newAppointmentTime: e.target.value })}
+                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white font-bold outline-none focus:border-[#8B5CF6]/50"
+                    />
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={this.rescheduleAppointment}
+                  className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
+                >
+                  Reprogramar Cita
+                </button>
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                  <button 
+                    onClick={() => this.updateAppointmentStatus('FINALIZADO')}
+                    className="py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
+                  >
+                    Forzar Cierre
+                  </button>
+                  <button 
+                    onClick={() => this.updateAppointmentStatus('CANCELADO')}
+                    className="py-4 bg-red-600 hover:bg-red-700 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
+                  >
+                    Cancelar Cita
+                  </button>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => this.setState({ showInterventionModal: false, selectedCitaForIntervention: null })}
+                className="w-full py-4 bg-white/5 hover:bg-white/10 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
+              >
+                Cerrar Panel
+              </button>
             </div>
           </div>
         )}

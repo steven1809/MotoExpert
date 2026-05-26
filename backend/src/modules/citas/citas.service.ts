@@ -14,6 +14,7 @@ import { Empleado } from '../empleados/entities/empleado.entity';
 import { CreateCitaDto } from './dto/create-cita.dto';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { Payment } from '../pagos/entities/payment.entity';
+import { OtpService } from '../otp/otp.service';
 
 @Injectable()
 export class CitasService {
@@ -37,6 +38,7 @@ export class CitasService {
     private readonly paymentRepo: Repository<Payment>,
 
     private readonly notificacionesService: NotificacionesService,
+    private readonly otpService: OtpService,
   ) {}
 
   async create(dto: CreateCitaDto) {
@@ -218,9 +220,28 @@ export class CitasService {
       servicio,
       empleado: empleadoAsignado,
       estado: 'PENDIENTE',
+      metodoPago: dto.metodoPago,
     });
 
-    return this.repo.save(cita);
+    const savedCita = await this.repo.save(cita);
+
+    // Generar y enviar código de entrega
+    try {
+      const deliveryCode = await this.otpService.generateOtp(usuario.id, 'delivery-code');
+      savedCita.codigoEntrega = deliveryCode;
+      await this.repo.save(savedCita);
+
+      await this.notificacionesService.create(
+        usuario,
+        'service_scheduled',
+        'Servicio Programado Exitosamente',
+        `Tu servicio de ${servicio.nombre} para el vehículo ${vehiculo.placa} ha sido agendado para el ${formattedFecha} a las ${dto.hora_inicio}. Tu código de entrega es: ${deliveryCode}`,
+      );
+    } catch (error) {
+      console.error('Error al generar código de entrega o notificar:', error);
+    }
+
+    return savedCita;
   }
 
   async forceCancel(id: number, userRole: string) {
