@@ -48,6 +48,12 @@ export class Cita {
   @Column({ default: false })
   rated: boolean;
 
+  @Column({ nullable: true })
+  metodoPago: string;
+
+  @Column({ nullable: true })
+  codigoEntrega: string;
+
   @ManyToOne(() => Usuario, { eager: true })
   usuario: Usuario;
 

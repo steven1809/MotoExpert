@@ -17,6 +17,7 @@ import { AppointmentChatsGateway } from './appointment-chats.gateway';
 import { AppointmentResolution } from './entities/appointment-resolution.entity';
 import { AppointmentResolutionsService } from './appointment-resolutions.service';
 import { Payment } from '../pagos/entities/payment.entity';
+import { OtpModule } from '../otp/otp.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { Payment } from '../pagos/entities/payment.entity';
       Payment,
     ]),
     NotificacionesModule,
+    OtpModule,
     JwtModule.register({
       secret: 'clave_secreta',
     }),

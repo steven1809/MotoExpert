@@ -35,6 +35,10 @@ export class CreateCitaDto {
   empleadoId?: number;
 
   @IsOptional()
+  @IsString()
+  metodoPago?: string;
+
+  @IsOptional()
   guestData?: {
     nombre: string;
     telefono: string;
