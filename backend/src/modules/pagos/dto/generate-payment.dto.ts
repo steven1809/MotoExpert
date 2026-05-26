@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, Min, IsPositive } from 'class-validator';
 import { PaymentMethod } from '../enums/payment-method.enum';
 
 export class GeneratePaymentDto {
