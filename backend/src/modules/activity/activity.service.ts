@@ -26,7 +26,7 @@ export class ActivityService {
       performedBy,
       performedByRole,
     });
-    return this.activityRepo.save(log);
+    return await this.activityRepo.save(log);
   }
 
   async findAll(page = 1, limit = 10, entityType?: string) {

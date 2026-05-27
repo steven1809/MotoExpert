@@ -38,7 +38,7 @@ export class NotificacionesService {
     const notificacion = await this.repo.findOne({ where: { id } });
     if (notificacion) {
       notificacion.leida = true;
-      return this.repo.save(notificacion);
+      return await this.repo.save(notificacion);
     }
     return notificacion;
   }
