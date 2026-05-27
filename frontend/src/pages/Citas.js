@@ -922,17 +922,7 @@ const Citas = ({
     }
   }, [processedCitas]);
 
-  useEffect(() => {
-    // Check for overdue appointments
-    citas.forEach(cita => {
-      if (cita.estado !== 'PENDIENTE') return;
-      
-      const timeInfo = getCitaTimeInfo(cita);
-      if (timeInfo.isPastGracePeriod && !processedCitas.has(cita.id)) {
-        cancelCita(cita.id);
-      }
-    });
-  }, [currentTime, citas, processedCitas, cancelCita, getCitaTimeInfo]);
+
 
   const handleDateChange = (e) => {
     const fecha = e.target.value;
@@ -1145,7 +1135,7 @@ const Citas = ({
           const serviceName = cita.servicio?.nombre?.toLowerCase() || '';
           const vehiclePlate = cita.vehiculo?.placa?.toLowerCase() || '';
           const vehicleModel = cita.vehiculo?.modelo?.toLowerCase() || '';
-          const workerName = cita.empleado?.nombre?.toLowerCase() || '';
+          const workerName = cita.empleado?.usuario?.nombre?.toLowerCase() || '';
 
           return (
             serviceName.includes(term) ||
