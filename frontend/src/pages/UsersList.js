@@ -5,7 +5,8 @@ import autoTable from 'jspdf-autotable';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-const UsersList = () => {
+const UsersList = (props) => {
+  const { activeTab: propActiveTab, setView } = props;
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,82 +21,126 @@ const UsersList = () => {
     loading: false
   });
 
-  const [activeTab, setActiveTab] = useState('usuarios'); // 'usuarios' o 'empleados'
+  const [activeTab, setActiveTab] = useState(propActiveTab || 'usuarios');
   const [empleados, setEmpleados] = useState([]);
+  const [filteredEmpleados, setFilteredEmpleados] = useState([]);
   const [citasGenerales, setCitasGenerales] = useState([]);
   const [filtroEstadoCita, setFiltroEstadoCita] = useState('TODAS');
   const [loadingAdmin, setLoadingAdmin] = useState(false);
+
+  // Paginación Citas
+  const [citasPage, setCitasPage] = useState(1);
+  const [citasLimit, setCitasLimit] = useState(10);
+  const [totalCitas, setTotalCitas] = useState(0);
+  const [totalPagesCitas, setTotalPagesCitas] = useState(0);
 
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [userToEditRole, setUserToEditRole] = useState(null);
   const [newRole, setNewRole] = useState('');
   const [updatingRole, setUpdatingRole] = useState(false);
 
-  // Paginación
+  // Estados para Empleados
+  const [expandedEmpleado, setExpandedEmpleado] = useState(null);
+  const [showCargoModal, setShowCargoModal] = useState(false);
+  const [editingEmpleado, setEditingEmpleado] = useState(null);
+  const [cargoForm, setCargoForm] = useState({ cargo: '', especialidad: '' });
+  const [updatingEmpleado, setUpdatingEmpleado] = useState(false);
+
+  // Paginación Usuarios/Empleados
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 10;
 
-  const exportUsers = (format) => {
-    const list = filteredUsers;
-    if (!Array.isArray(list) || list.length === 0) {
-      alert('No hay usuarios para exportar con los filtros actuales.');
-      return;
+  // Actualizar pestaña si cambia el prop
+  useEffect(() => {
+    if (propActiveTab) {
+      setActiveTab(propActiveTab);
+      setCurrentPage(1);
+      setCitasPage(1);
+      setSearchTerm('');
+    }
+  }, [propActiveTab]);
+
+  const exportData = (type, format) => {
+    let list = [];
+    let filename = '';
+    let headers = [];
+    let body = [];
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (type === 'usuarios') {
+      list = filteredUsers;
+      filename = `motoexpert_usuarios_${today}`;
+      headers = ['ID', 'Nombre', 'Apellidos', 'Email', 'Teléfono', 'Documento', 'Rol'];
+      body = list.map(u => [u.id, u.nombre, u.apellidos, u.email, u.telefono || 'N/A', u.documento || 'N/A', u.role]);
+    } else if (type === 'empleados') {
+      list = filteredEmpleados;
+      filename = `motoexpert_empleados_${today}`;
+      headers = ['ID', 'Nombre', 'Email', 'Cargo', 'Especialidad', 'Estado'];
+      body = list.map(e => [e.id, `${e.usuario?.nombre} ${e.usuario?.apellidos}`, e.usuario?.email, e.cargo, e.especialidad, e.estado]);
+    } else if (type === 'citas') {
+      list = citasGenerales;
+      filename = `motoexpert_citas_${today}`;
+      headers = ['ID', 'Servicio', 'Cliente', 'Vehículo', 'Fecha', 'Hora', 'Estado'];
+      body = list.map(c => [
+        c.id, 
+        c.servicio?.nombre, 
+        c.usuario?.nombre, 
+        c.vehiculo?.placa, 
+        new Date(c.fecha).toLocaleDateString(), 
+        c.hora_inicio, 
+        c.estado
+      ]);
     }
 
-    const today = new Date().toISOString().slice(0, 10);
-    const fileBaseName = `motoexpert_usuarios_${today}`;
-    const headers = [
-      'ID',
-      'Nombre',
-      'Apellidos',
-      'Email',
-      'Teléfono',
-      'Documento',
-      'Rol',
-      'Proveedor',
-      'Google ID',
-    ];
-
-    const body = list.map((u) => [
-      u.id ?? '',
-      u.nombre ?? '',
-      u.apellidos ?? '',
-      u.email ?? '',
-      u.telefono ?? '',
-      u.documento ?? '',
-      u.role ?? '',
-      u.provider ?? '',
-      u.googleId ?? '',
-    ]);
+    if (!Array.isArray(list) || list.length === 0) {
+      alert('No hay datos para exportar con los filtros actuales.');
+      return;
+    }
 
     if (format === 'excel') {
       const worksheet = XLSX.utils.aoa_to_sheet([headers, ...body]);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuarios');
-      XLSX.writeFile(workbook, `${fileBaseName}.xlsx`);
-      return;
-    }
-
-    if (format === 'pdf') {
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos');
+      XLSX.writeFile(workbook, `${filename}.xlsx`);
+    } else {
       const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
       doc.setFontSize(14);
-      doc.text('MotoExpert - Usuarios', 40, 40);
-      doc.setFontSize(10);
-      doc.text(`Exportado: ${today}`, 40, 58);
-
+      doc.text(`MotoExpert - ${type.charAt(0).toUpperCase() + type.slice(1)}`, 40, 40);
       autoTable(doc, {
-        startY: 76,
+        startY: 60,
         head: [headers],
-        body,
-        styles: { fontSize: 8, cellPadding: 4 },
-        headStyles: { fillColor: [37, 99, 235] },
-        alternateRowStyles: { fillColor: [245, 247, 255] },
-        margin: { left: 40, right: 40 },
+        body: body,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [37, 99, 235] }
       });
-
-      doc.save(`${fileBaseName}.pdf`);
+      doc.save(`${filename}.pdf`);
     }
   };
+
+  useEffect(() => {
+    const term = searchTerm.toLowerCase();
+    
+    if (activeTab === 'usuarios') {
+      const filtered = users.filter((user) =>
+        user.nombre?.toLowerCase().includes(term) ||
+        user.apellidos?.toLowerCase().includes(term) ||
+        user.email?.toLowerCase().includes(term) ||
+        user.id?.toString().includes(term)
+      );
+      setFilteredUsers(filtered);
+      setCurrentPage(1);
+    } else if (activeTab === 'empleados') {
+      const filtered = empleados.filter((emp) =>
+        emp.usuario?.nombre?.toLowerCase().includes(term) ||
+        emp.usuario?.apellidos?.toLowerCase().includes(term) ||
+        emp.usuario?.email?.toLowerCase().includes(term) ||
+        emp.cargo?.toLowerCase().includes(term) ||
+        emp.especialidad?.toLowerCase().includes(term)
+      );
+      setFilteredEmpleados(filtered);
+      setCurrentPage(1);
+    }
+  }, [searchTerm, users, empleados, activeTab]);
   useEffect(() => {
     const role = localStorage.getItem('role');
     const token = localStorage.getItem('token');
@@ -115,22 +160,56 @@ const UsersList = () => {
     try {
       console.log('[UsersList] Fetching admin data (employees and appointments)...');
       const headers = { 'Authorization': `Bearer ${token}` };
-      const [empRes, citasRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/empleados`, { headers }),
-        fetch(`${API_BASE_URL}/citas`, { headers })
-      ]);
+      
+      const empRes = await fetch(`${API_BASE_URL}/empleados`, { headers });
       if (empRes.ok) {
         const data = await empRes.json();
         console.log('[UsersList] Employees fetched:', data);
         setEmpleados(data);
       }
-      if (citasRes.ok) setCitasGenerales(await citasRes.json());
+
+      await fetchCitasPaginadas(token, citasPage, citasLimit, filtroEstadoCita);
     } catch (err) {
       console.error('Error al cargar datos de admin:', err);
     } finally {
       setLoadingAdmin(false);
     }
   };
+
+  const fetchCitasPaginadas = async (token, page, limit, estado) => {
+    setLoadingAdmin(true);
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const url = new URL(`${API_BASE_URL}/citas`);
+      url.searchParams.append('page', page);
+      url.searchParams.append('limit', limit);
+      if (estado && estado !== 'TODAS') {
+        url.searchParams.append('estado', estado);
+      }
+
+      const res = await fetch(url.toString(), { headers });
+      if (res.ok) {
+        const result = await res.json();
+        // El backend ahora devuelve { data, total, page, limit, totalPages }
+        setCitasGenerales(result.data || []);
+        setTotalCitas(result.total || 0);
+        setTotalPagesCitas(result.totalPages || 0);
+      }
+    } catch (err) {
+      console.error('Error al cargar citas paginadas:', err);
+    } finally {
+      setLoadingAdmin(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'citas') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        fetchCitasPaginadas(token, citasPage, citasLimit, filtroEstadoCita);
+      }
+    }
+  }, [citasPage, citasLimit, filtroEstadoCita, activeTab]);
 
   // Filtrado dinámico en tiempo real
   useEffect(() => {
@@ -226,7 +305,6 @@ const UsersList = () => {
     if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.')) {
       return;
     }
-
     const token = localStorage.getItem('token');
     try {
       const response = await fetch(`${API_BASE_URL}/auth/${id}`, {
@@ -247,6 +325,46 @@ const UsersList = () => {
     } catch (err) {
       alert('Error de conexión al intentar eliminar el usuario');
     }
+  };
+
+  const handleUpdateEmpleado = async (id, data) => {
+    setUpdatingEmpleado(true);
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`${API_BASE_URL}/empleados/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        const updated = await response.json();
+        setEmpleados(prev => prev.map(e => e.id === id ? updated : e));
+        setShowCargoModal(false);
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.message || 'No se pudo actualizar el empleado'}`);
+      }
+    } catch (err) {
+      alert('Error de conexión al intentar actualizar el empleado');
+    } finally {
+      setUpdatingEmpleado(false);
+    }
+  };
+
+  const handleOpenCargoModal = (empleado) => {
+    setEditingEmpleado(empleado);
+    setCargoForm({
+      cargo: empleado.cargo || '',
+      especialidad: empleado.especialidad || '',
+      documentNumber: empleado.documentNumber || empleado.usuario?.documento || '',
+      documentType: empleado.documentType || 'DNI',
+      fechaIngreso: empleado.fechaIngreso ? new Date(empleado.fechaIngreso).toISOString().split('T')[0] : ''
+    });
+    setShowCargoModal(true);
   };
 
   const handleOpenRoleModal = (user) => {
@@ -326,505 +444,274 @@ const UsersList = () => {
     );
   }
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setCurrentPage(1);
-    const token = localStorage.getItem('token');
-    if (token) {
-      if (tab === 'empleados' || tab === 'citas') {
-        fetchAdminData(token);
-      } else if (tab === 'usuarios') {
-        fetchUsers(token);
-      }
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  
+  const currentRecords = activeTab === 'usuarios' 
+    ? filteredUsers.slice(indexOfFirstRecord, indexOfLastRecord)
+    : filteredEmpleados.slice(indexOfFirstRecord, indexOfLastRecord);
+
+  const totalPages = Math.ceil((activeTab === 'usuarios' ? filteredUsers.length : filteredEmpleados.length) / recordsPerPage);
+
+  const getTitle = () => {
+    switch(activeTab) {
+      case 'usuarios': return 'Gestión de Usuarios';
+      case 'empleados': return 'Nómina de Empleados';
+      case 'citas': return 'Control de Citas Globales';
+      default: return 'Administración MotoExpert';
     }
   };
 
-  const totalPages = Math.ceil(filteredUsers.length / recordsPerPage);
-  const indexOfLastRecord = currentPage * recordsPerPage;
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentRecords = filteredUsers.slice(indexOfFirstRecord, indexOfLastRecord);
-
   return (
-    <div className="p-6 relative">
-      {/* Modal para Editar Rol */}
-      {showRoleModal && userToEditRole && (
+    <div className="p-4 md:p-8 bg-[#020617] min-h-screen animate-in fade-in duration-500">
+      {/* Modales */}
+      {showCargoModal && editingEmpleado && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowRoleModal(false)} />
-          <div className="relative bg-[#050507] border border-white/[0.08] rounded-[2.5rem] w-full max-w-md p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-blue-600" />
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setShowCargoModal(false)} />
+          <div className="relative bg-[#0B1220] border border-white/10 rounded-[3rem] w-full max-w-xl p-10 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">
+                  {editingEmpleado.cargo ? 'EDITAR PERFIL' : 'DEFINIR CARGO'}
+                </h3>
+                <p className="text-slate-500 text-sm mt-1 font-medium">Actualizando información de <span className="text-purple-400 font-bold">{editingEmpleado.usuario?.nombre}</span></p>
+              </div>
+              <button onClick={() => setShowCargoModal(false)} className="p-2 hover:bg-white/5 rounded-full text-slate-500 transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
             
-            <h3 className="text-2xl font-black text-white mb-2 tracking-tighter">EDITAR ROL</h3>
-            <p className="text-slate-400 text-sm mb-8">Cambiando el rol de <span className="text-white font-bold">{userToEditRole.nombre}</span></p>
-
-            <div className="space-y-4 mb-8">
-              <label className="block text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 ml-1">Seleccionar Nivel de Acceso</label>
-              <div className="grid grid-cols-3 gap-3">
-                <button 
-                  onClick={() => setNewRole('admin')}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
-                    newRole === 'admin' 
-                      ? 'bg-purple-600/20 border-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.2)]' 
-                      : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/10'
-                  }`}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-2 font-bold">Cargo del Empleado</label>
+                <input 
+                  type="text" 
+                  value={cargoForm.cargo}
+                  onChange={(e) => setCargoForm({ ...cargoForm, cargo: e.target.value })}
+                  placeholder="Ej: Mecánico Senior"
+                  className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold outline-none focus:border-purple-500/50 focus:bg-black/60 transition-all"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-2 font-bold">Especialidad Técnica</label>
+                <input 
+                  type="text" 
+                  value={cargoForm.especialidad}
+                  onChange={(e) => setCargoForm({ ...cargoForm, especialidad: e.target.value })}
+                  placeholder="Ej: Inyección Electrónica / Motores"
+                  className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold outline-none focus:border-purple-500/50 focus:bg-black/60 transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-2 font-bold">Tipo Doc.</label>
+                <select 
+                  value={cargoForm.documentType}
+                  onChange={(e) => setCargoForm({ ...cargoForm, documentType: e.target.value })}
+                  className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold outline-none focus:border-purple-500/50 focus:bg-black/60 transition-all appearance-none"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 2.944V12m0 0l4.5 4.5M12 12l-4.5 4.5" />
-                  </svg>
-                  <span className="font-mono text-[9px] uppercase tracking-widest font-bold">Administrador</span>
-                </button>
-
-                <button 
-                  onClick={() => setNewRole('empleado')}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
-                    newRole === 'empleado' 
-                      ? 'bg-blue-600/20 border-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.2)]' 
-                      : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/10'
-                  }`}
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <span className="font-mono text-[9px] uppercase tracking-widest font-bold">Empleado</span>
-                </button>
-
-                <button 
-                  onClick={() => setNewRole('usuario')}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
-                    newRole === 'usuario' 
-                      ? 'bg-emerald-600/20 border-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.2)]' 
-                      : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/10'
-                  }`}
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span className="font-mono text-[9px] uppercase tracking-widest font-bold">Usuario</span>
-                </button>
+                  <option value="DNI">DNI</option>
+                  <option value="Cédula">Cédula</option>
+                  <option value="Pasaporte">Pasaporte</option>
+                  <option value="RUT">RUT</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-2 font-bold">Nº Documento</label>
+                <input 
+                  type="text" 
+                  value={cargoForm.documentNumber}
+                  onChange={(e) => setCargoForm({ ...cargoForm, documentNumber: e.target.value })}
+                  placeholder="12345678-9"
+                  className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold outline-none focus:border-purple-500/50 focus:bg-black/60 transition-all"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-2 font-bold">Fecha de Ingreso</label>
+                <input 
+                  type="date" 
+                  value={cargoForm.fechaIngreso}
+                  onChange={(e) => setCargoForm({ ...cargoForm, fechaIngreso: e.target.value })}
+                  className="w-full px-6 py-4 bg-black/40 border border-white/10 rounded-2xl text-white font-bold outline-none focus:border-purple-500/50 focus:bg-black/60 transition-all color-scheme-dark"
+                />
               </div>
             </div>
 
             <div className="flex gap-4">
               <button 
-                onClick={() => setShowRoleModal(false)}
-                className="flex-1 py-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] text-slate-400 font-mono text-[10px] uppercase tracking-[0.2em] hover:bg-white/[0.05] transition-all"
+                onClick={() => setShowCargoModal(false)} 
+                className="flex-1 py-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-white/[0.05] transition-all"
               >
                 Cancelar
               </button>
               <button 
-                onClick={handleUpdateRole}
-                disabled={updatingRole || newRole === userToEditRole.role}
-                className={`flex-1 py-4 rounded-2xl font-mono text-[10px] uppercase tracking-[0.2em] transition-all ${
-                  updatingRole || newRole === userToEditRole.role
-                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
-                    : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg hover:scale-[1.02] active:scale-[0.98]'
-                }`}
+                onClick={() => handleUpdateEmpleado(editingEmpleado.id, cargoForm)} 
+                disabled={updatingEmpleado} 
+                className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 disabled:opacity-50 font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all"
               >
-                {updatingRole ? 'Actualizando...' : 'Guardar Cambios'}
+                {updatingEmpleado ? 'Procesando...' : 'Guardar Cambios'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Detalles */}
+      {showRoleModal && userToEditRole && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowRoleModal(false)} />
+          <div className="relative bg-[#050507] border border-white/[0.08] rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl">
+            <h3 className="text-2xl font-black text-white mb-2 tracking-tighter">EDITAR ROL</h3>
+            <p className="text-slate-400 text-sm mb-8">Cambiando el rol de <span className="text-white font-bold">{userToEditRole.nombre}</span></p>
+            <div className="space-y-3 mb-8">
+              {['user', 'empleado', 'admin'].map((role) => (
+                <button 
+                  key={role}
+                  onClick={() => setNewRole(role)}
+                  className={`w-full p-4 rounded-2xl border transition-all text-left ${
+                    newRole === role 
+                      ? 'bg-purple-600/20 border-purple-500 text-white shadow-lg' 
+                      : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/10'
+                  }`}
+                >
+                  <span className="font-mono text-[10px] uppercase tracking-widest font-bold">{role}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-4">
+              <button onClick={() => setShowRoleModal(false)} className="flex-1 py-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] text-slate-400 font-mono text-[10px] uppercase">Cancelar</button>
+              <button onClick={handleUpdateRole} disabled={updatingRole} className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg disabled:opacity-50 uppercase text-[10px] font-bold">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showModal && selectedUser && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Header del Modal */}
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-bold text-xl italic shadow-lg shadow-blue-600/20">
-                  {selectedUser.nombre?.charAt(0)}
-                </div>
+                <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-bold text-xl italic">{selectedUser.nombre?.charAt(0)}</div>
                 <div>
                   <h3 className="text-xl font-bold text-white leading-none">{selectedUser.nombre} {selectedUser.apellidos}</h3>
-                  <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">Detalles del Usuario #{selectedUser.id}</p>
+                  <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">ID #{selectedUser.id}</p>
                 </div>
               </div>
-              <button 
-                onClick={handleCloseModal}
-                className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-all"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+              <button onClick={handleCloseModal} className="p-2 hover:bg-slate-800 rounded-xl text-slate-400"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
-
-            {/* Contenido del Modal */}
             <div className="p-8 overflow-y-auto custom-scrollbar space-y-8">
-              {/* Información Personal */}
               <section>
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center">
-                  <span className="w-8 h-px bg-slate-800 mr-3"></span> Información del Perfil
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                  <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50">
-                    <p className="text-[10px] font-bold text-slate-600 uppercase mb-1">Nombre</p>
-                    <p className="text-sm text-white font-bold">{selectedUser.nombre || 'N/A'}</p>
-                  </div>
-                  <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50">
-                    <p className="text-[10px] font-bold text-slate-600 uppercase mb-1">Apellidos</p>
-                    <p className="text-sm text-white font-bold">{selectedUser.apellidos || 'N/A'}</p>
-                  </div>
-                  <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50 lg:col-span-1">
-                    <p className="text-[10px] font-bold text-slate-600 uppercase mb-1">Email</p>
-                    <p className="text-sm text-blue-400 font-medium truncate">{selectedUser.email}</p>
-                  </div>
-                  <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50">
-                    <p className="text-[10px] font-bold text-slate-600 uppercase mb-1">Teléfono</p>
-                    <p className="text-sm text-white font-medium">{selectedUser.telefono || 'No registrado'}</p>
-                  </div>
-                  <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50">
-                    <p className="text-[10px] font-bold text-slate-600 uppercase mb-1">Rol</p>
-                    <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${
-                      selectedUser.role === 'admin' 
-                        ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
-                        : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                    }`}>
-                      {selectedUser.role}
-                    </span>
-                  </div>
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center"><span className="w-8 h-px bg-slate-800 mr-3"></span> Perfil</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50"><p className="text-[10px] font-bold text-slate-600 uppercase mb-1">Email</p><p className="text-sm text-white font-bold truncate">{selectedUser.email}</p></div>
+                  <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50"><p className="text-[10px] font-bold text-slate-600 uppercase mb-1">Teléfono</p><p className="text-sm text-white font-bold">{selectedUser.telefono || 'N/A'}</p></div>
+                  <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50"><p className="text-[10px] font-bold text-slate-600 uppercase mb-1">Documento</p><p className="text-sm text-white font-bold">{selectedUser.documento || 'N/A'}</p></div>
+                  <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50"><p className="text-[10px] font-bold text-slate-600 uppercase mb-1">Rol</p><p className="text-sm text-blue-400 font-bold uppercase">{selectedUser.role}</p></div>
                 </div>
               </section>
-
-              {/* Vehículos del Usuario */}
               <section>
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center">
-                  <span className="w-8 h-px bg-slate-800 mr-3"></span> Garaje de Vehículos
-                </h4>
-                {userDetails.loading ? (
-                  <div className="py-12 flex flex-col items-center justify-center space-y-3 bg-slate-950/30 rounded-3xl border border-slate-800">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Consultando garaje...</p>
-                  </div>
-                ) : userDetails.vehiculos.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center"><span className="w-8 h-px bg-slate-800 mr-3"></span> Vehículos</h4>
+                {userDetails.vehiculos.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {userDetails.vehiculos.map(v => (
-                      <div key={v.id} className="bg-slate-950/50 p-5 rounded-3xl border border-slate-800 group hover:border-blue-600/40 transition-all shadow-lg">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${v.tipo === 'Auto' ? 'bg-purple-600/10 text-purple-500' : 'bg-blue-600/10 text-blue-500'}`}>
-                            {v.tipo === 'Auto' ? '🚗' : '🏍️'}
-                          </div>
-                          <div className="bg-slate-900 px-3 py-1 rounded-lg border border-slate-800 text-[10px] font-bold text-blue-400 tracking-widest uppercase">
-                            {v.placa}
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Marca / Modelo</p>
-                          <p className="text-base font-bold text-white leading-tight">{v.marca} {v.modelo}</p>
-                          <p className="text-[10px] text-slate-600 mt-1 uppercase font-bold tracking-widest">{v.color || 'Sin color'} • {v.anio || 'N/A'}</p>
-                        </div>
+                      <div key={v.id} className="bg-slate-950/50 p-5 rounded-3xl border border-slate-800 flex justify-between items-center">
+                        <div><p className="text-sm font-bold text-white">{v.marca} {v.modelo}</p><p className="text-[10px] text-slate-500 uppercase">{v.tipo} • {v.color}</p></div>
+                        <div className="bg-slate-900 px-3 py-1 rounded-lg border border-slate-800 text-[10px] font-bold text-blue-400 tracking-widest">{v.placa}</div>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="py-12 text-center bg-slate-950/30 rounded-3xl border border-dashed border-slate-800 flex flex-col items-center justify-center space-y-2">
-                    <span className="text-3xl grayscale opacity-30">🏍️</span>
-                    <p className="text-slate-500 text-sm font-medium">Este usuario no tiene vehículos registrados.</p>
-                  </div>
-                )}
+                ) : <p className="text-slate-500 text-sm italic text-center py-8">Sin vehículos registrados.</p>}
               </section>
-
-              {/* Historial de Citas */}
               <section>
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center">
-                  <span className="w-8 h-px bg-slate-800 mr-3"></span> Historial de Servicios
-                </h4>
-                {userDetails.loading ? (
-                  <div className="py-12 flex flex-col items-center justify-center space-y-3 bg-slate-950/30 rounded-3xl border border-slate-800">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Sincronizando citas...</p>
-                  </div>
-                ) : userDetails.citas.length > 0 ? (
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center"><span className="w-8 h-px bg-slate-800 mr-3"></span> Historial</h4>
+                {userDetails.citas.length > 0 ? (
                   <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/30">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-900/80 text-slate-500 font-bold uppercase tracking-wider">
-                        <tr>
-                          <th className="p-5">Servicio</th>
-                          <th className="p-5">Vehículo</th>
-                          <th className="p-5">Fecha y Hora</th>
-                          <th className="p-5 text-center">Estado</th>
-                        </tr>
-                      </thead>
+                      <thead className="bg-slate-900/80 text-slate-500 font-bold uppercase"><tr><th className="p-5">Servicio</th><th className="p-5">Vehículo</th><th className="p-5">Fecha</th><th className="p-5 text-center">Estado</th></tr></thead>
                       <tbody className="divide-y divide-slate-800">
                         {userDetails.citas.map(c => (
-                          <tr key={c.id} className="hover:bg-slate-800/30 transition-colors group">
-                            <td className="p-5">
-                              <div className="flex flex-col">
-                                <span className="font-bold text-white text-sm">{c.servicio?.nombre}</span>
-                                <span className="text-[10px] text-slate-500 font-medium">ID Cita: #{c.id}</span>
-                              </div>
-                            </td>
-                            <td className="p-5">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-blue-400 font-bold bg-blue-400/10 px-2 py-0.5 rounded text-[10px] tracking-widest border border-blue-400/20">{c.vehiculo?.placa}</span>
-                                <span className="text-slate-400 font-medium">{c.vehiculo?.modelo}</span>
-                              </div>
-                            </td>
-                            <td className="p-5">
-                              <div className="flex flex-col">
-                                <span className="text-slate-300 font-bold">{new Date(c.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
-                                <span className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">⏰ {c.hora_inicio?.substring(0, 5)}</span>
-                              </div>
-                            </td>
-                            <td className="p-5 text-center">
-                              <span className={`px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest ${
-                                c.estado === 'PENDIENTE' 
-                                  ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' 
-                                  : c.estado === 'EN PROCESO'
-                                  ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
-                                  : 'bg-green-500/10 text-green-500 border border-green-500/20'
-                              }`}>
-                                {c.estado || 'PENDIENTE'}
-                              </span>
-                            </td>
+                          <tr key={c.id} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="p-5 font-bold text-white">{c.servicio?.nombre}</td>
+                            <td className="p-5 text-blue-400 font-bold">{c.vehiculo?.placa}</td>
+                            <td className="p-5 text-slate-300">{new Date(c.fecha).toLocaleDateString()} ⏰ {c.hora_inicio?.substring(0, 5)}</td>
+                            <td className="p-5 text-center"><span className={`px-3 py-1 rounded-full text-[9px] font-extrabold uppercase ${c.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500' : c.estado === 'EN PROCESO' ? 'bg-blue-500/10 text-blue-400' : 'bg-green-500/10 text-green-500'}`}>{c.estado || 'PENDIENTE'}</span></td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                ) : (
-                  <div className="py-12 text-center bg-slate-950/30 rounded-3xl border border-dashed border-slate-800 flex flex-col items-center justify-center space-y-2">
-                    <span className="text-3xl grayscale opacity-30">📅</span>
-                    <p className="text-slate-500 text-sm font-medium">Este usuario no tiene citas agendadas.</p>
-                  </div>
-                )}
+                ) : <p className="text-slate-500 text-sm italic text-center py-8">Sin historial de citas.</p>}
               </section>
             </div>
-
-            {/* Footer del Modal */}
             <div className="p-6 border-t border-slate-800 bg-slate-950/50 flex justify-end">
-              <button 
-                onClick={handleCloseModal}
-                className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all shadow-lg active:scale-95"
-              >
-                Cerrar
-              </button>
+              <button onClick={handleCloseModal} className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all">Cerrar</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Header Principal */}
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
-        <div className="flex flex-col space-y-4">
-          <h1 className="text-4xl font-bold text-white bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent italic">
-            Administración MotoExpert
-          </h1>
-          <div className="flex space-x-2 bg-slate-900 p-1 rounded-2xl border border-slate-800 w-fit">
-            <button 
-              onClick={() => handleTabChange('usuarios')}
-              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'usuarios' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              👥 Usuarios
-            </button>
-            <button 
-              onClick={() => handleTabChange('empleados')}
-              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'empleados' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              🛠️ Empleados
-            </button>
-            <button 
-              onClick={() => handleTabChange('citas')}
-              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'citas' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              📅 Citas Globales
-            </button>
+        <h1 className="text-4xl font-bold text-white bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent italic">{getTitle()}</h1>
+        <div className="w-full md:w-auto flex flex-col items-stretch md:items-end gap-3">
+          <div className="relative w-full md:w-96 group">
+            <input 
+              type="text" 
+              placeholder={`Buscar en ${activeTab}...`} 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-purple-600 outline-none transition-all"
+            />
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <button onClick={() => exportData(activeTab, 'excel')} className="h-10 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] text-slate-300 hover:bg-white/[0.05] transition-all text-[10px] font-mono uppercase">Excel</button>
+            <button onClick={() => exportData(activeTab, 'pdf')} className="h-10 px-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg hover:scale-[1.02] transition-all text-[10px] font-mono uppercase">PDF</button>
           </div>
         </div>
-
-        {/* Barra de Búsqueda Dinámica (Solo visible en Usuarios) */}
-        {activeTab === 'usuarios' && (
-          <div className="w-full md:w-auto flex flex-col items-stretch md:items-end gap-3">
-            <div className="relative w-full md:w-96 group">
-              <input 
-                type="text" 
-                placeholder="Buscar por nombre, email o ID..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-purple-600 outline-none transition-all group-hover:border-purple-500/50"
-              />
-              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => exportUsers('excel')}
-                className="h-10 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] text-slate-300 hover:bg-white/[0.05] transition-all text-[10px] font-mono uppercase tracking-[0.2em]"
-              >
-                Exportar Excel
-              </button>
-              <button
-                type="button"
-                onClick={() => exportUsers('pdf')}
-                className="h-10 px-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] font-mono uppercase tracking-[0.2em]"
-              >
-                Exportar PDF
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
+      {/* Métricas Rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Total Usuarios</p>
-          <p className="text-3xl font-black text-white italic">{users.length}</p>
-        </div>
-        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Total Empleados</p>
-          <p className="text-3xl font-black text-purple-500 italic">{empleados.length}</p>
-        </div>
-        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Citas Pendientes</p>
-          <p className="text-3xl font-black text-amber-500 italic">{citasGenerales.filter(c => c.estado === 'PENDIENTE').length}</p>
-        </div>
-        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Citas Finalizadas</p>
-          <p className="text-3xl font-black text-emerald-500 italic">{citasGenerales.filter(c => c.estado === 'FINALIZADO').length}</p>
-        </div>
+        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Total Usuarios</p><p className="text-3xl font-black text-white italic">{users.length}</p></div>
+        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Total Empleados</p><p className="text-3xl font-black text-purple-500 italic">{empleados.length}</p></div>
+        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Pendientes</p><p className="text-3xl font-black text-amber-500 italic">{citasGenerales.filter(c => c.estado === 'PENDIENTE').length}</p></div>
+        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Finalizadas</p><p className="text-3xl font-black text-emerald-500 italic">{citasGenerales.filter(c => c.estado === 'FINALIZADO').length}</p></div>
       </div>
 
+      {/* Tablas de Datos */}
       {activeTab === 'usuarios' && (
         <div className="overflow-x-auto bg-slate-900/50 border border-slate-800 rounded-3xl backdrop-blur-sm shadow-2xl">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-900/80">
-                <th className="p-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">ID</th>
-                <th className="p-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nombre Completo</th>
-                <th className="p-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Correo Electrónico</th>
-                <th className="p-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Teléfono</th>
-                <th className="p-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Rol</th>
-                <th className="p-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Acciones</th>
+                <th className="p-5 text-[10px] font-bold text-slate-500 uppercase">ID</th>
+                <th className="p-5 text-[10px] font-bold text-slate-500 uppercase">Nombre</th>
+                <th className="p-5 text-[10px] font-bold text-slate-500 uppercase">Email</th>
+                <th className="p-5 text-[10px] font-bold text-slate-500 uppercase">Rol</th>
+                <th className="p-5 text-[10px] font-bold text-slate-500 uppercase text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
-              {currentRecords.length > 0 ? (
-                currentRecords.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-800/30 transition-colors group">
-                    <td className="p-5 text-sm font-mono text-slate-500">#{user.id}</td>
-                    <td className="p-5">
-                      <button 
-                        onClick={() => handleOpenDetails(user)}
-                        className="flex items-center space-x-4 group/name text-left"
-                      >
-                        <div className="w-10 h-10 rounded-2xl bg-blue-600/10 flex items-center justify-center text-blue-500 font-bold text-sm uppercase group-hover/name:bg-blue-600 group-hover/name:text-white transition-all shadow-inner">
-                          {user.nombre?.charAt(0) || 'U'}
-                        </div>
-                        <div>
-                          <span className="text-sm font-bold text-white group-hover/name:text-blue-400 transition-colors block leading-tight">
-                            {user.nombre} {user.apellidos}
-                          </span>
-                          <span className="text-[10px] text-slate-600 uppercase font-bold tracking-tighter">Cliente Registrado</span>
-                        </div>
-                      </button>
-                    </td>
-                    <td className="p-5 text-sm text-slate-400">{user.email}</td>
-                    <td className="p-5 text-sm text-slate-400 font-medium">{user.telefono || 'N/A'}</td>
-                    <td className="p-5">
-                      <span className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase tracking-widest ${
-                        user.role === 'admin' 
-                          ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
-                          : user.role === 'empleado'
-                          ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                          : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                      }`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="p-5">
-                      <div className="flex space-x-3 justify-center">
-                        {isAdmin && (
-                          <button 
-                            onClick={() => handleOpenRoleModal(user)}
-                            title="Editar rol de usuario"
-                            className="p-2 bg-purple-600/10 hover:bg-purple-600 text-purple-400 hover:text-white rounded-2xl transition-all border border-purple-500/20 shadow-lg"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 2.944V12m0 0l4.5 4.5M12 12l-4.5 4.5" />
-                            </svg>
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => handleOpenDetails(user)}
-                          title="Ver detalles completos"
-                          className="flex items-center space-x-2 px-4 py-2 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider transition-all border border-blue-500/20 shadow-lg"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                          <span>Detalles</span>
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(user.id)}
-                          title="Eliminar usuario"
-                          className="p-2 hover:bg-red-900/30 rounded-2xl text-slate-600 hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="py-20 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <span className="text-5xl grayscale opacity-20">🔍</span>
-                      <p className="text-slate-500 font-bold uppercase tracking-widest">Usuario no encontrado</p>
-                      <p className="text-slate-600 text-xs italic">Intenta con otro término de búsqueda</p>
-                    </div>
-                  </td>
+              {currentRecords.length > 0 ? currentRecords.map((item) => (
+                <tr key={item.id} className="hover:bg-slate-800/30 transition-colors group">
+                  <td className="p-5 text-sm font-mono text-slate-500">#{item.id}</td>
+                  <td className="p-5"><button onClick={() => handleOpenDetails(item)} className="flex items-center space-x-4 text-left"><div className="w-10 h-10 rounded-2xl bg-blue-600/10 flex items-center justify-center text-blue-500 font-bold text-sm uppercase">{item.nombre?.charAt(0) || 'U'}</div><div><span className="text-sm font-bold text-white block leading-tight">{item.nombre} {item.apellidos}</span><span className="text-[10px] text-slate-600 uppercase font-bold">Cliente</span></div></button></td>
+                  <td className="p-5 text-sm text-slate-400">{item.email}</td>
+                  <td className="p-5"><span className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase ${item.role === 'admin' ? 'bg-purple-500/10 text-purple-400' : item.role === 'empleado' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}`}>{item.role}</span></td>
+                  <td className="p-5"><div className="flex space-x-3 justify-center">
+                    {isAdmin && <button onClick={() => handleOpenRoleModal(item)} className="p-2 bg-purple-600/10 text-purple-400 rounded-2xl border border-purple-500/20"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 2.944V12m0 0l4.5 4.5M12 12l-4.5 4.5" /></svg></button>}
+                    <button onClick={() => handleOpenDetails(item)} className="px-4 py-2 bg-blue-600/10 text-blue-400 rounded-2xl text-[10px] font-bold uppercase border border-blue-500/20 shadow-lg">Detalles</button>
+                    <button onClick={() => handleDelete(item.id)} className="p-2 text-slate-600 hover:text-red-500 transition-colors"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                  </div></td>
                 </tr>
-              )}
+              )) : <tr><td colSpan="5" className="py-20 text-center text-slate-500 italic">No se encontraron resultados.</td></tr>}
             </tbody>
           </table>
-
-          {/* Controles de Paginación */}
-          {filteredUsers.length > recordsPerPage && (
-            <div className="p-6 border-t border-slate-800 bg-slate-900/80 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-                Mostrando <span className="text-white font-bold">{indexOfFirstRecord + 1}</span> a <span className="text-white font-bold">{Math.min(indexOfLastRecord, filteredUsers.length)}</span> de <span className="text-white font-bold">{filteredUsers.length}</span> usuarios
-              </div>
+          {totalPages > 1 && (
+            <div className="p-6 border-t border-slate-800 bg-slate-900/80 flex justify-between items-center">
+              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Página <span className="text-white font-bold">{currentPage}</span> de <span className="text-white font-bold">{totalPages}</span></div>
               <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className={`p-2 rounded-xl border transition-all ${
-                    currentPage === 1 
-                      ? 'bg-slate-800/50 border-slate-700 text-slate-600 cursor-not-allowed' 
-                      : 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-                </button>
-
-                <div className="flex items-center space-x-1">
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i + 1}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`w-8 h-8 rounded-xl text-[10px] font-bold transition-all ${
-                        currentPage === i + 1
-                          ? 'bg-purple-600 text-white shadow-lg'
-                          : 'bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700'
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className={`p-2 rounded-xl border transition-all ${
-                    currentPage === totalPages 
-                      ? 'bg-slate-800/50 border-slate-700 text-slate-600 cursor-not-allowed' 
-                      : 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-                </button>
+                <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-2 rounded-xl border border-slate-700 text-white disabled:opacity-30"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg></button>
+                <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="p-2 rounded-xl border border-slate-700 text-white disabled:opacity-30"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg></button>
               </div>
             </div>
           )}
@@ -832,60 +719,208 @@ const UsersList = () => {
       )}
 
       {activeTab === 'empleados' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loadingAdmin ? (
-            <div className="col-span-full py-20 flex flex-col items-center justify-center space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-              <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Actualizando nómina...</p>
-            </div>
-          ) : empleados.length > 0 ? (
-            empleados.map(emp => {
-              const completedServices = emp.citas?.filter(c => c.estado === 'FINALIZADO').length || 0;
-              const fechaRegistro = emp.usuario?.createdAt ? new Date(emp.usuario.createdAt) : null;
-              const formattedFechaRegistro = fechaRegistro 
-                ? `Desde ${fechaRegistro.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}`
-                : 'N/A';
-              
-              return (
-                <div key={emp.id} className="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-[#7b9cff]/10 flex items-center justify-center text-[#7b9cff] font-bold text-xl uppercase">
-                      {emp.usuario?.nombre?.charAt(0) || 'E'}
+        <div className="grid grid-cols-1 gap-6">
+          {currentRecords.length > 0 ? currentRecords.map((item) => {
+            const isExpanded = expandedEmpleado === item.id;
+            const usuario = item.usuario || {};
+            const imagenPerfil = usuario.picture || usuario.imagen || usuario.foto || null;
+
+            return (
+              <div 
+                key={item.id} 
+                className={`group bg-[#0B1220]/50 border transition-all duration-500 overflow-hidden ${
+                  isExpanded 
+                    ? 'border-purple-500/40 rounded-[2.5rem] shadow-[0_0_50px_-12px_rgba(168,85,247,0.2)] bg-[#0B1220]' 
+                    : 'border-white/[0.05] rounded-3xl hover:border-white/10 hover:bg-[#0B1220]/80'
+                }`}
+              >
+                {/* Vista Compacta (Por defecto) */}
+                <div 
+                  className={`p-6 flex flex-col md:flex-row items-center justify-between cursor-pointer gap-4 ${isExpanded ? 'bg-white/[0.02]' : ''}`}
+                  onClick={() => setExpandedEmpleado(isExpanded ? null : item.id)}
+                >
+                  <div className="flex items-center space-x-5">
+                    <div className="relative">
+                      {imagenPerfil ? (
+                        <img src={imagenPerfil} alt={usuario.nombre} className="w-16 h-16 rounded-2xl object-cover border border-white/10 shadow-lg" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-2xl italic shadow-lg">
+                          {usuario.nombre?.charAt(0)}
+                        </div>
+                      )}
+                      <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-[3px] border-[#020617] ${item.estado === 'activo' ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]'}`}></div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                      emp.estado === 'activo' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
-                    }`}>
-                      {emp.estado === 'activo' ? 'ACTIVO' : 'INACTIVO'}
-                    </span>
+                    <div>
+                      <h3 className="text-xl font-black text-white italic uppercase tracking-tighter leading-none group-hover:text-purple-400 transition-colors">{usuario.nombre} {usuario.apellidos}</h3>
+                      <div className="flex items-center gap-3 mt-2">
+                        <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest font-bold">ID EMP #{item.id}</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-700"></span>
+                        <span className="text-[10px] text-purple-400 font-black uppercase tracking-widest">{item.cargo || 'SIN CARGO'}</span>
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-1">
-                    {emp.usuario?.nombre} {emp.usuario?.apellidos}
-                  </h3>
-                  <p className="text-slate-500 text-xs uppercase font-bold tracking-widest mb-2">{emp.cargo || 'Técnico Especialista'}</p>
-                  <p className="text-slate-400 text-xs mb-1">{emp.usuario?.email}</p>
-                  {emp.usuario?.telefono && <p className="text-slate-500 text-xs mb-4">{emp.usuario?.telefono}</p>}
-                  <div className="space-y-3 pt-4 border-t border-slate-800">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-600 font-bold uppercase">Especialidad</span>
-                      <span className="text-xs text-[#7b9cff] font-bold">{emp.especialidad || 'Mecánica General'}</span>
+
+                  <div className="hidden lg:grid grid-cols-2 gap-10 flex-1 px-12 border-x border-white/[0.03] mx-6">
+                    <div>
+                      <p className="text-[9px] font-mono text-slate-500 uppercase tracking-[0.2em] mb-1.5 font-bold">Email Corporativo</p>
+                      <p className="text-sm text-slate-300 font-medium truncate">{usuario.email}</p>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-600 font-bold uppercase">Registro</span>
-                      <span className="text-xs text-slate-400">{formattedFechaRegistro}</span>
+                    <div>
+                      <p className="text-[9px] font-mono text-slate-500 uppercase tracking-[0.2em] mb-1.5 font-bold">Estado Actual</p>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
+                        item.estado === 'activo' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                      }`}>
+                        {item.estado}
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-600 font-bold uppercase">Servicios completados</span>
-                      <span className="text-xs text-slate-400">{completedServices}</span>
-                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setExpandedEmpleado(isExpanded ? null : item.id); }}
+                      className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                        isExpanded ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'
+                      }`}
+                    >
+                      {isExpanded ? 'Ver Menos' : 'Ver Más'}
+                    </button>
                   </div>
                 </div>
-              );
-            })
-          ) : (
-            <div className="col-span-full py-20 text-center flex flex-col items-center justify-center space-y-3">
-              <span className="text-5xl grayscale opacity-20">🛠️</span>
-              <p className="text-slate-500 font-bold uppercase tracking-widest">No hay empleados registrados</p>
-              <p className="text-slate-600 text-xs italic text-center max-w-xs">Asegúrate de asignar el rol de 'empleado' a los usuarios desde la pestaña de Usuarios.</p>
+
+                {/* Vista Expandida */}
+                {isExpanded && (
+                  <div className="p-10 border-t border-white/[0.05] animate-in slide-in-from-top-4 duration-500">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                      {/* Columna Izquierda: Foto y Acciones */}
+                      <div className="lg:col-span-4 flex flex-col items-center space-y-8">
+                        <div className="relative group/photo">
+                          {imagenPerfil ? (
+                            <img src={imagenPerfil} alt={usuario.nombre} className="w-full aspect-square max-w-[280px] rounded-[3rem] object-cover border-4 border-white/5 shadow-2xl transition-transform duration-500 group-hover/photo:scale-[1.02]" />
+                          ) : (
+                            <div className="w-full aspect-square max-w-[280px] rounded-[3rem] bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-8xl italic shadow-2xl">
+                              {usuario.nombre?.charAt(0)}
+                            </div>
+                          )}
+                          <div className={`absolute -top-4 -right-4 px-6 py-2 rounded-2xl text-[11px] font-black uppercase tracking-widest border shadow-2xl ${
+                            item.estado === 'activo' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-rose-500 text-white border-rose-400'
+                          }`}>
+                            {item.estado}
+                          </div>
+                        </div>
+                        
+                        <div className="w-full max-w-[280px] space-y-3">
+                          <button 
+                            onClick={() => handleUpdateEmpleado(item.id, { estado: item.estado === 'activo' ? 'inactivo' : 'activo' })}
+                            className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
+                              item.estado === 'activo' 
+                                ? 'bg-rose-600/10 text-rose-500 border border-rose-500/20 hover:bg-rose-600 hover:text-white' 
+                                : 'bg-emerald-600/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-600 hover:text-white'
+                            }`}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                            Cambiar Estado
+                          </button>
+                          <button 
+                            onClick={() => handleOpenCargoModal(item)}
+                            className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-3"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            {item.cargo ? 'Editar Cargo' : 'Definir Cargo'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Columna Derecha: Información Detallada */}
+                      <div className="lg:col-span-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] font-bold">Nombre Completo</p>
+                            <p className="text-xl font-black text-white italic uppercase tracking-tight">{usuario.nombre} {usuario.apellidos}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] font-bold">Email</p>
+                            <p className="text-lg font-bold text-slate-300 truncate">{usuario.email}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] font-bold">Teléfono</p>
+                            <p className="text-lg font-bold text-slate-300">{usuario.telefono || 'No registrado'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] font-bold">Documento</p>
+                            <p className="text-lg font-bold text-slate-300 uppercase">
+                              {item.documentType || 'DNI'} : {item.documentNumber || usuario.documento || 'No registrado'}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] font-bold">Cargo Actual</p>
+                            <p className="text-lg font-black text-purple-400 italic uppercase">{item.cargo || 'POR DEFINIR'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] font-bold">Especialidad</p>
+                            <p className="text-lg font-black text-blue-400 italic uppercase">{item.especialidad || 'GENERAL'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] font-bold">Fecha de Ingreso</p>
+                            <p className="text-lg font-bold text-slate-300">
+                              {item.fechaIngreso ? new Date(item.fechaIngreso).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : 'No registrada'}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] font-bold">ID Empleado</p>
+                            <p className="text-lg font-mono font-bold text-slate-400"># {item.id}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-12 pt-10 border-t border-white/5">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            <div className="bg-white/[0.02] p-6 rounded-[2rem] border border-white/[0.05] hover:bg-white/[0.04] transition-all">
+                              <p className="text-[9px] font-mono text-slate-500 uppercase tracking-widest mb-2 font-bold">Servicios</p>
+                              <div className="flex items-baseline gap-2">
+                                <p className="text-3xl font-black text-white italic">{item.citas?.length || 0}</p>
+                                <span className="text-[10px] text-slate-500 font-bold uppercase">Realizados</span>
+                              </div>
+                            </div>
+                            <div className="bg-white/[0.02] p-6 rounded-[2rem] border border-white/[0.05] hover:bg-white/[0.04] transition-all">
+                              <p className="text-[9px] font-mono text-slate-500 uppercase tracking-widest mb-2 font-bold">Antigüedad</p>
+                              <div className="flex items-baseline gap-2">
+                                <p className="text-3xl font-black text-white italic">
+                                  {item.fechaIngreso ? Math.floor((new Date() - new Date(item.fechaIngreso)) / (1000 * 60 * 60 * 24 * 30.44)) : '0'}
+                                </p>
+                                <span className="text-[10px] text-slate-500 font-bold uppercase">Meses</span>
+                              </div>
+                            </div>
+                            <div className="bg-white/[0.02] p-6 rounded-[2rem] border border-white/[0.05] hover:bg-white/[0.04] transition-all">
+                              <p className="text-[9px] font-mono text-slate-500 uppercase tracking-widest mb-2 font-bold">Calificación</p>
+                              <div className="flex items-baseline gap-2">
+                                <p className="text-3xl font-black text-amber-500 italic">4.9</p>
+                                <span className="text-[10px] text-slate-500 font-bold uppercase">Promedio</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          }) : (
+            <div className="py-32 text-center bg-[#0B1220]/30 border border-dashed border-white/10 rounded-[3rem]">
+              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 italic uppercase">No hay empleados</h3>
+              <p className="text-slate-500 max-w-xs mx-auto">No se encontraron colaboradores que coincidan con tu búsqueda actual.</p>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="p-10 flex justify-between items-center">
+              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Página <span className="text-white font-bold">{currentPage}</span> de <span className="text-white font-bold">{totalPages}</span></div>
+              <div className="flex items-center space-x-2">
+                <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="h-12 px-6 rounded-2xl border border-slate-800 text-white font-black text-[10px] uppercase tracking-widest disabled:opacity-20 hover:bg-white/5 transition-all">Anterior</button>
+                <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="h-12 px-6 rounded-2xl border border-slate-800 text-white font-black text-[10px] uppercase tracking-widest disabled:opacity-20 hover:bg-white/5 transition-all">Siguiente</button>
+              </div>
             </div>
           )}
         </div>
@@ -895,63 +930,35 @@ const UsersList = () => {
         <div className="space-y-6">
           <div className="flex space-x-2 bg-slate-900 p-1 rounded-2xl border border-slate-800 w-fit">
             {['TODAS', 'PENDIENTE', 'EN PROCESO', 'FINALIZADO'].map(est => (
-              <button 
-                key={est}
-                onClick={() => setFiltroEstadoCita(est)}
-                className={`px-4 py-1.5 rounded-xl text-[10px] font-bold transition-all ${filtroEstadoCita === est ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
-              >
-                {est}
-              </button>
+              <button key={est} onClick={() => { setFiltroEstadoCita(est); setCitasPage(1); }} className={`px-4 py-1.5 rounded-xl text-[10px] font-bold transition-all ${filtroEstadoCita === est ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}>{est}</button>
             ))}
           </div>
-          
-          <div className="overflow-x-auto bg-slate-900/50 border border-slate-800 rounded-3xl">
+          <div className="overflow-x-auto bg-slate-900/50 border border-slate-800 rounded-3xl relative min-h-[200px]">
+            {loadingAdmin && <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] z-10 flex items-center justify-center rounded-3xl"><div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>}
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950/80 text-slate-500 font-bold uppercase tracking-widest">
-                <tr>
-                  <th className="p-5">Cita</th>
-                  <th className="p-5">Cliente / Vehículo</th>
-                  <th className="p-5">Empleado Asignado</th>
-                  <th className="p-5">Fecha / Hora</th>
-                  <th className="p-5 text-center">Estado</th>
-                </tr>
-              </thead>
+              <thead className="bg-slate-950/80 text-slate-500 uppercase tracking-widest"><tr><th className="p-5">Cita</th><th className="p-5">Cliente / Vehículo</th><th className="p-5">Empleado</th><th className="p-5">Fecha / Hora</th><th className="p-5 text-center">Estado</th></tr></thead>
               <tbody className="divide-y divide-slate-800">
-                {citasGenerales
-                  .filter(c => filtroEstadoCita === 'TODAS' || c.estado === filtroEstadoCita)
-                  .map(c => (
-                    <tr key={c.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="p-5 font-bold text-white">{c.servicio?.nombre}</td>
-                      <td className="p-5">
-                        <div className="flex flex-col">
-                          <span className="text-slate-300">{c.usuario?.nombre}</span>
-                          <span className="text-blue-400 font-bold tracking-tighter">{c.vehiculo?.placa}</span>
-                        </div>
-                      </td>
-                      <td className="p-5">
-                        <span className="bg-slate-800 px-3 py-1 rounded-lg text-slate-300 font-bold">
-                          {c.empleado?.usuario?.nombre || 'Sin asignar'}
-                        </span>
-                      </td>
-                      <td className="p-5">
-                        <div className="flex flex-col">
-                          <span className="text-slate-300">{new Date(c.fecha).toLocaleDateString()}</span>
-                          <span className="text-slate-500 font-bold">⏰ {c.hora_inicio.substring(0, 5)}</span>
-                        </div>
-                      </td>
-                      <td className="p-5 text-center">
-                        <span className={`px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest ${
-                          c.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 
-                          c.estado === 'EN PROCESO' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 'bg-green-500/10 text-green-500 border border-green-500/20'
-                        }`}>
-                          {c.estado}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                {citasGenerales.length > 0 ? citasGenerales.map(c => (
+                  <tr key={c.id} className="hover:bg-slate-800/30 transition-colors">
+                    <td className="p-5 font-bold text-white">{c.servicio?.nombre}</td>
+                    <td className="p-5"><div className="flex flex-col"><span className="text-slate-300 font-bold">{c.usuario?.nombre}</span><span className="text-blue-400 font-bold">{c.vehiculo?.placa}</span></div></td>
+                    <td className="p-5"><span className="bg-slate-800 px-3 py-1 rounded-lg text-slate-300 font-bold">{c.empleado?.usuario?.nombre || 'Sin asignar'}</span></td>
+                    <td className="p-5"><div className="flex flex-col"><span className="text-slate-300 font-bold">{new Date(c.fecha).toLocaleDateString()}</span><span className="text-slate-500 font-bold italic">⏰ {c.hora_inicio?.substring(0, 5)}</span></div></td>
+                    <td className="p-5 text-center"><span className={`px-3 py-1 rounded-full text-[9px] font-extrabold uppercase ${c.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500' : c.estado === 'EN PROCESO' ? 'bg-blue-500/10 text-blue-500' : 'bg-green-500/10 text-green-500'}`}>{c.estado}</span></td>
+                  </tr>
+                )) : <tr><td colSpan="5" className="p-10 text-center text-slate-500 italic">No hay citas registradas.</td></tr>}
               </tbody>
             </table>
           </div>
+          {totalCitas > 0 && (
+            <div className="p-6 border border-slate-800 bg-slate-900/50 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Página <span className="text-white font-bold">{citasPage}</span> de <span className="text-white font-bold">{totalPagesCitas}</span> <span className="mx-2 opacity-20">|</span> Total: <span className="text-white font-bold">{totalCitas}</span></div>
+              <div className="flex items-center space-x-2">
+                <button onClick={() => setCitasPage(prev => Math.max(prev - 1, 1))} disabled={citasPage === 1 || loadingAdmin} className="px-4 py-2 rounded-xl border border-slate-700 text-white disabled:opacity-30">Anterior</button>
+                <button onClick={() => setCitasPage(prev => Math.min(prev + 1, totalPagesCitas))} disabled={citasPage === totalPagesCitas || loadingAdmin} className="px-4 py-2 rounded-xl border border-slate-700 text-white disabled:opacity-30">Siguiente</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

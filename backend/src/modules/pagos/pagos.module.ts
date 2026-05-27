@@ -5,9 +5,10 @@ import { Pago } from './entities/pago.entity';
 import { Payment } from './entities/payment.entity';
 import { EmpleadoRoleGuard, PaymentController, UsuarioRoleGuard } from './payment.controller';
 import { PaymentService } from './payment.service';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Pago, Payment, Cita])],
+  imports: [TypeOrmModule.forFeature([Pago, Payment, Cita]), ActivityModule],
   controllers: [PaymentController],
   providers: [PaymentService, UsuarioRoleGuard, EmpleadoRoleGuard],
   exports: [TypeOrmModule, PaymentService],

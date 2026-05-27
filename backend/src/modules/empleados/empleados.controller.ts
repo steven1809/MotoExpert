@@ -7,10 +7,13 @@ import {
   Put,
   Delete,
   ParseIntPipe,
+  Patch,
+  UseGuards,
 } from '@nestjs/common';
 import { EmpleadosService } from './empleados.service';
 import { CreateEmpleadoDto } from './dto/create-empleado.dto';
 import { UpdateEmpleadoDto } from './dto/update-empleado.dto';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 
 @Controller('empleados')
 export class EmpleadosController {
@@ -33,6 +36,14 @@ export class EmpleadosController {
 
   @Put(':id')
   update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: UpdateEmpleadoDto,
+  ) {
+    return this.service.update(id, body);
+  }
+
+  @Patch(':id')
+  async patch(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: UpdateEmpleadoDto,
   ) {

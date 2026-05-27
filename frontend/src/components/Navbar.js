@@ -40,10 +40,13 @@ class Navbar extends Component {
 
     if (role === "admin") {
       return [
-        { key: "dashboard", label: "Inicio", view: "dashboard"},
-        { key: "servicios", label: "Servicios", view: "servicios" },
-        { key: "users", label: "Usuarios", view: "users"},
-        { key: "cuenta", label: "Cuenta", view: "cuenta"},
+        { key: "dashboard", label: "Dashboard", view: "dashboard", icon: "grid" },
+        { key: "servicios", label: "Gestion de Servicios", view: "servicios", icon: "spark" },
+        { key: "users", label: "Gestion de Usuarios", view: "users", icon: "users" },
+        { key: "empleados", label: "Gestion de Empleados", view: "admin_empleados", icon: "tool" },
+        { key: "citas_admin", label: "Gestion de Citas", view: "admin_citas", icon: "clock" },
+        { key: "actividad", label: "Logs de Actividad", view: "admin_actividad", icon: "history" },
+        { key: "cuenta", label: "Mi Cuenta", view: "cuenta", icon: "shield" },
       ];
     }
 
@@ -100,6 +103,12 @@ class Navbar extends Component {
             <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
           </svg>
         );
+      case "tool":
+        return (
+          <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+          </svg>
+        );
       case "shield":
         return (
           <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -126,6 +135,12 @@ class Navbar extends Component {
             <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
           </svg>
         );
+      case "history":
+        return (
+          <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
     }
   }
   
@@ -148,14 +163,14 @@ class Navbar extends Component {
           isActive
             ? isHorizontal 
               ? "text-white" 
-              : "bg-white/[0.03] border-[#7b9cff] text-white"
+              : "bg-purple-600/10 border-purple-500 text-white shadow-[inset_4px_0_15px_rgba(168,85,247,0.05)]"
             : isHorizontal
               ? "text-slate-400 hover:text-white"
               : "border-transparent text-slate-400 hover:bg-white/[0.02] hover:text-white"
         }`}
       >
         <span className={`transition-transform duration-300 group-hover:scale-110 ${
-          isActive ? "text-[#7b9cff]" : "text-slate-500 group-hover:text-[#7b9cff]"
+          isActive ? "text-purple-400" : "text-slate-500 group-hover:text-purple-400"
         }`}>
           {this.renderIcon(item.icon)}
         </span>
@@ -166,7 +181,7 @@ class Navbar extends Component {
         {/* Underline effect for horizontal */}
         {isHorizontal && (
           <div className={`absolute bottom-0 left-0 right-0 h-[2px] transition-all duration-300 ${
-            isActive ? "bg-[#7b9cff] shadow-[0_0_8px_rgba(123,156,255,0.5)]" : "bg-transparent group-hover:bg-white/10"
+            isActive ? "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" : "bg-transparent group-hover:bg-white/10"
           }`} />
         )}
       </button>

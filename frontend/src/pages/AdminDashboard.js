@@ -71,109 +71,14 @@ class AdminDashboard extends Component {
       loadingAppointments: false,
 
       submittingVehicle: false,
-      submittingAppointment: false,
-
-      // Citas Globales
-      globalCitas: [],
-      selectedCitaForIntervention: null,
-      showInterventionModal: false,
-      newAppointmentDate: '',
-      newAppointmentTime: '',
-      currentGlobalCitasPage: 1,
-      globalCitasPerPage: 10
+      submittingAppointment: false
     };
   }
 
   componentDidMount() {
     this.fetchDashboardData();
     this.fetchFormConfigs();
-    this.fetchGlobalCitas();
   }
-
-  fetchGlobalCitas = async () => {
-    const token = localStorage.getItem('token');
-    const headers = { 'Authorization': `Bearer ${token}` };
-    try {
-      const res = await fetch(`${API_BASE_URL}/citas`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        this.setState({ globalCitas: Array.isArray(data) ? data : [] });
-      }
-    } catch (error) {
-      console.error('Error fetching global appointments:', error);
-    }
-  };
-
-  handleIntervention = (cita) => {
-    this.setState({
-      selectedCitaForIntervention: cita,
-      showInterventionModal: true,
-      newAppointmentDate: cita.fecha,
-      newAppointmentTime: cita.hora_inicio?.substring(0, 5)
-    });
-  };
-
-  updateAppointmentStatus = async (status) => {
-    const { selectedCitaForIntervention } = this.state;
-    if (!selectedCitaForIntervention) return;
-
-    const token = localStorage.getItem('token');
-    const headers = { 
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/citas/${selectedCitaForIntervention.id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ estado: status })
-      });
-
-      if (res.ok) {
-        if (this.props.showToast) {
-          this.props.showToast(`Cita ${status.toLowerCase()} correctamente`, 'success');
-        }
-        this.setState({ showInterventionModal: false, selectedCitaForIntervention: null });
-        this.fetchGlobalCitas();
-        this.fetchDashboardData();
-      }
-    } catch (error) {
-      console.error('Error updating appointment status:', error);
-    }
-  };
-
-  rescheduleAppointment = async () => {
-    const { selectedCitaForIntervention, newAppointmentDate, newAppointmentTime } = this.state;
-    if (!selectedCitaForIntervention || !newAppointmentDate || !newAppointmentTime) return;
-
-    const token = localStorage.getItem('token');
-    const headers = { 
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/citas/${selectedCitaForIntervention.id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ 
-          fecha: newAppointmentDate,
-          hora_inicio: newAppointmentTime.length === 5 ? `${newAppointmentTime}:00` : newAppointmentTime
-        })
-      });
-
-      if (res.ok) {
-        if (this.props.showToast) {
-          this.props.showToast('Cita reprogramada correctamente', 'success');
-        }
-        this.setState({ showInterventionModal: false, selectedCitaForIntervention: null });
-        this.fetchGlobalCitas();
-      }
-    } catch (error) {
-      console.error('Error rescheduling appointment:', error);
-    }
-  };
 
   componentDidUpdate(prevProps, prevState) {
     // Si cambia la fecha, cargar todas las citas de ese día para el modal de especialistas
@@ -201,10 +106,10 @@ class AdminDashboard extends Component {
     const headers = { 'Authorization': `Bearer ${token}` };
     
     try {
-      // Obtenemos todas las citas para verificar disponibilidad de especialistas localmente
       const res = await fetch(`${API_BASE_URL}/citas`, { headers });
       if (res.ok) {
-        const allAppointments = await res.json();
+        const citasData = await res.json();
+        const allAppointments = Array.isArray(citasData) ? citasData : (citasData.data ?? []);
         const filtered = allAppointments.filter(a => a.fecha === fechaIngreso && a.estado !== 'CANCELADO');
         this.setState({ appointmentsAtSelectedDate: filtered, loadingAppointments: false });
       }
@@ -277,23 +182,25 @@ class AdminDashboard extends Component {
     const token = localStorage.getItem('token');
     const headers = { 'Authorization': `Bearer ${token}` };
     try {
-      const [usersRes, citasRes] = await Promise.all([
+      const [usersRes, citasRes, empRes] = await Promise.all([
         fetch(`${API_BASE_URL}/auth`, { headers }),
-        fetch(`${API_BASE_URL}/citas`, { headers })
+        fetch(`${API_BASE_URL}/citas`, { headers }),
+        fetch(`${API_BASE_URL}/empleados`, { headers })
       ]);
       
       const users = usersRes.ok ? await usersRes.json() : [];
       const citas = citasRes.ok ? await citasRes.json() : [];
+      const employees = empRes.ok ? await empRes.json() : [];
       
       this.setState({
         stats: {
           usuarios: Array.isArray(users) ? users.length : 0,
           ingresos: 12500.50,
-          vehiculosEnProceso: Array.isArray(citas) 
-            ? citas.filter(c => c.estado === 'EN PROCESO').length 
+          empleadosActivos: Array.isArray(employees) 
+            ? employees.filter(e => e.estado === 'activo').length 
             : 0,
-          trabajadoresActivos: Array.isArray(users)
-            ? users.filter(u => u.role?.toLowerCase() === 'empleado' || u.role?.toLowerCase() === 'trabajador').length
+          empleadosInactivos: Array.isArray(employees)
+            ? employees.filter(e => e.estado !== 'activo').length
             : 0
         },
         users: users,
@@ -314,8 +221,10 @@ class AdminDashboard extends Component {
         fetch(`${API_BASE_URL}/empleados`, { headers })
       ]);
 
+      const servData = servRes.ok ? await servRes.json() : { data: [] };
+
       this.setState({
-        servicios: servRes.ok ? await servRes.json() : [],
+        servicios: Array.isArray(servData) ? servData : (servData.data ?? []),
         vehiculos: vehRes.ok ? await vehRes.json() : [],
         empleados: empRes.ok ? await empRes.json() : []
       });
@@ -719,25 +628,12 @@ class AdminDashboard extends Component {
       selectedPaymentMethod,
       validationErrors,
       showQR,
-      globalCitas,
-      selectedCitaForIntervention,
-      showInterventionModal,
-      newAppointmentDate,
-      newAppointmentTime,
-      currentGlobalCitasPage,
-      globalCitasPerPage,
       submittingVehicle,
       submittingAppointment
     } = this.state;
 
     const filteredUsers = this.getFilteredUsers();
     const selectedUser = users.find(u => u.id === parseInt(userId));
-
-    // Paginación Citas Globales
-    const totalGlobalPages = Math.ceil((globalCitas || []).length / globalCitasPerPage);
-    const indexOfLastGlobal = currentGlobalCitasPage * globalCitasPerPage;
-    const indexOfFirstGlobal = indexOfLastGlobal - globalCitasPerPage;
-    const currentGlobalRecords = (globalCitas || []).slice(indexOfFirstGlobal, indexOfLastGlobal);
 
     // Filtrar servicios según tipo de vehículo seleccionado
     const filteredServices = servicios.filter(s => {
@@ -815,75 +711,73 @@ class AdminDashboard extends Component {
       );
     }
 
+    const userName = localStorage.getItem('userName') || 'Administrador';
+
     return (
       <div className="min-h-screen bg-[#020617] p-6 relative">
         <div className="mb-8">
-          <div className="bg-gradient-to-br from-slate-900 to-[#111827] rounded-[3rem] p-12 text-center">
-           
+          <div className="bg-gradient-to-br from-slate-900 to-[#111827] rounded-[3rem] p-12 text-center border border-white/5 shadow-2xl">
+            <div className="inline-block px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-black uppercase tracking-[0.3em] mb-6">
+              Panel de Administración
+            </div>
             <h1 className="text-5xl md:text-6xl font-black text-[#F8FAFC] italic uppercase tracking-tighter mb-4">
-              CONTROL <span className="text-[#2563EB]">ADMINISTRATIVO</span>
+              HOLA, <span className="text-purple-500">{userName.split(' ')[0]}</span>
             </h1>
-            
+            <p className="text-slate-400 text-sm max-w-lg mx-auto font-medium leading-relaxed">
+              Bienvenido de nuevo al centro de control de MotoExpert. Aquí puedes gestionar vehículos, programar servicios y supervisar el rendimiento global del negocio.
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           <div 
             onClick={() => this.props.setView('users')}
-            className="bg-[#0B1220] border border-white/5 rounded-3xl p-6 cursor-pointer hover:scale-[1.02] hover:border-blue-500/30 transition-all duration-300"
+            className="bg-[#0B1220] border border-white/5 rounded-3xl p-8 cursor-pointer hover:scale-[1.02] hover:border-purple-500/30 transition-all duration-300 group shadow-lg"
           >
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">Usuarios</div>
-            <div className="mt-2 text-3xl font-black text-white">{stats.usuarios}</div>
-          </div>
-          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-6">
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">Ingresos</div>
-            <div className="mt-2 text-3xl font-black text-white">${stats.ingresos}</div>
-          </div>
-          <div 
-            onClick={() => this.props.setView('citas')}
-            className="bg-[#0B1220] border border-white/5 rounded-3xl p-6 cursor-pointer hover:scale-[1.02] hover:border-blue-500/30 transition-all duration-300"
-          >
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">En proceso</div>
-            <div className="mt-2 text-3xl font-black text-white">{stats.vehiculosEnProceso}</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B] group-hover:text-purple-400 transition-colors">Usuarios Registrados</div>
+            <div className="mt-4 flex items-end justify-between">
+              <div className="text-4xl font-black text-white italic">{stats.usuarios}</div>
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+              </div>
+            </div>
           </div>
           <div 
-            onClick={() => this.props.setView('users')}
-            className="bg-[#0B1220] border border-white/5 rounded-3xl p-6 cursor-pointer hover:scale-[1.02] hover:border-blue-500/30 transition-all duration-300"
+            onClick={() => this.props.setView('admin_empleados')}
+            className="bg-[#0B1220] border border-white/5 rounded-3xl p-8 cursor-pointer hover:scale-[1.02] hover:border-emerald-500/30 transition-all duration-300 group shadow-lg"
           >
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">Empleados</div>
-            <div className="mt-2 text-3xl font-black text-white">{stats.trabajadoresActivos}</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B] group-hover:text-emerald-400 transition-colors">Empleados Activos</div>
+            <div className="mt-4 flex items-end justify-between">
+              <div className="text-4xl font-black text-white italic">{stats.empleadosActivos}</div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 2.944V12m0 0l4.5 4.5M12 12l-4.5 4.5" /></svg>
+              </div>
+            </div>
+          </div>
+          <div 
+            onClick={() => this.props.setView('admin_empleados')}
+            className="bg-[#0B1220] border border-white/5 rounded-3xl p-8 cursor-pointer hover:scale-[1.02] hover:border-rose-500/30 transition-all duration-300 group shadow-lg"
+          >
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B] group-hover:text-rose-400 transition-colors">Empleados Inactivos</div>
+            <div className="mt-4 flex items-end justify-between">
+              <div className="text-4xl font-black text-white italic">{stats.empleadosInactivos}</div>
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+            </div>
+          </div>
+          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-8 shadow-lg">
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">Dinero Recaudado</div>
+            <div className="mt-4 flex items-end justify-between">
+              <div className="text-4xl font-black text-white italic">${stats.ingresos.toLocaleString()}</div>
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* PESTAÑAS DEL DASHBOARD */}
-        <div className="flex gap-4 mb-8">
-          <button 
-            onClick={() => this.setState({ activeDashboardTab: 'programar' })}
-            className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
-              (!this.state.activeDashboardTab || this.state.activeDashboardTab === 'programar') 
-              ? 'bg-[#2563EB] text-white shadow-lg shadow-[#2563EB]/20' 
-              : 'bg-[#0B1220] border border-white/5 text-slate-500 hover:border-white/10'
-            }`}
-          >
-            Programar Servicio
-          </button>
-          <button 
-            onClick={() => {
-              this.setState({ activeDashboardTab: 'globales' });
-              this.fetchGlobalCitas();
-            }}
-            className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
-              this.state.activeDashboardTab === 'globales' 
-              ? 'bg-[#8B5CF6] text-white shadow-lg shadow-[#8B5CF6]/20' 
-              : 'bg-[#0B1220] border border-white/5 text-slate-500 hover:border-white/10'
-            }`}
-          >
-            Citas Globales
-          </button>
-        </div>
-
-        {(!this.state.activeDashboardTab || this.state.activeDashboardTab === 'programar') && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start animate-in fade-in duration-500">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start animate-in fade-in duration-500">
             {/* CARD REGISTRAR VEHÍCULO */}
           <div className="bg-[#0B1220] border border-white/5 rounded-[2.5rem] p-8 transition-all duration-500">
             <div className="flex items-center gap-3 mb-8">
@@ -1560,75 +1454,6 @@ class AdminDashboard extends Component {
                 className="w-full py-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
               >
                 Entendido
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL DE INTERVENCIÓN ADMINISTRATIVA */}
-        {showInterventionModal && selectedCitaForIntervention && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-md" onClick={() => this.setState({ showInterventionModal: false, selectedCitaForIntervention: null })}></div>
-            <div className="relative w-full max-w-lg bg-[#0B1220] border border-white/10 rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95 duration-300">
-              <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-6">Intervención Administrativa</h3>
-              
-              <div className="space-y-6 mb-8">
-                {/* Código de entrega (Solo lectura) */}
-                <div className="p-4 bg-slate-800/50 rounded-2xl border border-white/5">
-                  <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Código de Entrega (Seguridad)</label>
-                  <div className="text-xl font-black text-[#8B5CF6] tracking-[0.2em]">{selectedCitaForIntervention.codigoEntrega || 'NO GENERADO'}</div>
-                </div>
-
-                {/* Cambio de Fecha y Hora */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-2">Nueva Fecha</label>
-                    <input 
-                      type="date"
-                      value={newAppointmentDate}
-                      onChange={(e) => this.setState({ newAppointmentDate: e.target.value })}
-                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white font-bold outline-none focus:border-[#8B5CF6]/50"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-2">Nueva Hora</label>
-                    <input 
-                      type="time"
-                      value={newAppointmentTime}
-                      onChange={(e) => this.setState({ newAppointmentTime: e.target.value })}
-                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white font-bold outline-none focus:border-[#8B5CF6]/50"
-                    />
-                  </div>
-                </div>
-                
-                <button 
-                  onClick={this.rescheduleAppointment}
-                  className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
-                >
-                  Reprogramar Cita
-                </button>
-
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                  <button 
-                    onClick={() => this.updateAppointmentStatus('FINALIZADO')}
-                    className="py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
-                  >
-                    Forzar Cierre
-                  </button>
-                  <button 
-                    onClick={() => this.updateAppointmentStatus('CANCELADO')}
-                    className="py-4 bg-red-600 hover:bg-red-700 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
-                  >
-                    Cancelar Cita
-                  </button>
-                </div>
-              </div>
-
-              <button 
-                onClick={() => this.setState({ showInterventionModal: false, selectedCitaForIntervention: null })}
-                className="w-full py-4 bg-white/5 hover:bg-white/10 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
-              >
-                Cerrar Panel
               </button>
             </div>
           </div>

@@ -24,10 +24,9 @@ export class ServiciosController {
   @Public()
   @Get()
   async getAll(@Query() filtros: any) {
-    console.log('Filtros recibidos:', filtros);
-    const servicios = await this.service.findAll(filtros);
-    console.log('Servicios encontrados:', servicios.length);
-    return servicios;
+    const result = await this.service.findAll(filtros);
+    console.log('Servicios encontrados:', result.data.length, 'de', result.total);
+    return result;
   }
 
   @Public()

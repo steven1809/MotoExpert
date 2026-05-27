@@ -5,6 +5,7 @@ import { Empleado } from './entities/empleado.entity';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 import { CreateEmpleadoDto } from './dto/create-empleado.dto';
 import { UpdateEmpleadoDto } from './dto/update-empleado.dto';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class EmpleadosService {
@@ -13,6 +14,7 @@ export class EmpleadosService {
     private readonly repo: Repository<Empleado>,
     @InjectRepository(Usuario)
     private readonly usuarioRepo: Repository<Usuario>,
+    private readonly activityService: ActivityService,
   ) {}
 
   async findAll() {
@@ -28,7 +30,7 @@ export class EmpleadosService {
         console.log(`[EmpleadosService] Sync: Creating missing employee record for user ${usuario.id}`);
         await this.create({
           usuarioId: usuario.id,
-          documento: usuario.documento || undefined,
+          documentNumber: usuario.documento || undefined,
           cargo: 'Mecánico',
           especialidad: 'Mecánica General',
           estado: 'activo',
@@ -36,7 +38,10 @@ export class EmpleadosService {
       }
     }
 
-    return this.repo.find({ relations: ['usuario', 'citas'] });
+    return this.repo.find({ 
+      relations: ['usuario', 'citas'],
+      order: { id: 'DESC' }
+    });
   }
 
   findByUsuarioId(usuarioId: number) {
@@ -60,7 +65,21 @@ export class EmpleadosService {
 
   async update(id: number, data: UpdateEmpleadoDto) {
     await this.repo.update(id, data);
-    return this.findOne(id);
+    
+    // Registrar actividad
+    await this.activityService.logActivity(
+      'EMPLEADO_ACTUALIZADO',
+      `Cargo de empleado #${id} actualizado`,
+      'empleado',
+      id.toString(),
+      'admin',
+      'admin'
+    );
+
+    return this.repo.findOne({ 
+      where: { id }, 
+      relations: ['usuario'] 
+    });
   }
 
   delete(id: number) {

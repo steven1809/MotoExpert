@@ -20,6 +20,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import NotificationBell from './components/NotificationBell';
 import ResenasPage from './pages/ResenasPage';
+import ActivityLogPage from './pages/ActivityLogPage';
 import PaymentStep from './components/PaymentStep';
 import PaymentConfirmation from './components/PaymentConfirmation';
 
@@ -418,7 +419,10 @@ function App() {
                 {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard showToast={showToast} />}
                 {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
                 {view === "servicios" && <Servicios setView={setView} />}
-                {view === "users" && <UsersList />}
+                {view === "users" && <UsersList setView={setView} activeTab="usuarios" />}
+                {view === "admin_empleados" && <UsersList setView={setView} activeTab="empleados" />}
+                {view === "admin_citas" && <UsersList setView={setView} activeTab="citas" />}
+                {view === "admin_actividad" && <ActivityLogPage />}
                 {view === "vehiculos" && <Vehiculos setView={setView} showToast={showToast} />}
                 {view === "citas" && (
                   <Citas
@@ -431,7 +435,7 @@ function App() {
                   />
                 )}
                 {view === "resenas" && <ResenasPage />}
-                {view === "cuenta" && <MiCuenta />}
+                {view === "cuenta" && <MiCuenta setView={setView} />}
                 {view === "panel_empleado" && <PanelEmpleado showToast={showToast} />}
               </>
             )}

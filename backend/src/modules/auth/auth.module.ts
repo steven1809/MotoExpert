@@ -7,12 +7,14 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 import { UsuariosModule } from '../usuarios/usuarios.module';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
   imports: [
     UsuariosModule,
     PassportModule,
     TypeOrmModule.forFeature([Usuario]),
+    ActivityModule,
     JwtModule.register({
       secret: 'clave_secreta',
       signOptions: { expiresIn: '1h' },
