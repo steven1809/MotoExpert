@@ -1,6 +1,5 @@
 import { useState } from 'react';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+import { API_BASE_URL } from '../../apiConfig';
 
 const Register = ({ onSuccess }) => {
   const [formData, setFormData] = useState({

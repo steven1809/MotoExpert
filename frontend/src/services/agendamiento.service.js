@@ -1,4 +1,4 @@
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001'; 
+import { API_BASE_URL as API_BASE } from '../apiConfig';
  
  const handleResponse = async (response) => { 
    if (!response.ok) { 

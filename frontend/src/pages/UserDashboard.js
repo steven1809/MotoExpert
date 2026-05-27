@@ -14,7 +14,62 @@ import lanzaderaIcon from '../assets/iconos/lanzadera.png';
 import finalizarIcon from '../assets/iconos/finalizar.png';
 import notificacionIcon from '../assets/iconos/notificacion.png';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { QRCodeCanvas } from 'qrcode.react';
+
+import { API_BASE_URL } from '../apiConfig';
+
+const TokenCodeModal = ({ isOpen, onClose, tokenCode }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-[#0f1117] border border-[#2a2d3a] p-8 rounded-[2.5rem] shadow-2xl max-w-md w-full mx-4 animate-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">
+              Código de entrega
+            </h2>
+            <p className="text-[#94A3B8] text-sm font-medium mt-1">
+              Muestra este código al empleado cuando retires tu vehículo
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-xl bg-[#1a1d27] border border-[#2a2d3a] text-[#94A3B8] hover:text-white hover:border-white/20 transition-all"
+            aria-label="Cerrar"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="space-y-5 text-center">
+          <div className="px-6 py-4 rounded-2xl bg-[#1a1d27] border border-[#2a2d3a]">
+            <div className="text-4xl font-black tracking-[0.25em] text-[#F8FAFC] font-mono">
+              {tokenCode || '------'}
+            </div>
+          </div>
+
+          {tokenCode ? (
+            <div className="flex justify-center">
+              <div className="p-4 rounded-2xl border border-white/10 bg-[#0b0d12]">
+                <QRCodeCanvas
+                  value={tokenCode}
+                  size={176}
+                  includeMargin
+                  fgColor="#FFFFFF"
+                  bgColor="#0b0d12"
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const REPORTS_PER_PAGE = 6;
 
@@ -477,6 +532,8 @@ class UserDashboard extends Component {
       activeReportCitaId: null,
       userProfile: null,
       notifications: [],
+      tokenModalOpen: false,
+      tokenModalCode: '',
     };
     this.pollingInterval = null;
   }
@@ -805,16 +862,30 @@ class UserDashboard extends Component {
 
     const now = new Date();
     const oneDayMs = 24 * 60 * 60 * 1000;
-    const upcomingCita = (Array.isArray(citas) ? citas : [])
+    const sortedActive = (Array.isArray(citas) ? citas : [])
       .filter(isActiveAppointment)
       .map((cita) => ({ cita, start: parseAppointmentStart(cita) }))
       .filter((x) => x.start)
       .filter((x) => {
+        // Si está en proceso, siempre es relevante
+        if (normalizeEstado(x.cita.estado) === 'en_proceso') return true;
+        
         const diffMs = x.start - now;
         const isFutureOrRecent = diffMs >= -oneDayMs;
         return isFutureOrRecent;
       })
-      .sort((a, b) => a.start - b.start)[0]?.cita;
+      .sort((a, b) => {
+        const statusA = normalizeEstado(a.cita.estado);
+        const statusB = normalizeEstado(b.cita.estado);
+        
+        // Priorizar EN PROCESO
+        if (statusA === 'en_proceso' && statusB !== 'en_proceso') return -1;
+        if (statusA !== 'en_proceso' && statusB === 'en_proceso') return 1;
+        
+        return a.start - b.start;
+      });
+
+    const upcomingCita = sortedActive[0]?.cita;
 
     const recommendedServices = (Array.isArray(servicios) ? servicios : []).slice(0, 4);
     const vehiclesPreview = (Array.isArray(misVehiculos) ? misVehiculos : []).slice(0, 2);
@@ -963,13 +1034,24 @@ class UserDashboard extends Component {
                           </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setView('citas')}
-                          className="h-10 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black transition-colors"
-                        >
-                          Ver detalles
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setView('citas')}
+                            className="h-10 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black transition-colors"
+                          >
+                            Ver detalles
+                          </button>
+                          {upcomingCita?.payment?.tokenCode && !upcomingCita?.payment?.tokenUsed && (
+                            <button
+                              type="button"
+                              onClick={() => this.setState({ tokenModalOpen: true, tokenModalCode: upcomingCita.payment.tokenCode })}
+                              className="h-10 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-black transition-colors border border-white/10"
+                            >
+                              Ver código
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -1225,12 +1307,20 @@ class UserDashboard extends Component {
           </div>
         </div>
 
-        {showReports && (
-          <div className="hidden">
-            <ServiceReportsPanel items={[]} onOpenReport={() => {}} />
-            <ServiceReportModal report={null} rating={null} onClose={() => {}} onSubmitRating={() => {}} />
-          </div>
+        {this.state.activeReportCitaId && (
+          <ServiceReportModal
+            report={citas.find(c => c.id === this.state.activeReportCitaId)}
+            rating={ratings.find(r => r.citaId === this.state.activeReportCitaId)}
+            onClose={this.handleCloseReport}
+            onSubmitRating={this.submitRating}
+          />
         )}
+
+        <TokenCodeModal 
+          isOpen={this.state.tokenModalOpen}
+          tokenCode={this.state.tokenModalCode}
+          onClose={() => this.setState({ tokenModalOpen: false, tokenModalCode: '' })}
+        />
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
+import { API_BASE_URL } from '../apiConfig';
 import correoIcon from '../assets/iconos/correo.png';
 import telefonoIcon from '../assets/iconos/telefono.png';
 import ubicacionIcon from '../assets/iconos/ubicacion.png';
@@ -104,7 +105,7 @@ const Toast = ({ message, type = 'success', onClose }) => (
   </motion.div>
 );
 
-const MiCuenta = () => {
+const MiCuenta = ({ setView }) => {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
   const fileInputRef = useRef(null);
@@ -165,7 +166,7 @@ const MiCuenta = () => {
     if (!token) return;
 
     const headers = { 'Authorization': `Bearer ${token}` };
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const API_URL = API_BASE_URL;
 
     try {
       // 1. Cargar Perfil
@@ -229,7 +230,8 @@ const MiCuenta = () => {
           descripcion: `${c.servicio?.nombre || 'Servicio'} - ${c.vehiculo?.placa || ''}`,
           fecha: new Date(c.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
           estado: c.estado,
-          rawDate: new Date(c.fecha)
+          rawDate: new Date(c.fecha),
+          canRate: (c.estado === 'FINALIZADO' || c.estado === 'Completado') && !c.rated
         })),
         ...ratingsData.map(r => ({
           id: `rating-${r.id}`,
@@ -328,7 +330,7 @@ const MiCuenta = () => {
     e.preventDefault();
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const API_URL = API_BASE_URL;
 
     try {
       const res = await fetch(`${API_URL}/usuarios/${userId}`, {
@@ -378,7 +380,7 @@ const MiCuenta = () => {
 
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const API_URL = API_BASE_URL;
 
     const formData = new FormData();
     formData.append('file', file);
@@ -418,7 +420,7 @@ const MiCuenta = () => {
     e.preventDefault();
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const API_URL = API_BASE_URL;
 
     const formData = new FormData();
     formData.append('marca', newVehicle.marca);
@@ -466,7 +468,7 @@ const MiCuenta = () => {
     if (!window.confirm("¿Estás seguro de eliminar este vehículo?")) return;
     
     const token = localStorage.getItem('token');
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const API_URL = API_BASE_URL;
 
     try {
       const res = await fetch(`${API_URL}/vehiculos/${id}`, {
@@ -550,7 +552,7 @@ const MiCuenta = () => {
     }
     
     const token = localStorage.getItem('token');
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const API_URL = API_BASE_URL;
     const userEmail = localStorage.getItem('userEmail');
 
     try {
@@ -825,11 +827,20 @@ const MiCuenta = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-black text-gray-900 dark:text-white truncate tracking-tight">{a.descripcion}</p>
                       <p className="text-[10px] font-bold text-gray-400 uppercase">{a.fecha}</p>
+                      {a.canRate && (
+                        <button 
+                          onClick={() => setView('resenas')}
+                          className="mt-2 text-[9px] font-black text-[#3b82f6] uppercase tracking-widest hover:underline"
+                        >
+                          Calificar Servicio
+                        </button>
+                      )}
                     </div>
                     {a.estado && (
                       <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
-                        a.estado === 'Completado' ? 'bg-emerald-500/10 text-emerald-500' :
+                        a.estado === 'FINALIZADO' || a.estado === 'Completado' ? 'bg-emerald-500/10 text-emerald-500' :
                         a.estado === 'Publicado' ? 'bg-blue-500/10 text-blue-500' :
+                        a.estado === 'EN PROCESO' ? 'bg-indigo-500/10 text-indigo-500' :
                         'bg-amber-500/10 text-amber-500'
                       }`}>
                         {a.estado}
@@ -1070,11 +1081,20 @@ const MiCuenta = () => {
                 <div className="flex-1">
                   <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">{a.descripcion}</p>
                   <p className="text-[10px] font-bold text-gray-400 uppercase">{a.fecha}</p>
+                  {a.canRate && (
+                    <button 
+                      onClick={() => setView('resenas')}
+                      className="mt-2 text-[9px] font-black text-[#3b82f6] uppercase tracking-widest hover:underline"
+                    >
+                      Calificar Servicio
+                    </button>
+                  )}
                 </div>
                 {a.estado && (
                   <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
-                    a.estado === 'Completado' ? 'bg-emerald-500/10 text-emerald-500' :
+                    a.estado === 'FINALIZADO' || a.estado === 'Completado' ? 'bg-emerald-500/10 text-emerald-500' :
                     a.estado === 'Publicado' ? 'bg-blue-500/10 text-blue-500' :
+                    a.estado === 'EN PROCESO' ? 'bg-indigo-500/10 text-indigo-500' :
                     'bg-amber-500/10 text-amber-500'
                   }`}>
                     {a.estado}

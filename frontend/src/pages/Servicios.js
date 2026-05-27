@@ -11,7 +11,7 @@ import motorImg from "../assets/services/motor.jpeg";
 import protectionImg from "../assets/services/proteccionc.jpeg";
 import pulidoImg from "../assets/services/pulidop.jpeg";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../apiConfig';
 
 const normalizeText = (t) =>
   (t || "")

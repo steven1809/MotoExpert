@@ -154,26 +154,19 @@ export class ServiciosService implements OnModuleInit {
       'limpieza de cadena': 30,
     };
 
-    const updates: Promise<unknown>[] = [];
     for (const s of servicios) {
       const key = this.normalize(s.nombre);
       const minutes = defaults[key];
       if (!minutes) continue;
       if (!s.duration_minutes || s.duration_minutes <= 0) {
-        updates.push(
-          this.repo.update(
-            { id: s.id },
-            {
-              duration_minutes: minutes,
-              duracion: s.duracion && s.duracion > 0 ? s.duracion : minutes,
-            },
-          ),
+        await this.repo.update(
+          { id: s.id },
+          {
+            duration_minutes: minutes,
+            duracion: s.duracion && s.duracion > 0 ? s.duracion : minutes,
+          },
         );
       }
-    }
-
-    if (updates.length) {
-      await Promise.all(updates);
     }
   }
 

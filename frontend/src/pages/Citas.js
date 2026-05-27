@@ -14,7 +14,7 @@ import finalizarIcon from '../assets/iconos/finalizar.png';
 import relojIcon from '../assets/iconos/reloj.png';
 import ubicIcon from '../assets/iconos/ubicacion.png';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../apiConfig';
 
 const getConditionStyle = (condition) => {
   switch (condition?.toLowerCase()) {
@@ -2208,28 +2208,44 @@ const Citas = ({
                                   </div>
                                 </div>
 
-                                <div className="px-4 pb-4 flex gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                                    className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
-                                  >
-                                    Ver detalles
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleReschedule(cita)}
-                                    className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
-                                  >
-                                    Reprogramar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDelete(cita.id)}
-                                    className="flex-1 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 text-[11px] font-black uppercase tracking-widest transition-colors"
-                                  >
-                                    Cancelar
-                                  </button>
+                                <div className="px-4 pb-4 flex flex-col gap-2">
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                                      className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                                    >
+                                      Ver detalles
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReschedule(cita)}
+                                      className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                                    >
+                                      Reprogramar
+                                    </button>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDelete(cita.id)}
+                                      className="flex-1 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 text-[11px] font-black uppercase tracking-widest transition-colors"
+                                    >
+                                      Cancelar
+                                    </button>
+                                    {cita.payment?.tokenCode && !cita.payment?.tokenUsed && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setTokenModalCode(cita.payment.tokenCode);
+                                          setTokenModalOpen(true);
+                                        }}
+                                        className="flex-1 h-10 rounded-2xl bg-[#2563EB]/10 hover:bg-[#2563EB]/20 border border-[#2563EB]/20 text-[#60A5FA] text-[11px] font-black uppercase tracking-widest transition-colors"
+                                      >
+                                        Código
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             );

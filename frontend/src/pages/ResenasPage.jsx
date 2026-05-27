@@ -11,7 +11,7 @@ import {
   Dot
 } from 'recharts';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../apiConfig';
 
 const getInitials = (name) => {
   if (!name) return 'U';
@@ -101,7 +101,8 @@ const ResenasPage = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
-          const data = await response.json();
+          const resData = await response.json();
+          const data = resData.data || resData;
           // Filtrar citas FINALIZADAS y no calificadas
           const pending = data.filter(c => c.estado === 'FINALIZADO' && !c.rated);
           setPendingAppointments(pending);

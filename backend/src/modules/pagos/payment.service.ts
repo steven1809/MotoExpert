@@ -189,7 +189,7 @@ export class PaymentService {
     const reference = `motoexpert-${appointmentId}-${Date.now()}`;
     const integritySecret = process.env.WOMPI_INTEGRITY_SECRET ?? '';
     const publicKey = process.env.WOMPI_PUBLIC_KEY ?? '';
-    const redirectUrl = `${process.env.FRONTEND_URL ?? 'http://localhost:3000'}/appointments/payment-confirmation`;
+    const redirectUrl = `${process.env.FRONTEND_URL ?? 'http://localhost:3002'}/appointments/payment-confirmation`;
 
     // Firma SHA-256 según spec Wompi: reference + amountInCents + currency + integritySecret
     const { createHash } = await import('crypto');

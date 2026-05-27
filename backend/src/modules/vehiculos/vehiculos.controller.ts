@@ -22,11 +22,15 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import * as fs from 'fs';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('vehiculos')
 @UseGuards(AuthGuard('jwt'))
 export class VehiculosController {
-  constructor(private readonly service: VehiculosService) {}
+  constructor(
+    private readonly service: VehiculosService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post()
   @UseInterceptors(
@@ -58,7 +62,8 @@ export class VehiculosController {
     const vehicleData = { ...dto, usuarioId: finalUserId };
 
     if (file) {
-      vehicleData.imagen = `http://localhost:3001/uploads/vehicles/${file.filename}`;
+      const appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3001';
+      vehicleData.imagen = `${appUrl}/uploads/vehicles/${file.filename}`;
     }
 
     return this.service.create(vehicleData);
@@ -80,7 +85,8 @@ export class VehiculosController {
     }),
   )
   uploadImage(@Param('id') id: string, @UploadedFile() file: any) {
-    const photoUrl = `http://localhost:3001/uploads/vehicles/${file.filename}`;
+    const appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3001';
+    const photoUrl = `${appUrl}/uploads/vehicles/${file.filename}`;
     return this.service.update(+id, { imagen: photoUrl });
   }
 
@@ -188,9 +194,10 @@ export class VehiculosController {
 
       // Si el usuario subió una foto nueva, borrar la anterior y asignar la nueva URL
       if (file) {
+        const appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3001';
         if (
           vehiculo.imagen &&
-          vehiculo.imagen.includes('http://localhost:3001/uploads/vehicles/')
+          vehiculo.imagen.includes(`${appUrl}/uploads/vehicles/`)
         ) {
           const oldFilename = vehiculo.imagen.split('/').pop();
           const oldPath = join(
@@ -207,7 +214,7 @@ export class VehiculosController {
             }
           }
         }
-        finalUpdateData.imagen = `http://localhost:3001/uploads/vehicles/${file.filename}`;
+        finalUpdateData.imagen = `${appUrl}/uploads/vehicles/${file.filename}`;
       }
 
       // Ejecutar la actualización de forma segura
