@@ -619,15 +619,39 @@ export class CitasService {
     });
   }
 
-  async remove(id: number) {
+  async reschedule(id: number, fecha: string, hora_inicio: string) {
+    const cita = await this.repo.findOne({ where: { id }, relations: ['usuario', 'vehiculo', 'servicio'] });
+    if (!cita) throw new NotFoundException('Cita no encontrada');
+
+    cita.fecha = fecha;
+    cita.hora_inicio = hora_inicio;
+    const savedCita = await this.repo.save(cita);
+
+    try {
+      await this.activityService.logActivity(
+        'CITA_REPROGRAMADA',
+        `Cita #${id} reprogramada para el ${fecha} a las ${hora_inicio}`,
+        'cita',
+        id.toString(),
+        'sistema',
+        'admin',
+      );
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+
+    return savedCita;
+  }
+
+  async remove(id: number, motivo?: string) {
     const cita = await this.findOne(id);
     const result = await this.repo.delete(id);
     
     try {
       if (cita) {
         await this.activityService.logActivity(
-          'CITA_CANCELADA',
-          `Cita #${id} eliminada del sistema`,
+          'CITA_ELIMINADA_FORZADA',
+          `Cita #${id} eliminada permanentemente. Motivo: ${motivo || 'No especificado'}`,
           'cita',
           id.toString(),
           'sistema',
