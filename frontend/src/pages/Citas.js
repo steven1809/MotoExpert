@@ -1194,7 +1194,7 @@ const Citas = ({
     }, [filters]);
 
     const citasPendientes = useMemo(
-      () => citas.filter((cita) => cita.estado === "PENDIENTE" || cita.estado === "EN PROCESO"),
+      () => citas.filter((cita) => cita.estado === "PENDIENTE" || cita.estado === "EN PROCESO" || cita.estado === "tiempo_excedido"),
       [citas],
     );
 
