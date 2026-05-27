@@ -62,29 +62,35 @@ export class CitasController {
     return this.service.create(finalDto);
   }
   @Get()
-  findAll(@Request() req, @Query('userId') userId?: string) {
-    console.log('[DEBUG] req.user:', req.user);
-
+  findAll(
+    @Request() req,
+    @Query('userId') userId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('estado') estado?: string,
+  ) {
     const userRole = (req.user.rol || req.user.role)?.toLowerCase();
-
-    console.log('[DEBUG] userRole:', userRole);
+    const p = page ? parseInt(page) : 1;
+    const l = limit ? parseInt(limit) : 10;
 
     // ADMIN VE TODO
     if (userRole === 'admin') {
-      if (userId) {
-        return this.service.findAll(+userId, userRole);
-      }
-
-      return this.service.findAll(undefined, userRole);
+      return this.service.findAll(
+        userId ? +userId : undefined,
+        userRole,
+        p,
+        l,
+        estado,
+      );
     }
 
     // EMPLEADO VE SUS CITAS
     if (userRole === 'empleado' || userRole === 'trabajador') {
-      return this.service.findAll(req.user.userId, 'empleado');
+      return this.service.findAll(req.user.userId, 'empleado', p, l, estado);
     }
 
     // USUARIO NORMAL
-    return this.service.findAll(req.user.userId, 'usuario');
+    return this.service.findAll(req.user.userId, 'usuario', p, l, estado);
   }
 
   @Public()

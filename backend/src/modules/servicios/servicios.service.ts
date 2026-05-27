@@ -4,6 +4,7 @@ import { Servicio } from './entities/servicio.entity';
 import { Repository } from 'typeorm';
 import { CreateServicioDto } from './dto/create-servicio.dto';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
+import { ActivityService } from '../activity/activity.service';
 
 type ServiciosFilters = {
   categoria?: string;
@@ -12,6 +13,9 @@ type ServiciosFilters = {
   precio_hasta?: string;
   duracion?: string;
   orden?: string;
+  page?: string;
+  limit?: string;
+  search?: string;
 };
 
 @Injectable()
@@ -19,6 +23,7 @@ export class ServiciosService implements OnModuleInit {
   constructor(
     @InjectRepository(Servicio)
     private repo: Repository<Servicio>,
+    private readonly activityService: ActivityService,
   ) {}
 
   private normalize(t: string) {
@@ -155,8 +160,16 @@ export class ServiciosService implements OnModuleInit {
   async findAll(filters: ServiciosFilters = {}) {
     const qb = this.repo.createQueryBuilder('servicio');
 
+    // Búsqueda por nombre (search)
+    const search = (filters.search || '').toString().trim().toLowerCase();
+    if (search) {
+      qb.andWhere('LOWER(servicio.nombre) LIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
     const categoriaRaw = (filters.categoria || '').toString().trim();
-    if (categoriaRaw) {
+    if (categoriaRaw && categoriaRaw !== 'Todos') {
       const token = this.categoriaToken(categoriaRaw);
       qb.andWhere('LOWER(servicio.nombre) LIKE :categoria', {
         categoria: `%${token}%`,
@@ -192,17 +205,41 @@ export class ServiciosService implements OnModuleInit {
       qb.orderBy('servicio.id', 'DESC');
     }
 
-    const servicios = await qb.getMany();
+    // Paginación
+    const page = parseInt(filters.page || '1', 10);
+    const limit = parseInt(filters.limit || '9', 10);
+    const skip = (page - 1) * limit;
+
+    // Solo aplicamos paginación si se solicita explícitamente o si queremos el formato paginado
+    const isPaginado = !!(filters.page || filters.limit);
+    if (isPaginado) {
+      qb.skip(skip).take(limit);
+    }
+
+    const [servicios, total] = await qb.getManyAndCount();
+    
+    // El dedupe se mantiene para limpiar datos, aunque afecte la cantidad por página
     const serviciosDedupe = this.dedupeServicios(servicios);
 
+    // Filtro por tipo de vehículo (en memoria por ahora)
+    let finalResult = serviciosDedupe;
     const tipoVehiculoRaw = (filters.tipo_vehiculo || '').toString().trim();
-    if (!tipoVehiculoRaw) return serviciosDedupe;
+    if (tipoVehiculoRaw) {
+      const target = this.normalize(tipoVehiculoRaw);
+      finalResult = serviciosDedupe.filter((s) => {
+        const allowed = this.getTiposVehiculo(s);
+        return allowed.some((t) => this.normalize(t) === target);
+      });
+    }
 
-    const target = this.normalize(tipoVehiculoRaw);
-    return serviciosDedupe.filter((s) => {
-      const allowed = this.getTiposVehiculo(s);
-      return allowed.some((t) => this.normalize(t) === target);
-    });
+    // Siempre retorna formato paginado
+    return {
+      data: finalResult,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findPublicList() {
@@ -216,12 +253,27 @@ export class ServiciosService implements OnModuleInit {
     return this.repo.findOneBy({ id });
   }
 
-  create(data: CreateServicioDto) {
+  async create(data: CreateServicioDto) {
     const newService = this.repo.create({
       ...data,
       duration_minutes: Number(data.duracion),
     });
-    return this.repo.save(newService);
+    const saved = await this.repo.save(newService);
+    
+    try {
+      await this.activityService.logActivity(
+        'SERVICIO_CREADO',
+        `Nuevo servicio creado: ${saved.nombre}`,
+        'servicio',
+        saved.id.toString(),
+        'admin',
+        'admin',
+      );
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+    
+    return saved;
   }
 
   async update(id: number, data: UpdateServicioDto) {
@@ -232,10 +284,45 @@ export class ServiciosService implements OnModuleInit {
       patch.duration_minutes = Number(data.duracion);
     }
     await this.repo.update(id, patch);
-    return this.findOne(id);
+    const updated = await this.findOne(id);
+    
+    try {
+      if (updated) {
+        await this.activityService.logActivity(
+          'SERVICIO_EDITADO',
+          `Servicio actualizado: ${updated.nombre}`,
+          'servicio',
+          id.toString(),
+          'admin',
+          'admin',
+        );
+      }
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+    
+    return updated;
   }
 
-  delete(id: number) {
-    return this.repo.delete(id);
+  async delete(id: number) {
+    const service = await this.findOne(id);
+    const result = await this.repo.delete(id);
+    
+    try {
+      if (service) {
+        await this.activityService.logActivity(
+          'SERVICIO_ELIMINADO',
+          `Servicio #${id} (${service.nombre}) eliminado`,
+          'servicio',
+          id.toString(),
+          'admin',
+          'admin',
+        );
+      }
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+    
+    return result;
   }
 }

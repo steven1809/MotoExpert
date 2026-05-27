@@ -13,6 +13,7 @@ import { Cita } from '../citas/entities/cita.entity';
 import { Payment } from './entities/payment.entity';
 import { PaymentMethod } from './enums/payment-method.enum';
 import { PaymentStatus } from './enums/payment-status.enum';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class PaymentService {
@@ -21,6 +22,7 @@ export class PaymentService {
     private readonly paymentRepo: Repository<Payment>,
     @InjectRepository(Cita)
     private readonly citaRepo: Repository<Cita>,
+    private readonly activityService: ActivityService,
   ) {}
 
   async generateToken(
@@ -28,7 +30,10 @@ export class PaymentService {
     method: PaymentMethod,
     mockApproved?: boolean,
   ): Promise<Payment> {
-    const cita = await this.citaRepo.findOneBy({ id: appointmentId });
+    const cita = await this.citaRepo.findOne({
+      where: { id: appointmentId },
+      relations: { usuario: true },
+    });
     if (!cita) {
       throw new NotFoundException('Cita no encontrada');
     }
@@ -72,6 +77,20 @@ export class PaymentService {
     }
 
     const saved = await this.paymentRepo.save(payment);
+
+    try {
+      await this.activityService.logActivity(
+        'PAGO_GENERADO',
+        `Pago generado para cita #${appointmentId} con método ${method}`,
+        'pago',
+        appointmentId.toString(),
+        'sistema',
+        'sistema',
+      );
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+
     const full = await this.paymentRepo.findOne({
       where: { id: saved.id },
       relations: { appointment: true },
@@ -222,7 +241,21 @@ export class PaymentService {
       tokenExpiresAt,
       tokenUsed: false,
     });
-    await this.paymentRepo.save(payment);
+    const saved = await this.paymentRepo.save(payment);
+
+    try {
+      await this.activityService.logActivity(
+        'PAGO_COMPLETADO',
+        `Pago Wompi aprobado para cita #${appointmentId}`,
+        'pago',
+        appointmentId.toString(),
+        'sistema',
+        'sistema',
+      );
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+
     return { status: 'APPROVED', appointmentId };
   }
 

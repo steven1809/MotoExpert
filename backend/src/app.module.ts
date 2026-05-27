@@ -15,6 +15,7 @@ import { MailModule } from './modules/mail/mail.module';
 import { NotificacionesModule } from './modules/notificaciones/notificaciones.module';
 import { RatingsModule } from './modules/ratings/ratings.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ActivityModule } from './modules/activity/activity.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     MailModule,
     NotificacionesModule,
     RatingsModule,
+    ActivityModule,
   ],
   controllers: [AppController],
   providers: [AppService],

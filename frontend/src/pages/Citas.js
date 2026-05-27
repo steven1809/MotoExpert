@@ -777,13 +777,14 @@ const Citas = ({
           serviciosRes.json(),
           empleadosRes.json()
         ]);
-        setCitas(citasData);
+        const citasArray = Array.isArray(citasData) ? citasData : (citasData.data ?? []);
+        const serviciosArray = Array.isArray(serviciosData) ? serviciosData : (serviciosData.data ?? []);
+        setCitas(citasArray);
         setVehiculos(vehiculosData);
-        setServicios(dedupeServicios(serviciosData));
-        setEmpleados(empleadosData.filter(e => e.estado === 'activo')); // Solo activos
-        
-        // Cargar calificaciones para el historial
-        fetchRatingsForCitas(citasData, headers);
+        setServicios(dedupeServicios(serviciosArray));
+        setEmpleados(empleadosData.filter(e => e.estado === 'activo'));
+
+        fetchRatingsForCitas(citasArray, headers);
       } else {
         setError('Error al obtener datos iniciales');
       }

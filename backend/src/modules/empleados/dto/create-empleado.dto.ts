@@ -7,7 +7,11 @@ export class CreateEmpleadoDto {
 
   @IsString()
   @IsOptional()
-  documento?: string;
+  documentNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  documentType?: string;
 
   @IsString()
   @IsOptional()
@@ -21,4 +25,8 @@ export class CreateEmpleadoDto {
   @IsString()
   @IsOptional()
   especialidad?: string;
+
+  @IsString()
+  @IsOptional()
+  fechaIngreso?: string;
 }

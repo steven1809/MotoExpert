@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsuariosService } from '../usuarios/usuarios.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,7 @@ export class AuthService {
     private readonly userRepository: Repository<Usuario>,
     private usuariosService: UsuariosService,
     private jwtService: JwtService,
+    private activityService: ActivityService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -58,8 +60,22 @@ export class AuthService {
         role: (createUserDto.role || 'user').toLowerCase(),
       });
 
-      await this.userRepository.save(user);
-      const { password: _, ...result } = user;
+      const savedUser = await this.userRepository.save(user);
+
+      try {
+        await this.activityService.logActivity(
+          'USUARIO_REGISTRADO',
+          `Nuevo usuario registrado: ${savedUser.nombre} ${savedUser.apellidos || ''}`,
+          'usuario',
+          savedUser.id.toString(),
+          'sistema',
+          'usuario',
+        );
+      } catch (error) {
+        console.error('Error logging activity:', error);
+      }
+
+      const { password: _, ...result } = savedUser;
 
       return result;
     } catch (error) {

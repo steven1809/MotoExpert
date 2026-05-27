@@ -15,7 +15,10 @@ export class Empleado {
   id: number;
 
   @Column({ unique: true, nullable: true })
-  documento: string;
+  documentNumber: string;
+
+  @Column({ nullable: true })
+  documentType: string;
 
   @Column({ default: 'activo' })
   estado: string; // activo o inactivo
@@ -25,6 +28,9 @@ export class Empleado {
 
   @Column({ nullable: true })
   especialidad: string;
+
+  @Column({ nullable: true })
+  fechaIngreso: string;
 
   @OneToOne(() => Usuario)
   @JoinColumn({ name: 'usuarioId' })

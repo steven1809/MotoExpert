@@ -68,7 +68,7 @@ export class UsuariosService {
           console.log(`[UsuariosService] Creating employee record for user ${id}`);
           await this.empleadosService.create({
             usuarioId: id,
-            documento: updatedUser.documento || undefined,
+            documentNumber: updatedUser.documento || undefined,
             cargo: 'Mecánico',
             especialidad: 'Mecánica General',
             estado: 'activo',

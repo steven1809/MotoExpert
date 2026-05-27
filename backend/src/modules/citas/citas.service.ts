@@ -15,6 +15,7 @@ import { CreateCitaDto } from './dto/create-cita.dto';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { Payment } from '../pagos/entities/payment.entity';
 import { OtpService } from '../otp/otp.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class CitasService {
@@ -39,6 +40,7 @@ export class CitasService {
 
     private readonly notificacionesService: NotificacionesService,
     private readonly otpService: OtpService,
+    private readonly activityService: ActivityService,
   ) {}
 
   async create(dto: CreateCitaDto) {
@@ -225,6 +227,19 @@ export class CitasService {
 
     const savedCita = await this.repo.save(cita);
 
+    try {
+      await this.activityService.logActivity(
+        'CITA_CREADA',
+        `Nueva cita agendada: ${servicio.nombre} para el ${formattedFecha}`,
+        'cita',
+        savedCita.id.toString(),
+        usuario.nombre || 'sistema',
+        usuario.role || 'usuario',
+      );
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+
     // Generar y enviar código de entrega
     try {
       const deliveryCode = await this.otpService.generateOtp(usuario.id, 'delivery-code');
@@ -261,6 +276,19 @@ export class CitasService {
 
     cita.estado = 'CANCELADO';
     const savedCita = await this.repo.save(cita);
+
+    try {
+      await this.activityService.logActivity(
+        'CITA_CANCELADA',
+        `Cita #${id} cancelada por el administrador`,
+        'cita',
+        id.toString(),
+        'sistema',
+        'admin',
+      );
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
 
     // Notificar al usuario
     await this.notificacionesService.create(
@@ -312,6 +340,30 @@ export class CitasService {
     }
 
     const savedCita = await this.repo.save(cita);
+
+    try {
+      if (nuevoEstado === 'FINALIZADO') {
+        await this.activityService.logActivity(
+          'CITA_FINALIZADA',
+          `Cita #${id} marcada como finalizada`,
+          'cita',
+          id.toString(),
+          'sistema',
+          userRole === 'admin' ? 'admin' : 'empleado',
+        );
+      } else if (nuevoEstado === 'CANCELADO') {
+        await this.activityService.logActivity(
+          'CITA_CANCELADA',
+          `Cita #${id} eliminada/cancelada del sistema`,
+          'cita',
+          id.toString(),
+          'sistema',
+          userRole === 'admin' ? 'admin' : 'sistema',
+        );
+      }
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
 
     // Create notification based on estado
     if (nuevoEstado === 'EN PROCESO') {
@@ -455,7 +507,23 @@ export class CitasService {
     return slots;
   }
 
-  async findAll(userId?: number, rol?: string): Promise<Cita[]> {
+  async findAll(
+    userId?: number,
+    rol?: string,
+    page: number = 1,
+    limit: number = 10,
+    estado?: string,
+  ): Promise<any> {
+    const skip = (page - 1) * limit;
+    const relations = [
+      'usuario',
+      'vehiculo',
+      'servicio',
+      'empleado',
+      'empleado.usuario',
+      'payment',
+    ];
+
     // SI ES EMPLEADO
     if (userId && rol === 'empleado') {
       const empleado = await this.empleadoRepo
@@ -465,56 +533,76 @@ export class CitasService {
         .getOne();
 
       if (!empleado) {
-        return [];
+        return { data: [], total: 0, page, limit, totalPages: 0 };
       }
 
-      return this.repo.find({
-        where: {
-          empleado: {
-            id: empleado.id,
-          },
-        },
-        relations: [
-          'usuario',
-          'vehiculo',
-          'servicio',
-          'empleado',
-          'empleado.usuario',
-          'payment',
-        ],
+      const where: any = { empleado: { id: empleado.id } };
+      if (estado && estado !== 'TODAS') {
+        where.estado = estado;
+      }
+
+      const [data, total] = await this.repo.findAndCount({
+        where,
+        relations,
+        order: { fecha: 'DESC', hora_inicio: 'DESC' },
+        skip,
+        take: limit,
       });
+
+      return {
+        data,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
     }
 
     // SI ES USUARIO NORMAL
     if (userId) {
-      return this.repo.find({
-        where: {
-          usuario: {
-            id: userId,
-          },
-        },
-        relations: [
-          'usuario',
-          'vehiculo',
-          'servicio',
-          'empleado',
-          'empleado.usuario',
-          'payment',
-        ],
+      const where: any = { usuario: { id: userId } };
+      if (estado && estado !== 'TODAS') {
+        where.estado = estado;
+      }
+
+      const [data, total] = await this.repo.findAndCount({
+        where,
+        relations,
+        order: { fecha: 'DESC', hora_inicio: 'DESC' },
+        skip,
+        take: limit,
       });
+
+      return {
+        data,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
     }
 
     // ADMIN
-    return this.repo.find({
-      relations: [
-        'usuario',
-        'vehiculo',
-        'servicio',
-        'empleado',
-        'empleado.usuario',
-        'payment',
-      ],
+    const where: any = {};
+    if (estado && estado !== 'TODAS') {
+      where.estado = estado;
+    }
+
+    const [data, total] = await this.repo.findAndCount({
+      where,
+      relations,
+      order: { fecha: 'DESC', hora_inicio: 'DESC' },
+      skip,
+      take: limit,
     });
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   findOne(id: number) {
@@ -531,7 +619,25 @@ export class CitasService {
     });
   }
 
-  remove(id: number) {
-    return this.repo.delete(id);
+  async remove(id: number) {
+    const cita = await this.findOne(id);
+    const result = await this.repo.delete(id);
+    
+    try {
+      if (cita) {
+        await this.activityService.logActivity(
+          'CITA_CANCELADA',
+          `Cita #${id} eliminada del sistema`,
+          'cita',
+          id.toString(),
+          'sistema',
+          'admin',
+        );
+      }
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+    
+    return result;
   }
 }

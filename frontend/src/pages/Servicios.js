@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import CardServicio from "../components/CardServicio";
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import premiumImg from "../assets/services/premium.jpg";
 import expressImg from "../assets/services/express.jpeg";
@@ -142,6 +145,13 @@ export default function Servicios({ setView }) {
   const [userRole, setUserRole] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editServicio, setEditServicio] = useState(null);
+
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const pageSize = 9;
+
   const [formData, setFormData] = useState({
     nombre: "",
     descripcion: "",
@@ -153,16 +163,35 @@ export default function Servicios({ setView }) {
 
   useEffect(() => {
     setUserRole(localStorage.getItem("role") || "");
-    fetchServicios();
   }, []);
 
-  const fetchServicios = () => {
+  useEffect(() => {
+    fetchServicios(currentPage, filtroBusqueda, categoryFilter);
+  }, [currentPage, filtroBusqueda, categoryFilter]);
+
+  const fetchServicios = (page = 1, search = "", category = "Todos") => {
     setLoading(true);
     setError("");
-    fetch(`${API_BASE_URL}/servicios`)
+    
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: pageSize.toString(),
+      search: search,
+      categoria: category === "Todos" ? "" : category
+    });
+
+    fetch(`${API_BASE_URL}/servicios?${params.toString()}`)
       .then((res) => res.json())
-      .then((data) => {
-        setServicios(dedupeServicios(data));
+      .then((res) => {
+        if (res.data) {
+          setServicios(res.data);
+          setTotalPages(res.totalPages || 1);
+          setTotalRecords(res.total || 0);
+        } else {
+          setServicios(dedupeServicios(res));
+          setTotalPages(1);
+          setTotalRecords(res.length);
+        }
       })
       .catch(() => {
         setServicios([]);
@@ -272,17 +301,55 @@ export default function Servicios({ setView }) {
     return byPrice?.id ?? null;
   }, [servicios]);
 
-  const serviciosFiltrados = useMemo(() => {
-    const term = normalizeText(filtroBusqueda);
-    const filtered = servicios.filter((servicio) => {
-      const nameMatches = normalizeText(servicio?.nombre).includes(term);
-      if (!nameMatches) return false;
-      if (categoryFilter === "Todos") return true;
-      const tags = getCategoryTags(servicio);
-      return tags.includes(categoryFilter);
-    });
-    return dedupeServicios(filtered);
-  }, [categoryFilter, filtroBusqueda, servicios]);
+  const exportData = async (format) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/servicios?limit=1000`);
+      const data = await response.json();
+      const allServicios = Array.isArray(data) ? dedupeServicios(data) : (data.data || []);
+
+      const filename = `servicios-motoexpert`;
+      const today = new Date().toLocaleDateString();
+
+      if (format === 'excel') {
+        const worksheet = XLSX.utils.json_to_sheet(allServicios.map(s => ({
+          ID: s.id,
+          Nombre: s.nombre,
+          Descripción: s.descripcion,
+          Precio: s.precio,
+          Duración: s.duracion || s.duration_minutes,
+          'Tipo de Vehículo': s.tipoVehiculo || 'Cualquiera'
+        })));
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Servicios');
+        XLSX.writeFile(workbook, `${filename}.xlsx`);
+      } else {
+        const doc = new jsPDF();
+        doc.setFontSize(20);
+        doc.text('MOTOEXPERT', 14, 22);
+        doc.setFontSize(10);
+        doc.text(`Reporte de Servicios - ${today}`, 14, 30);
+        
+        autoTable(doc, {
+          startY: 35,
+          head: [['ID', 'Nombre', 'Descripción', 'Precio', 'Duración', 'Tipo de Vehículo']],
+          body: allServicios.map(s => [
+            s.id,
+            s.nombre,
+            s.descripcion,
+            `$${s.precio}`,
+            `${s.duracion || s.duration_minutes} min`,
+            s.tipoVehiculo || 'Cualquiera'
+          ]),
+          styles: { fontSize: 8 },
+          headStyles: { fillColor: [37, 99, 235] }
+        });
+        doc.save(`${filename}.pdf`);
+      }
+    } catch (err) {
+      console.error("Error al exportar:", err);
+      alert("No se pudieron exportar los datos");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#020617] pb-24 animate-in fade-in duration-700">
@@ -344,7 +411,10 @@ export default function Servicios({ setView }) {
                 type="text"
                 placeholder="Buscar servicio..."
                 value={filtroBusqueda}
-                onChange={(e) => setFiltroBusqueda(e.target.value)}
+                onChange={(e) => {
+                  setFiltroBusqueda(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full h-11 pl-12 pr-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#2563EB]/50 transition-colors"
               />
             </div>
@@ -354,7 +424,10 @@ export default function Servicios({ setView }) {
                 <button
                   key={c}
                   type="button"
-                  onClick={() => setCategoryFilter(c)}
+                  onClick={() => {
+                    setCategoryFilter(c);
+                    setCurrentPage(1);
+                  }}
                   className={`h-9 px-4 rounded-2xl border text-[11px] font-black uppercase tracking-widest transition-colors ${
                     categoryFilter === c
                       ? "bg-[#2563EB]/15 border-[#2563EB]/25 text-[#60A5FA]"
@@ -365,15 +438,32 @@ export default function Servicios({ setView }) {
                 </button>
               ))}
 
-              {userRole === "admin" && (
+              <div className="flex items-center gap-2 ml-2">
                 <button
                   type="button"
-                  onClick={() => handleOpenModal()}
-                  className="h-9 px-4 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                  onClick={() => exportData('excel')}
+                  className="h-9 px-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-colors"
                 >
-                  + Añadir servicio
+                  Excel
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={() => exportData('pdf')}
+                  className="h-9 px-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-colors"
+                >
+                  PDF
+                </button>
+                
+                {userRole === "admin" && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenModal()}
+                    className="h-9 px-4 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[11px] font-black uppercase tracking-widest transition-colors ml-2"
+                  >
+                    + Añadir servicio
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-6 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -414,53 +504,77 @@ export default function Servicios({ setView }) {
             </div>
           )}
 
-          {!loading && !error && servicios.length > 0 && serviciosFiltrados.length === 0 && (
+          {!loading && !error && servicios.length === 0 && (
             <div className="text-center py-16 bg-slate-100 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 mt-10">
               <div className="text-4xl mb-4">🔍</div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No se encontraron servicios</h3>
-              <p className="text-slate-500 dark:text-slate-400">No se encontraron servicios que coincidan con tu búsqueda: <span className="text-blue-500 font-bold">"{filtroBusqueda}"</span></p>
+              <p className="text-slate-500 dark:text-slate-400">No se encontraron servicios que coincidan con tu búsqueda{filtroBusqueda ? `: "${filtroBusqueda}"` : ''}</p>
               <button
-                onClick={() => setFiltroBusqueda("")}
+                onClick={() => { setFiltroBusqueda(""); setCategoryFilter("Todos"); setCurrentPage(1); }}
                 className="mt-6 text-sm text-blue-400 hover:text-blue-300 font-medium underline"
               >
-                Limpiar búsqueda
+                Limpiar filtros
               </button>
             </div>
           )}
 
-          {!loading && !error && serviciosFiltrados.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {serviciosFiltrados.map((servicio) => {
-                const servicioUI = {
-                  ...servicio,
-                  nombre: limpiarTexto(servicio?.nombre),
-                  descripcion: limpiarTexto(servicio?.descripcion),
-                  imagen: getImagen(servicio),
-                };
-                const slug = normalizeSlug(servicioUI.nombre || servicio?.nombre || "");
-                const isAutoExpand = window.location.hash === `#${slug}`;
+          {!loading && !error && servicios.length > 0 && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {servicios.map((servicio) => {
+                  const servicioUI = {
+                    ...servicio,
+                    nombre: limpiarTexto(servicio?.nombre),
+                    descripcion: limpiarTexto(servicio?.descripcion),
+                    imagen: getImagen(servicio),
+                  };
+                  const slug = normalizeSlug(servicioUI.nombre || servicio?.nombre || "");
+                  const isAutoExpand = window.location.hash === `#${slug}`;
 
-                return (
-                  <div key={servicio.id} id={slug} className="scroll-mt-32">
-                    <CardServicio
-                      servicio={servicioUI}
-                      isAdmin={userRole === "admin"}
-                      onEdit={() => handleOpenModal(servicio)}
-                      onDelete={() => handleDelete(servicio.id)}
-                      autoExpand={isAutoExpand}
-                      setView={setView}
-                      isFeatured={featuredServiceId === servicio.id}
-                    />
+                  return (
+                    <div key={servicio.id} id={slug} className="scroll-mt-32">
+                      <CardServicio
+                        servicio={servicioUI}
+                        isAdmin={userRole === "admin"}
+                        onEdit={() => handleOpenModal(servicio)}
+                        onDelete={() => handleDelete(servicio.id)}
+                        autoExpand={isAutoExpand}
+                        setView={setView}
+                        isFeatured={featuredServiceId === servicio.id}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Paginación */}
+              {totalPages > 1 && (
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-10 border-t border-slate-200 dark:border-white/10 mt-10">
+                  <div className="text-xs font-mono text-slate-500 dark:text-[#94A3B8] uppercase tracking-[0.2em]">
+                    Página <span className="text-slate-900 dark:text-white font-black">{currentPage}</span> de <span className="text-slate-900 dark:text-white font-black">{totalPages}</span>
+                    <span className="mx-3 opacity-20">|</span>
+                    Total: <span className="text-slate-900 dark:text-white font-black">{totalRecords}</span> servicios
                   </div>
-                );
-              })}
-            </div>
-          )}
-
-          {!loading && !error && servicios.length === 0 && (
-            <div className="text-center text-slate-500 dark:text-slate-400 mt-10">
-              No hay servicios registrados todavía.
-            </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1 || loading}
+                      className="h-10 px-6 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white text-[11px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages || loading}
+                      className="h-10 px-6 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white text-[11px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
