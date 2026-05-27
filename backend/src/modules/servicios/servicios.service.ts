@@ -35,6 +35,26 @@ export class ServiciosService implements OnModuleInit {
       .trim();
   }
 
+  private cleanTextForJson(t: string) {
+    if (!t) return t;
+    return String(t)
+      .replace(/\r/g, ' ')
+      .replace(/\n/g, ' ')
+      .replace(/\t/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private cleanServicioForJson(servicio: Servicio) {
+    return {
+      ...servicio,
+      nombre: this.cleanTextForJson(servicio.nombre),
+      descripcion: this.cleanTextForJson(servicio.descripcion),
+      incluye: this.cleanTextForJson(servicio.incluye),
+      beneficios: this.cleanTextForJson(servicio.beneficios),
+    };
+  }
+
   private servicioDedupeKey(nombre: string) {
     const normalized = this.normalize(nombre || '');
     const alnum = normalized.replace(/[^a-z0-9]/g, '');
@@ -234,7 +254,7 @@ export class ServiciosService implements OnModuleInit {
 
     // Siempre retorna formato paginado
     return {
-      data: finalResult,
+      data: finalResult.map(s => this.cleanServicioForJson(s)),
       total,
       page,
       limit,
@@ -243,10 +263,11 @@ export class ServiciosService implements OnModuleInit {
   }
 
   async findPublicList() {
-    return this.repo.find({
+    const servicios = await this.repo.find({
       select: ['id', 'nombre', 'precio', 'duracion', 'descripcion'],
       order: { id: 'DESC' },
     });
+    return servicios.map(s => this.cleanServicioForJson(s));
   }
 
   findOne(id: number) {

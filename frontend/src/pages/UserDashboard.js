@@ -602,7 +602,7 @@ class UserDashboard extends Component {
           serviciosRes.json(),
           vehiculosRes.json()
         ]);
-        this.setState({ servicios: serviciosData, misVehiculos: vehiculosData, loading: false });
+        this.setState({ servicios: serviciosData.data || serviciosData, misVehiculos: vehiculosData, loading: false });
         // Check onboarding after we have data
         this.checkAndUpdateOnboarding(vehiculosData, this.state.citas);
       } else {
@@ -621,15 +621,16 @@ class UserDashboard extends Component {
       const response = await fetch(`${API_BASE_URL}/citas`, { headers });
       if (response.ok) {
         const data = await response.json();
-        this.checkForStatusChanges(data);
+        const citasArray = data.data || data;
+        this.checkForStatusChanges(citasArray);
         this.setState(prev => ({ 
-          citas: data, 
+          citas: citasArray, 
           previousCitas: prev.citas 
         }));
         // Check onboarding after we have citas
-        this.checkAndUpdateOnboarding(this.state.misVehiculos, data);
+        this.checkAndUpdateOnboarding(this.state.misVehiculos, citasArray);
         // Fetch ratings for citas
-        this.fetchRatingsForCitas(data, headers);
+        this.fetchRatingsForCitas(citasArray, headers);
       }
     } catch (err) {
       console.error('Error fetching citas:', err);
