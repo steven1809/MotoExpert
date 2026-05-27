@@ -11,6 +11,8 @@ import {
   Patch,
   SetMetadata,
   Injectable,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CitasService } from './citas.service';
 import { CreateCitaDto } from './dto/create-cita.dto';
@@ -139,15 +141,26 @@ export class CitasController {
     return this.chatsService.getHistory(appointmentId);
   }
 
+  @Patch(':id/reschedule')
+  reschedule(
+    @Param('id') id: string,
+    @Body('fecha') fecha: string,
+    @Body('hora_inicio') hora_inicio: string,
+  ) {
+    return this.service.reschedule(+id, fecha, hora_inicio);
+  }
+
   @Delete(':id')
-  async remove(@Param('id') id: string, @Request() req) {
+  async remove(@Param('id') id: string, @Body('motivo') motivo: string, @Request() req) {
     const cita = await this.service.findOne(+id);
-    if (
-      cita &&
-      (req.user.rol === 'admin' || cita.usuario.id === req.user.userId)
-    ) {
-      return this.service.remove(+id);
+    if (!cita) throw new NotFoundException('Cita no encontrada');
+    
+    const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+    // Solo admin puede forzar eliminar desde este nuevo flujo
+    if (userRole !== 'admin') {
+      throw new ForbiddenException('No tienes permisos para eliminar citas permanentemente');
     }
-    return { message: 'No tienes permiso para eliminar esta cita' };
+
+    return this.service.remove(+id, motivo);
   }
 }

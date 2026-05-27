@@ -25,6 +25,14 @@ const UsersList = (props) => {
   const [empleados, setEmpleados] = useState([]);
   const [filteredEmpleados, setFilteredEmpleados] = useState([]);
   const [citasGenerales, setCitasGenerales] = useState([]);
+  const [selectedCitaForDrawer, setSelectedCitaForDrawer] = useState(null);
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [showAplazarModal, setShowAplazarModal] = useState(false);
+  const [showEliminarModal, setShowEliminarModal] = useState(false);
+  const [nuevaFecha, setNuevaFecha] = useState('');
+  const [nuevaHora, setNuevaHora] = useState('');
+  const [motivoEliminacion, setMotivoEliminacion] = useState('');
+  const [submittingAction, setSubmittingAction] = useState(false);
   const [filtroEstadoCita, setFiltroEstadoCita] = useState('TODAS');
   const [loadingAdmin, setLoadingAdmin] = useState(false);
 
@@ -199,6 +207,59 @@ const UsersList = (props) => {
       console.error('Error al cargar citas paginadas:', err);
     } finally {
       setLoadingAdmin(false);
+    }
+  };
+
+  const handleReschedule = async () => {
+    if (!nuevaFecha || !nuevaHora || !selectedCitaForDrawer) return;
+    setSubmittingAction(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/citas/${selectedCitaForDrawer.id}/reschedule`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ fecha: nuevaFecha, hora_inicio: nuevaHora })
+      });
+
+      if (res.ok) {
+        setShowAplazarModal(false);
+        setShowDrawer(false);
+        fetchCitasPaginadas(token, citasPage, citasLimit, filtroEstadoCita);
+        // Podrías agregar un toast aquí si existiera en este componente
+      }
+    } catch (err) {
+      console.error('Error al reprogramar cita:', err);
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  const handleForceDelete = async () => {
+    if (!motivoEliminacion || !selectedCitaForDrawer) return;
+    setSubmittingAction(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/citas/${selectedCitaForDrawer.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ motivo: motivoEliminacion })
+      });
+
+      if (res.ok) {
+        setShowEliminarModal(false);
+        setShowDrawer(false);
+        fetchCitasPaginadas(token, citasPage, citasLimit, filtroEstadoCita);
+      }
+    } catch (err) {
+      console.error('Error al eliminar cita:', err);
+    } finally {
+      setSubmittingAction(false);
     }
   };
 
@@ -939,8 +1000,15 @@ const UsersList = (props) => {
               <thead className="bg-slate-950/80 text-slate-500 uppercase tracking-widest"><tr><th className="p-5">Cita</th><th className="p-5">Cliente / Vehículo</th><th className="p-5">Empleado</th><th className="p-5">Fecha / Hora</th><th className="p-5 text-center">Estado</th></tr></thead>
               <tbody className="divide-y divide-slate-800">
                 {citasGenerales.length > 0 ? citasGenerales.map(c => (
-                  <tr key={c.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="p-5 font-bold text-white">{c.servicio?.nombre}</td>
+                  <tr 
+                    key={c.id} 
+                    className="hover:bg-slate-800/30 transition-colors cursor-pointer group"
+                    onClick={() => {
+                      setSelectedCitaForDrawer(c);
+                      setShowDrawer(true);
+                    }}
+                  >
+                    <td className="p-5 font-bold text-white group-hover:text-blue-400 transition-colors">{c.servicio?.nombre}</td>
                     <td className="p-5"><div className="flex flex-col"><span className="text-slate-300 font-bold">{c.usuario?.nombre}</span><span className="text-blue-400 font-bold">{c.vehiculo?.placa}</span></div></td>
                     <td className="p-5"><span className="bg-slate-800 px-3 py-1 rounded-lg text-slate-300 font-bold">{c.empleado?.usuario?.nombre || 'Sin asignar'}</span></td>
                     <td className="p-5"><div className="flex flex-col"><span className="text-slate-300 font-bold">{new Date(c.fecha).toLocaleDateString()}</span><span className="text-slate-500 font-bold italic">⏰ {c.hora_inicio?.substring(0, 5)}</span></div></td>
@@ -959,6 +1027,206 @@ const UsersList = (props) => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* DRAWER LATERAL DE DETALLES DE CITA */}
+      <>
+        {/* Overlay */}
+        <div 
+          className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] transition-opacity duration-300 ${showDrawer ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          onClick={() => setShowDrawer(false)}
+        />
+        
+        {/* Drawer */}
+        <div className={`fixed right-0 top-0 h-full w-full sm:max-w-[420px] bg-[#0B1220] border-l border-white/5 shadow-2xl z-[1000] flex flex-col transform transition-transform duration-300 ease-in-out ${showDrawer ? 'translate-x-0' : 'translate-x-full'}`}>
+          
+          {selectedCitaForDrawer && (
+            <>
+              {/* Header */}
+              <div className="p-8 border-b border-white/5">
+                <div className="flex justify-between items-start mb-4">
+                  <button 
+                    onClick={() => setShowDrawer(false)}
+                    className="p-2 -ml-2 rounded-xl hover:bg-white/5 text-slate-500 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                    selectedCitaForDrawer.estado === 'PENDIENTE' ? 'bg-amber-500/10 text-amber-500' : 
+                    selectedCitaForDrawer.estado === 'EN PROCESO' ? 'bg-blue-500/10 text-blue-500' : 
+                    selectedCitaForDrawer.estado === 'CANCELADO' ? 'bg-red-500/10 text-red-500' :
+                    selectedCitaForDrawer.estado === 'TIEMPO_EXCEDIDO' ? 'bg-orange-500/10 text-orange-500' :
+                    'bg-emerald-500/10 text-emerald-500'
+                  }`}>
+                    {selectedCitaForDrawer.estado}
+                  </span>
+                </div>
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight leading-none mb-1">
+                  {selectedCitaForDrawer.servicio?.nombre}
+                </h2>
+                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Detalle de la Cita</p>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                {/* Info Section */}
+                <div className="space-y-6">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">Cliente</span>
+                    <span className="text-white font-bold text-lg">{selectedCitaForDrawer.usuario?.nombre} {selectedCitaForDrawer.usuario?.apellidos}</span>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">Vehículo</span>
+                    <div className="flex items-center gap-3">
+                      <span className="bg-blue-500/10 text-blue-400 px-4 py-2 rounded-xl font-black text-sm border border-blue-500/20">
+                        {selectedCitaForDrawer.vehiculo?.placa}
+                      </span>
+                      <span className="text-slate-400 text-sm font-bold italic">{selectedCitaForDrawer.vehiculo?.marca} {selectedCitaForDrawer.vehiculo?.modelo}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">Empleado Asignado</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      <span className="text-slate-200 font-bold">{selectedCitaForDrawer.empleado?.usuario?.nombre || 'Sin asignar'}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">Fecha y Hora</span>
+                      <span className="text-white font-bold">{new Date(selectedCitaForDrawer.fecha).toLocaleDateString()}</span>
+                      <span className="text-slate-500 text-sm font-bold italic">⏰ {selectedCitaForDrawer.hora_inicio?.substring(0, 5)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">Creación</span>
+                      <span className="text-slate-400 text-xs font-bold">{new Date(selectedCitaForDrawer.createdAt).toLocaleDateString()}</span>
+                      <span className="text-slate-500 text-[10px] font-bold italic uppercase">por {selectedCitaForDrawer.createdBy || 'Sistema'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Verification Code Section */}
+                {(selectedCitaForDrawer.estado === 'PENDIENTE' || 
+                  selectedCitaForDrawer.estado === 'EN PROCESO' || 
+                  selectedCitaForDrawer.estado === 'TIEMPO_EXCEDIDO') && (
+                  <div className="bg-slate-950/50 border border-white/5 rounded-3xl p-6">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">Código enviado al cliente</span>
+                    <div className="bg-black/40 rounded-2xl p-6 text-center border border-white/5">
+                      <span className="text-4xl font-mono font-black text-blue-400 tracking-[0.5em] ml-[0.5em]">
+                        {selectedCitaForDrawer.verificationCode || '---'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              {selectedCitaForDrawer.estado !== 'FINALIZADO' && (
+                <div className="p-8 bg-slate-950/30 border-t border-white/5 grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => {
+                      setNuevaFecha(selectedCitaForDrawer.fecha?.split('T')[0]);
+                      setNuevaHora(selectedCitaForDrawer.hora_inicio);
+                      setShowAplazarModal(true);
+                    }}
+                    className="px-4 py-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all"
+                  >
+                    Aplazar Cita
+                  </button>
+                  <button 
+                    onClick={() => setShowEliminarModal(true)}
+                    className="px-4 py-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-[10px] font-black text-red-500 uppercase tracking-widest hover:bg-red-500/20 transition-all"
+                  >
+                    Forzar Eliminar
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </>
+
+      {/* MODAL APLAZAR */}
+      {showAplazarModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1100] flex items-center justify-center p-4">
+          <div className="bg-[#0B1220] border border-white/10 rounded-[40px] p-10 w-full max-w-md shadow-2xl">
+            <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-6 italic">Reprogramar Cita</h3>
+            <div className="space-y-6">
+              <div>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Nueva Fecha</label>
+                <input 
+                  type="date" 
+                  className="w-full bg-slate-950 border border-white/5 rounded-2xl p-4 text-white font-bold"
+                  value={nuevaFecha}
+                  onChange={(e) => setNuevaFecha(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Nueva Hora</label>
+                <input 
+                  type="time" 
+                  className="w-full bg-slate-950 border border-white/5 rounded-2xl p-4 text-white font-bold"
+                  value={nuevaHora}
+                  onChange={(e) => setNuevaHora(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                <button 
+                  onClick={() => setShowAplazarModal(false)}
+                  className="px-6 py-4 bg-slate-900 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleReschedule}
+                  disabled={submittingAction || !nuevaFecha || !nuevaHora}
+                  className="px-6 py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-600/20 disabled:opacity-50"
+                >
+                  {submittingAction ? 'PROCESANDO...' : 'CONFIRMAR'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ELIMINAR */}
+      {showEliminarModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1100] flex items-center justify-center p-4">
+          <div className="bg-[#0B1220] border border-white/10 rounded-[40px] p-10 w-full max-w-md shadow-2xl">
+            <h3 className="text-2xl font-black text-red-500 uppercase tracking-tighter mb-2 italic">Eliminar Cita</h3>
+            <p className="text-slate-400 font-bold text-sm mb-6">¿Eliminar permanentemente esta cita?</p>
+            <div className="space-y-6">
+              <div>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Motivo Obligatorio</label>
+                <textarea 
+                  className="w-full bg-slate-950 border border-white/5 rounded-2xl p-4 text-white font-bold min-h-[100px]"
+                  placeholder="Explique el motivo de la eliminación..."
+                  value={motivoEliminacion}
+                  onChange={(e) => setMotivoEliminacion(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                <button 
+                  onClick={() => setShowEliminarModal(false)}
+                  className="px-6 py-4 bg-slate-900 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleForceDelete}
+                  disabled={submittingAction || !motivoEliminacion}
+                  className="px-6 py-4 bg-red-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-600/20 disabled:opacity-50"
+                >
+                  {submittingAction ? 'ELIMINAR AHORA' : 'CONFIRMAR'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
