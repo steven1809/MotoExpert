@@ -15,6 +15,6 @@ export class Pago {
   @Column()
   metodoPago: string;
 
-  @ManyToOne(() => Cita, (cita) => cita.pagos)
+  @ManyToOne(() => Cita, (cita) => cita.pagos, { onDelete: 'CASCADE' })
   cita: Cita;
 }

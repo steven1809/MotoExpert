@@ -803,10 +803,17 @@ class UserDashboard extends Component {
       return `${diffDays}d`;
     };
 
+    const now = new Date();
+    const oneDayMs = 24 * 60 * 60 * 1000;
     const upcomingCita = (Array.isArray(citas) ? citas : [])
       .filter(isActiveAppointment)
       .map((cita) => ({ cita, start: parseAppointmentStart(cita) }))
       .filter((x) => x.start)
+      .filter((x) => {
+        const diffMs = x.start - now;
+        const isFutureOrRecent = diffMs >= -oneDayMs;
+        return isFutureOrRecent;
+      })
       .sort((a, b) => a.start - b.start)[0]?.cita;
 
     const recommendedServices = (Array.isArray(servicios) ? servicios : []).slice(0, 4);

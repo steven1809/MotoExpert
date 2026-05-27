@@ -26,7 +26,7 @@ export class Rating {
   @ManyToOne(() => Usuario, { eager: true })
   usuario: Usuario;
 
-  @ManyToOne(() => Cita, { eager: true })
+  @ManyToOne(() => Cita, { eager: true, onDelete: 'CASCADE' })
   cita: Cita;
 
   @ManyToOne(() => Empleado, { eager: true })
