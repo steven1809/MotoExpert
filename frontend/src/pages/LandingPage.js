@@ -339,11 +339,13 @@ class LandingPage extends Component {
         console.log('Data recibida:', data);
         const list = Array.isArray(data)
           ? data
-          : Array.isArray(data?.servicios)
-            ? data.servicios
-            : Array.isArray(data?.value)
-              ? data.value
-              : [];
+          : Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data?.servicios)
+              ? data.servicios
+              : Array.isArray(data?.value)
+                ? data.value
+                : [];
         this.setState({ landingServicios: list });
       })
       .catch(() => {
