@@ -758,13 +758,16 @@ const Citas = ({
   const fetchInitialData = async () => {
     try {
       const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      console.log('[Citas.js] fetchInitialData: userId from localStorage:', userId);
+      
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       };
 
       const [citasRes, vehiculosRes, serviciosRes, empleadosRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/citas`, { headers }),
+        fetch(`${API_BASE_URL}/citas?limit=100`, { headers }),
         fetch(`${API_BASE_URL}/vehiculos`, { headers }),
         fetch(`${API_BASE_URL}/servicios`, { headers }),
         fetch(`${API_BASE_URL}/empleados`, { headers })
@@ -777,8 +780,14 @@ const Citas = ({
           serviciosRes.json(),
           empleadosRes.json()
         ]);
+        console.log('[Citas.js] citasData received:', citasData);
+        
         const citasArray = Array.isArray(citasData) ? citasData : (citasData.data ?? []);
+        console.log('[Citas.js] citasArray length:', citasArray.length);
+        console.log('[Citas.js] citasArray:', citasArray);
+        
         const serviciosArray = Array.isArray(serviciosData) ? serviciosData : (serviciosData.data ?? []);
+        
         setCitas(citasArray);
         setVehiculos(vehiculosData);
         setServicios(dedupeServicios(serviciosArray));
@@ -789,6 +798,7 @@ const Citas = ({
         setError('Error al obtener datos iniciales');
       }
     } catch (err) {
+      console.error('[Citas.js] fetchInitialData error:', err);
       setError('No se pudo conectar con el servidor');
     } finally {
       setLoading(false);
