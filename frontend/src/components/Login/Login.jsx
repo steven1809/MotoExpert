@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { AuthContext } from '../../context/AuthContext';
 import GoogleLoginButton from '../GoogleLoginButton';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../../apiConfig';
 
 const STYLE = `
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap');

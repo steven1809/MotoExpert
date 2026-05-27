@@ -3,7 +3,7 @@ import CustomSelect from '../components/CustomSelect';
 import carHeroImg from '../assets/images/1.png';
 import vehiculoIcon from '../assets/iconos/coche.png';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../apiConfig';
 
 class Vehiculos extends Component {
   constructor(props) {

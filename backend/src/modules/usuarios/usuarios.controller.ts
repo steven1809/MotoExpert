@@ -6,13 +6,17 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { Request } from 'express';
 import { Req } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 // Definimos un decorador simple para marcar rutas como públicas
 const Public = () => SetMetadata('isPublic', true);
 
 @Controller('usuarios')
 export class UsuariosController {
-  constructor(private readonly usuariosService: UsuariosService) {}
+  constructor(
+    private readonly usuariosService: UsuariosService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Public()
   @Get('empleados')
@@ -58,7 +62,8 @@ export class UsuariosController {
     }),
   )
   uploadPhoto(@Param('id') id: string, @UploadedFile() file: any) {
-    const photoUrl = `http://localhost:3001/uploads/profiles/${file.filename}`;
+    const appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3001';
+    const photoUrl = `${appUrl}/uploads/profiles/${file.filename}`;
     return this.usuariosService.update(+id, { picture: photoUrl });
   }
 
@@ -79,7 +84,8 @@ export class UsuariosController {
     }),
   )
   uploadBanner(@Param('id') id: string, @UploadedFile() file: any) {
-    const bannerUrl = `http://localhost:3001/uploads/banners/${file.filename}`;
+    const appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3001';
+    const bannerUrl = `${appUrl}/uploads/banners/${file.filename}`;
     return this.usuariosService.update(+id, { banner: bannerUrl });
   }
 }

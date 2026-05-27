@@ -16,7 +16,7 @@ import telefonoIcon from '../assets/iconos/telefono.png';
 import ubicIcon from '../assets/iconos/ubicacion.png';
 import relojIcon from '../assets/iconos/reloj.png';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../apiConfig';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({

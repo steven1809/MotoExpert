@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 
-@Controller('auth') // La URL será: localhost:3000/auth
+@Controller('auth') // La URL será: localhost:3001/auth
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -12,7 +12,7 @@ export class AuthController {
     return this.authService.findAll();
   }
 
-  @Post('register') // La URL final: localhost:3000/auth/register
+  @Post('register') // La URL final: localhost:3001/auth/register
   create(@Body() createUserDto: CreateUserDto) {
     return this.authService.register(createUserDto);
   }

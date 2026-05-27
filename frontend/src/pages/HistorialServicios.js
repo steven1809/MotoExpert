@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../apiConfig';
 
 class HistorialServicios extends Component {
   constructor(props) {

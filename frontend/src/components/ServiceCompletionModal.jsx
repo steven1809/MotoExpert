@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../apiConfig';
 
 const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
   const tokenInputRef = useRef(null);

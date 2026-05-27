@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import WompiCheckout from './WompiCheckout'; // ajusta la ruta según tu proyecto
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../apiConfig';
 
 export default function PaymentStep({ apiBaseUrl, onNavigate }) {
   const baseUrl = apiBaseUrl || API_BASE_URL;

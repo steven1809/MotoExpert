@@ -7,7 +7,7 @@ import ProximosServicios from '../components/empleado/ProximosServicios';
 import HistorialReciente from '../components/empleado/HistorialReciente';
 import MiRendimiento from '../components/empleado/MiRendimiento';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../apiConfig';
 
 const EmpleadoDashboard = ({ showToast, activeTab: propActiveTab }) => {
   const [activeTab, setActiveTab] = useState(propActiveTab || 'inicio');

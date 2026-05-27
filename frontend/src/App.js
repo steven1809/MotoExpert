@@ -24,7 +24,7 @@ import ActivityLogPage from './pages/ActivityLogPage';
 import PaymentStep from './components/PaymentStep';
 import PaymentConfirmation from './components/PaymentConfirmation';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from './apiConfig';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('token')); 

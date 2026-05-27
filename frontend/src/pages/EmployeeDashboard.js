@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import ServiceCompletionModal from '../components/ServiceCompletionModal';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../apiConfig';
 
 class EmployeeDashboard extends Component {
   constructor(props) {

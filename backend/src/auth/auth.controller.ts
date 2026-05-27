@@ -6,12 +6,17 @@ import {
   Delete,
   Param,
   UnauthorizedException,
+  SetMetadata,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Usuario } from '../modules/usuarios/entities/usuario.entity';
 
-@Controller('auth') // La URL será: localhost:3000/auth
+// Decorador para rutas públicas
+export const Public = () => SetMetadata('isPublic', true);
+
+@Controller('auth') // La URL será: localhost:3001/auth
+@Public()
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -20,7 +25,7 @@ export class AuthController {
     return this.authService.findAll();
   }
 
-  @Post('register') // La URL final: localhost:3000/auth/register
+  @Post('register') // La URL final: localhost:3001/auth/register
   create(@Body() createUserDto: CreateUserDto) {
     return this.authService.register(createUserDto);
   }
