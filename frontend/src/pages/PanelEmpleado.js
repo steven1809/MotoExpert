@@ -25,7 +25,8 @@ class PanelEmpleado extends Component {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
-        const data = await response.json();
+        const responseData = await response.json();
+        const data = Array.isArray(responseData) ? responseData : (responseData.data ?? []);
         
         // Obtener la fecha de hoy en formato YYYY-MM-DD
         const today = new Date().toISOString().split('T')[0];
@@ -33,7 +34,7 @@ class PanelEmpleado extends Component {
         // Filtramos solo las citas pendientes o en proceso de este empleado
         // Y ordenamos cronológicamente (fecha y luego hora)
         const filteredAndSorted = data
-          .filter(c => c.estado !== 'FINALIZADO')
+          .filter(c => c.estado !== 'FINALIZADO' && c.estado !== 'CANCELADO')
           .sort((a, b) => {
             if (a.fecha !== b.fecha) {
               return new Date(a.fecha) - new Date(b.fecha);

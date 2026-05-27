@@ -902,8 +902,8 @@ const Citas = ({
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/citas/${citaId}`, {
-        method: 'PUT',
+      const response = await fetch(`${API_BASE_URL}/citas/${citaId}/estado`, {
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -1959,14 +1959,15 @@ const Citas = ({
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {empleados.slice(0, 4).map((e) => {
-                              const isSelected = String(e.id) === String(formData.empleadoId);
+                              const isSelected = String(e.usuario?.id || e.id) === String(formData.empleadoId);
                               const isAvailable = String(e.estado || '').toLowerCase() === 'activo';
+                              const empleadoNombre = e.usuario?.nombre || 'Especialista';
                               return (
                                 <button
                                   key={e.id}
                                   type="button"
                                   onClick={() => {
-                                    setFormData((prev) => ({ ...prev, empleadoId: String(e.id), hora_inicio: '' }));
+                                    setFormData((prev) => ({ ...prev, empleadoId: String(e.usuario?.id || e.id), hora_inicio: '' }));
                                     setDisponibilidad([]);
                                   }}
                                   className={`rounded-2xl border p-4 text-left transition-colors ${
@@ -1977,10 +1978,10 @@ const Citas = ({
                                 >
                                   <div className="flex items-center gap-3">
                                     <div className="h-11 w-11 rounded-2xl bg-white/10 border border-white/10 text-white flex items-center justify-center font-black">
-                                      {(e.nombre || 'E').trim().slice(0, 1).toUpperCase()}
+                                      {empleadoNombre.trim().slice(0, 1).toUpperCase()}
                                     </div>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-black text-white truncate">{e.nombre || 'Especialista'}</div>
+                                      <div className="text-xs font-black text-white truncate">{empleadoNombre}</div>
                                       <div className="text-[11px] text-white/50 truncate">{e.cargo || e.especialidad || 'Especialista'}</div>
                                     </div>
                                   </div>
