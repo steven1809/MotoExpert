@@ -37,6 +37,9 @@ export class Usuario {
   @Column({ nullable: true })
   picture?: string;
 
+  @Column({ nullable: true })
+  banner?: string;
+
   @Column({ default: 'local' })
   provider: string;
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import correoIcon from '../assets/iconos/correo.png';
@@ -107,6 +107,8 @@ const Toast = ({ message, type = 'success', onClose }) => (
 const MiCuenta = () => {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
+  const fileInputRef = useRef(null);
+  const bannerInputRef = useRef(null);
 
   // --- GESTIÓN DE ESTADO ---
   
@@ -117,6 +119,7 @@ const MiCuenta = () => {
     telefono: '',
     direccion: '',
     fotoPerfil: localStorage.getItem('userPicture') || null,
+    fotoBanner: null,
     memberSince: 'Mayo 2023'
   });
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -156,124 +159,129 @@ const MiCuenta = () => {
 
   // --- CARGA DE DATOS REALES ---
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) return;
+  const fetchData = async () => {
+    setLoading(true);
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-      const headers = { 'Authorization': `Bearer ${token}` };
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const headers = { 'Authorization': `Bearer ${token}` };
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-      try {
-        // 1. Cargar Perfil
-        const profileRes = await fetch(`${API_URL}/usuarios/me`, { headers });
-        let profileData = null;
-        if (profileRes.ok) {
-          profileData = await profileRes.json();
-          const mappedProfile = {
-            nombre: profileData.nombre,
-            email: profileData.email,
-            telefono: profileData.telefono || 'No registrado',
-            direccion: profileData.direccion || 'No registrada',
-            fotoPerfil: profileData.picture || null,
-            memberSince: new Date(profileData.createdAt).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
-          };
-          setProfile(mappedProfile);
-          setEditForm(mappedProfile);
+    try {
+      // 1. Cargar Perfil
+      const profileRes = await fetch(`${API_URL}/usuarios/me`, { headers });
+      let profileData = null;
+      if (profileRes.ok) {
+        profileData = await profileRes.json();
+        const mappedProfile = {
+          nombre: profileData.nombre,
+          email: profileData.email,
+          telefono: profileData.telefono || 'No registrado',
+          direccion: profileData.direccion || 'No registrada',
+          fotoPerfil: profileData.picture || null,
+          fotoBanner: profileData.banner || null,
+          memberSince: new Date(profileData.createdAt).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+        };
+        setProfile(mappedProfile);
+        setEditForm(mappedProfile);
+        if (mappedProfile.fotoPerfil) {
+          localStorage.setItem('userPicture', mappedProfile.fotoPerfil);
         }
-
-        // 2. Cargar Vehículos
-        const vehiclesRes = await fetch(`${API_URL}/vehiculos`, { headers });
-        let vehiclesData = [];
-        if (vehiclesRes.ok) {
-          vehiclesData = await vehiclesRes.json();
-          setVehicles(vehiclesData.map((v, index) => ({
-            id: v.id,
-            nombre: `${v.marca} ${v.modelo}`,
-            año: v.anio,
-            placa: v.placa,
-            km: 0, 
-            imagen: v.imagen || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=600",
-            principal: index === 0
-          })));
-        }
-
-        // 3. Cargar Actividad (Citas y Reseñas)
-        const appointmentsRes = await fetch(`${API_URL}/citas`, { headers });
-        let appointmentsData = [];
-        if (appointmentsRes.ok) {
-          appointmentsData = await appointmentsRes.json();
-        }
-
-        const ratingsRes = await fetch(`${API_URL}/ratings`, { headers });
-        let ratingsData = [];
-        if (ratingsRes.ok) {
-          ratingsData = await ratingsRes.json();
-          const userId = localStorage.getItem('userId');
-          ratingsData = ratingsData.filter(r => String(r.usuario?.id) === String(userId));
-        }
-
-        // Combinar todo el historial
-        const historyItems = [
-          ...appointmentsData.map(c => ({
-            id: `cita-${c.id}`,
-            tipo: 'servicio',
-            descripcion: `${c.servicio?.nombre || 'Servicio'} - ${c.vehiculo?.placa || ''}`,
-            fecha: new Date(c.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-            estado: c.estado,
-            rawDate: new Date(c.fecha)
-          })),
-          ...ratingsData.map(r => ({
-            id: `rating-${r.id}`,
-            tipo: 'reseña',
-            descripcion: `Calificaste: ${r.cita?.servicio?.nombre || 'Servicio'} (${r.serviceRating}★)`,
-            fecha: new Date(r.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
-            estado: 'Publicado',
-            rawDate: new Date(r.createdAt)
-          })),
-          ...vehiclesData.map(v => ({
-            id: `vehiculo-${v.id}`,
-            tipo: 'vehiculo',
-            descripcion: `Registraste: ${v.marca} ${v.modelo} (${v.placa})`,
-            fecha: new Date(v.createdAt || Date.now()).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
-            estado: '',
-            rawDate: new Date(v.createdAt || Date.now())
-          }))
-        ].sort((a, b) => b.rawDate - a.rawDate);
-
-        setActivities(historyItems);
-
-        // 4. Calcular Logros
-        const completedCitas = appointmentsData.filter(c => c.estado === 'FINALIZADO').length;
-        const premiumServices = appointmentsData.filter(c => c.estado === 'FINALIZADO' && c.servicio?.nombre?.toLowerCase().includes('premium')).length;
-        const numVehicles = vehiclesData.length;
-        const numRatings = ratingsData.length;
-        const monthsActive = profileData ? Math.floor((Date.now() - new Date(profileData.createdAt)) / (1000 * 60 * 60 * 24 * 30)) : 0;
-
-        setAchievements(prev => prev.map(ach => {
-          let progress = 0;
-          switch(ach.id) {
-            case 1: progress = (completedCitas / 5) * 100; break;
-            case 2: progress = (premiumServices / 10) * 100; break;
-            case 3: progress = (monthsActive / 12) * 100; break;
-            case 4: progress = (numVehicles / 5) * 100; break;
-            case 5: progress = (numRatings / 5) * 100; break;
-            case 6: progress = (completedCitas / 20) * 100; break;
-            default: break;
-          }
-          progress = Math.min(100, Math.max(0, progress));
-          return { ...ach, progress: Math.round(progress), unlocked: progress >= 100 };
-        }));
-
-      } catch (error) {
-        console.error("Error cargando datos:", error);
-        showNotification("Error al cargar información");
-      } finally {
-        setLoading(false);
       }
-    };
 
+      // 2. Cargar Vehículos
+      const vehiclesRes = await fetch(`${API_URL}/vehiculos`, { headers });
+      let vehiclesData = [];
+      if (vehiclesRes.ok) {
+        vehiclesData = await vehiclesRes.json();
+        setVehicles(vehiclesData.map((v, index) => ({
+          id: v.id,
+          nombre: `${v.marca} ${v.modelo}`,
+          año: v.anio,
+          placa: v.placa,
+          km: 0, 
+          imagen: v.imagen || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=600",
+          principal: index === 0
+        })));
+      }
+
+      // 3. Cargar Actividad (Citas y Reseñas)
+      const appointmentsRes = await fetch(`${API_URL}/citas`, { headers });
+      let appointmentsData = [];
+      if (appointmentsRes.ok) {
+        const res = await appointmentsRes.json();
+        appointmentsData = res.data || [];
+      }
+
+      const ratingsRes = await fetch(`${API_URL}/ratings`, { headers });
+      let ratingsData = [];
+      if (ratingsRes.ok) {
+        ratingsData = await ratingsRes.json();
+        const userId = localStorage.getItem('userId');
+        ratingsData = ratingsData.filter(r => String(r.usuario?.id) === String(userId));
+      }
+
+      // Combinar todo el historial
+      const historyItems = [
+        ...appointmentsData.map(c => ({
+          id: `cita-${c.id}`,
+          tipo: 'servicio',
+          descripcion: `${c.servicio?.nombre || 'Servicio'} - ${c.vehiculo?.placa || ''}`,
+          fecha: new Date(c.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          estado: c.estado,
+          rawDate: new Date(c.fecha)
+        })),
+        ...ratingsData.map(r => ({
+          id: `rating-${r.id}`,
+          tipo: 'reseña',
+          descripcion: `Calificaste: ${r.cita?.servicio?.nombre || 'Servicio'} (${r.serviceRating}★)`,
+          fecha: new Date(r.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
+          estado: 'Publicado',
+          rawDate: new Date(r.createdAt)
+        })),
+        ...vehiclesData.map(v => ({
+          id: `vehiculo-${v.id}`,
+          tipo: 'vehiculo',
+          descripcion: `Registraste: ${v.marca} ${v.modelo} (${v.placa})`,
+          fecha: new Date(v.createdAt || Date.now()).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
+          estado: '',
+          rawDate: new Date(v.createdAt || Date.now())
+        }))
+      ].sort((a, b) => b.rawDate - a.rawDate);
+
+      setActivities(historyItems);
+
+      // 4. Calcular Logros
+      const completedCitas = appointmentsData.filter(c => c.estado === 'FINALIZADO').length;
+      const premiumServices = appointmentsData.filter(c => c.estado === 'FINALIZADO' && c.servicio?.nombre?.toLowerCase().includes('premium')).length;
+      const numVehicles = vehiclesData.length;
+      const numRatings = ratingsData.length;
+      const monthsActive = profileData ? Math.floor((Date.now() - new Date(profileData.createdAt)) / (1000 * 60 * 60 * 24 * 30)) : 0;
+
+      setAchievements(prev => prev.map(ach => {
+        let progress = 0;
+        switch(ach.id) {
+          case 1: progress = (completedCitas / 5) * 100; break;
+          case 2: progress = (premiumServices / 10) * 100; break;
+          case 3: progress = (monthsActive / 12) * 100; break;
+          case 4: progress = (numVehicles / 5) * 100; break;
+          case 5: progress = (numRatings / 5) * 100; break;
+          case 6: progress = (completedCitas / 20) * 100; break;
+          default: break;
+        }
+        progress = Math.min(100, Math.max(0, progress));
+        return { ...ach, progress: Math.round(progress), unlocked: progress >= 100 };
+      }));
+
+    } catch (error) {
+      console.error("Error cargando datos:", error);
+      showNotification("Error al cargar información");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -364,6 +372,48 @@ const MiCuenta = () => {
     showNotification("Vehículo principal actualizado");
   };
 
+  const handleFileUpload = async (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const endpoint = type === 'profile' ? 'upload-photo' : 'upload-banner';
+
+    try {
+      const res = await fetch(`${API_URL}/usuarios/${userId}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        const updatedUser = await res.json();
+        if (type === 'profile') {
+          setProfile({ ...profile, fotoPerfil: updatedUser.picture });
+          localStorage.setItem('userPicture', updatedUser.picture);
+          showNotification("Foto de perfil actualizada");
+        } else {
+          setProfile({ ...profile, fotoBanner: updatedUser.banner });
+          showNotification("Banner actualizado");
+        }
+        fetchData(); // Refrescar actividades y demás
+      } else {
+        showNotification("Error al subir la imagen", "error");
+      }
+    } catch (error) {
+      console.error("Error subiendo imagen:", error);
+      showNotification("Error de conexión", "error");
+    }
+  };
+
   const handleAddVehicle = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
@@ -402,6 +452,7 @@ const MiCuenta = () => {
         setNewVehicle({ marca: '', modelo: '', año: '', placa: '', color: '', km: '', imagen: '' });
         setShowAddVehicle(false);
         showNotification("Vehículo agregado con éxito");
+        fetchData(); // Refrescar actividades
       } else {
         showNotification("Error al agregar vehículo", "error");
       }
@@ -547,6 +598,22 @@ const MiCuenta = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] transition-colors duration-500 pb-20">
+      {/* Inputs de archivo ocultos */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={(e) => handleFileUpload(e, 'profile')} 
+      />
+      <input 
+        type="file" 
+        ref={bannerInputRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={(e) => handleFileUpload(e, 'banner')} 
+      />
+
       {loading && (
         <div className="fixed inset-0 z-[300] bg-white/80 dark:bg-[#0d1117]/80 backdrop-blur-sm flex flex-col items-center justify-center">
           <div className="w-16 h-16 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mb-4" />
@@ -557,23 +624,40 @@ const MiCuenta = () => {
         
         {/* --- CABECERA / BANNER --- */}
         <div className="relative group">
-          <div className="h-48 md:h-64 bg-gradient-to-br from-blue-600 to-blue-900 rounded-[2.5rem] overflow-hidden shadow-xl shadow-blue-500/10">
+          <div 
+            className="h-48 md:h-64 bg-gradient-to-br from-blue-600 to-blue-900 rounded-[2.5rem] overflow-hidden shadow-xl shadow-blue-500/10 cursor-pointer relative"
+            onClick={() => bannerInputRef.current.click()}
+          >
             <img 
-              src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1200" 
+              src={profile.fotoBanner || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1200"} 
               className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700" 
               alt="Banner" 
             />
-            <div className="absolute inset-0 bg-black/20" />
+            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center text-white">
+                <svg className="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="text-xs font-bold uppercase tracking-widest">Cambiar Banner</span>
+              </div>
+            </div>
           </div>
           
           <div className="absolute -bottom-12 left-10 flex flex-col md:flex-row items-end gap-6">
-            <div className="relative">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-white dark:bg-[#161b22] border-4 border-white dark:border-[#0d1117] shadow-2xl overflow-hidden flex items-center justify-center text-5xl font-black text-blue-600">
+            <div className="relative group/avatar cursor-pointer" onClick={() => fileInputRef.current.click()}>
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-white dark:bg-[#161b22] border-4 border-white dark:border-[#0d1117] shadow-2xl overflow-hidden flex items-center justify-center text-5xl font-black text-blue-600 relative">
                 {profile.fotoPerfil ? (
                   <img src={profile.fotoPerfil} className="w-full h-full object-cover" alt="Avatar" />
                 ) : (
                   profile.nombre.charAt(0)
                 )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
+                   <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
               </div>
               <div className="absolute bottom-2 right-2 w-8 h-8 bg-emerald-500 border-4 border-white dark:border-[#161b22] rounded-full shadow-lg" />
             </div>
@@ -727,31 +811,37 @@ const MiCuenta = () => {
             </div>
             
             <div className="space-y-6 flex-1">
-              {activities.slice(0, 4).map((a) => (
-                <div key={a.id} className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm ${
-                    a.tipo === 'servicio' ? 'bg-emerald-500/10 text-emerald-500' :
-                    a.tipo === 'reseña' ? 'bg-blue-500/10 text-blue-500' :
-                    a.tipo === 'vehiculo' ? 'bg-purple-500/10 text-purple-500' :
-                    'bg-amber-500/10 text-amber-500'
-                  }`}>
-                    {a.tipo === 'servicio' ? '🛠️' : a.tipo === 'reseña' ? '⭐' : a.tipo === 'vehiculo' ? '🚗' : '📅'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-black text-gray-900 dark:text-white truncate tracking-tight">{a.descripcion}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase">{a.fecha}</p>
-                  </div>
-                  {a.estado && (
-                    <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
-                      a.estado === 'Completado' ? 'bg-emerald-500/10 text-emerald-500' :
-                      a.estado === 'Publicado' ? 'bg-blue-500/10 text-blue-500' :
+              {activities.length > 0 ? (
+                activities.slice(0, 4).map((a) => (
+                  <div key={a.id} className="flex items-start gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm ${
+                      a.tipo === 'servicio' ? 'bg-emerald-500/10 text-emerald-500' :
+                      a.tipo === 'reseña' ? 'bg-blue-500/10 text-blue-500' :
+                      a.tipo === 'vehiculo' ? 'bg-purple-500/10 text-purple-500' :
                       'bg-amber-500/10 text-amber-500'
                     }`}>
-                      {a.estado}
-                    </span>
-                  )}
+                      {a.tipo === 'servicio' ? '🛠️' : a.tipo === 'reseña' ? '⭐' : a.tipo === 'vehiculo' ? '🚗' : '📅'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black text-gray-900 dark:text-white truncate tracking-tight">{a.descripcion}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">{a.fecha}</p>
+                    </div>
+                    {a.estado && (
+                      <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
+                        a.estado === 'Completado' ? 'bg-emerald-500/10 text-emerald-500' :
+                        a.estado === 'Publicado' ? 'bg-blue-500/10 text-blue-500' :
+                        'bg-amber-500/10 text-amber-500'
+                      }`}>
+                        {a.estado}
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sin actividad reciente</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -966,31 +1056,37 @@ const MiCuenta = () => {
           ))}
         </div>
         <div className="space-y-6">
-          {filteredActivities.map(a => (
-            <div key={a.id} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-[#161b22]">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm ${
-                a.tipo === 'servicio' ? 'bg-emerald-500/10 text-emerald-500' :
-                a.tipo === 'reseña' ? 'bg-blue-500/10 text-blue-500' :
-                a.tipo === 'vehiculo' ? 'bg-purple-500/10 text-purple-500' :
-                'bg-amber-500/10 text-amber-500'
-              }`}>
-                {a.tipo === 'servicio' ? '🛠️' : a.tipo === 'reseña' ? '⭐' : a.tipo === 'vehiculo' ? '🚗' : '📅'}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">{a.descripcion}</p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">{a.fecha}</p>
-              </div>
-              {a.estado && (
-                <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
-                  a.estado === 'Completado' ? 'bg-emerald-500/10 text-emerald-500' :
-                  a.estado === 'Publicado' ? 'bg-blue-500/10 text-blue-500' :
+          {filteredActivities.length > 0 ? (
+            filteredActivities.map(a => (
+              <div key={a.id} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-[#161b22]">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm ${
+                  a.tipo === 'servicio' ? 'bg-emerald-500/10 text-emerald-500' :
+                  a.tipo === 'reseña' ? 'bg-blue-500/10 text-blue-500' :
+                  a.tipo === 'vehiculo' ? 'bg-purple-500/10 text-purple-500' :
                   'bg-amber-500/10 text-amber-500'
                 }`}>
-                  {a.estado}
-                </span>
-              )}
+                  {a.tipo === 'servicio' ? '🛠️' : a.tipo === 'reseña' ? '⭐' : a.tipo === 'vehiculo' ? '🚗' : '📅'}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">{a.descripcion}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">{a.fecha}</p>
+                </div>
+                {a.estado && (
+                  <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
+                    a.estado === 'Completado' ? 'bg-emerald-500/10 text-emerald-500' :
+                    a.estado === 'Publicado' ? 'bg-blue-500/10 text-blue-500' :
+                    'bg-amber-500/10 text-amber-500'
+                  }`}>
+                    {a.estado}
+                  </span>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No se encontraron actividades</p>
             </div>
-          ))}
+          )}
         </div>
       </Modal>
 

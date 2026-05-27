@@ -74,4 +74,7 @@ export class Cita {
 
   @OneToOne(() => Payment, (payment) => payment.appointment)
   payment: Payment;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }

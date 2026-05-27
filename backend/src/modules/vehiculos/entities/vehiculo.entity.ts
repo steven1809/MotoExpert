@@ -4,6 +4,8 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { Cita } from '../../citas/entities/cita.entity';
@@ -50,4 +52,10 @@ export class Vehiculo {
 
   @OneToMany(() => Cita, (cita) => cita.vehiculo)
   citas: Cita[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

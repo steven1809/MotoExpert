@@ -61,4 +61,25 @@ export class UsuariosController {
     const photoUrl = `http://localhost:3001/uploads/profiles/${file.filename}`;
     return this.usuariosService.update(+id, { picture: photoUrl });
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/upload-banner')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/banners',
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  uploadBanner(@Param('id') id: string, @UploadedFile() file: any) {
+    const bannerUrl = `http://localhost:3001/uploads/banners/${file.filename}`;
+    return this.usuariosService.update(+id, { banner: bannerUrl });
+  }
 }
