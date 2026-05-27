@@ -27,9 +27,13 @@ import PaymentConfirmation from './components/PaymentConfirmation';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
-  const [userRole, setUserRole] = useState("admin");
-  const [view, setView] = useState("landing");
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('token')); 
+  const [userRole, setUserRole] = useState(() => localStorage.getItem('role') || "admin");
+  const [view, setView] = useState(() => {
+    const saved = localStorage.getItem('motoexpert_current_view');
+    const token = localStorage.getItem('token');
+    return (token && saved) ? saved : "landing";
+  });
   const [routePath, setRoutePath] = useState(window.location.pathname || '/');
   const [toasts, setToasts] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -39,6 +43,12 @@ function App() {
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [overdueAlerts, setOverdueAlerts] = useState([]);
   const processedTimeoutsRef = useRef(new Set());
+
+  useEffect(() => {
+    if (isLoggedIn && view !== 'landing') {
+      localStorage.setItem('motoexpert_current_view', view);
+    }
+  }, [view, isLoggedIn]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -123,6 +133,7 @@ function App() {
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userId");
     localStorage.removeItem("userPicture");
+    localStorage.removeItem("motoexpert_current_view");
   };
 
   const showToast = (message, type = 'info') => {
