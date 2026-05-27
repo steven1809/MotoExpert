@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Servicio } from './entities/servicio.entity';
 import { Repository } from 'typeorm';
@@ -19,7 +19,7 @@ type ServiciosFilters = {
 };
 
 @Injectable()
-export class ServiciosService implements OnModuleInit {
+export class ServiciosService implements OnApplicationBootstrap {
   constructor(
     @InjectRepository(Servicio)
     private repo: Repository<Servicio>,
@@ -145,7 +145,7 @@ export class ServiciosService implements OnModuleInit {
     return ['Auto', 'Camioneta', 'SUV'];
   }
 
-  async onModuleInit() {
+  async onApplicationBootstrap() {
     const servicios = await this.repo.find();
     const defaults: Record<string, number> = {
       'lavado basico': 45,
@@ -263,8 +263,8 @@ export class ServiciosService implements OnModuleInit {
     return servicios.map(s => this.cleanServicioForJson(s));
   }
 
-  findOne(id: number) {
-    return this.repo.findOneBy({ id });
+  async findOne(id: number) {
+    return await this.repo.findOneBy({ id });
   }
 
   async create(data: CreateServicioDto) {

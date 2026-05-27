@@ -7,7 +7,8 @@ export default function PaymentStep({ apiBaseUrl, onNavigate }) {
   const baseUrl = apiBaseUrl || API_BASE_URL;
   const { appointmentId, summary } = useMemo(() => {
     const state = window.history.state || {};
-    const id = typeof state.appointmentId === 'number' ? state.appointmentId : null;
+    const raw = state.appointmentId;
+    const id = raw != null ? parseInt(String(raw).replace(/\D/g, ''), 10) || null : null;
     const s = state.summary || null;
     return {
       appointmentId: id,
@@ -205,7 +206,7 @@ export default function PaymentStep({ apiBaseUrl, onNavigate }) {
             ) : wompiData ? (
               <WompiCheckout
                 appointmentId={appointmentId}
-                amountCOP={wompiData.amountCOP}
+                amountCOP={Number(wompiData.amountCOP)}
                 publicKey={wompiData.publicKey}
                 integritySignature={wompiData.integritySignature}
                 reference={wompiData.reference}

@@ -62,8 +62,8 @@ export class VehiculosService {
     return result;
   }
 
-  findOne(id: number) {
-    return this.repo.findOne({
+  async findOne(id: number) {
+    return await this.repo.findOne({
       where: { id },
       relations: ['usuario'],
     });

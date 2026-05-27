@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -6,7 +6,7 @@ import autoTable from 'jspdf-autotable';
 import { API_BASE_URL } from '../apiConfig';
 
 const UsersList = (props) => {
-  const { activeTab: propActiveTab, setView } = props;
+  const { activeTab: propActiveTab } = props;
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,7 +38,7 @@ const UsersList = (props) => {
 
   // Paginación Citas
   const [citasPage, setCitasPage] = useState(1);
-  const [citasLimit, setCitasLimit] = useState(10);
+  const [citasLimit] = useState(10);
   const [totalCitas, setTotalCitas] = useState(0);
   const [totalPagesCitas, setTotalPagesCitas] = useState(0);
 
@@ -149,42 +149,7 @@ const UsersList = (props) => {
       setCurrentPage(1);
     }
   }, [searchTerm, users, empleados, activeTab]);
-  useEffect(() => {
-    const role = localStorage.getItem('role');
-    const token = localStorage.getItem('token');
-
-    if (role === 'admin' && token) {
-      setIsAdmin(true);
-      fetchUsers(token);
-      fetchAdminData(token);
-    } else {
-      setLoading(false);
-      setIsAdmin(false);
-    }
-  }, []);
-
-  const fetchAdminData = async (token) => {
-    setLoadingAdmin(true);
-    try {
-      console.log('[UsersList] Fetching admin data (employees and appointments)...');
-      const headers = { 'Authorization': `Bearer ${token}` };
-      
-      const empRes = await fetch(`${API_BASE_URL}/empleados`, { headers });
-      if (empRes.ok) {
-        const data = await empRes.json();
-        console.log('[UsersList] Employees fetched:', data);
-        setEmpleados(data);
-      }
-
-      await fetchCitasPaginadas(token, citasPage, citasLimit, filtroEstadoCita);
-    } catch (err) {
-      console.error('Error al cargar datos de admin:', err);
-    } finally {
-      setLoadingAdmin(false);
-    }
-  };
-
-  const fetchCitasPaginadas = async (token, page, limit, estado) => {
+  const fetchCitasPaginadas = useCallback(async (token, page, limit, estado) => {
     setLoadingAdmin(true);
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
@@ -208,7 +173,28 @@ const UsersList = (props) => {
     } finally {
       setLoadingAdmin(false);
     }
-  };
+  }, []);
+
+  const fetchAdminData = useCallback(async (token) => {
+    setLoadingAdmin(true);
+    try {
+      console.log('[UsersList] Fetching admin data (employees and appointments)...');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      
+      const empRes = await fetch(`${API_BASE_URL}/empleados`, { headers });
+      if (empRes.ok) {
+        const data = await empRes.json();
+        console.log('[UsersList] Employees fetched:', data);
+        setEmpleados(data);
+      }
+
+      await fetchCitasPaginadas(token, citasPage, citasLimit, filtroEstadoCita);
+    } catch (err) {
+      console.error('Error al cargar datos de admin:', err);
+    } finally {
+      setLoadingAdmin(false);
+    }
+  }, [citasPage, citasLimit, filtroEstadoCita, fetchCitasPaginadas]);
 
   const handleReschedule = async () => {
     if (!nuevaFecha || !nuevaHora || !selectedCitaForDrawer) return;
@@ -270,90 +256,12 @@ const UsersList = (props) => {
         fetchCitasPaginadas(token, citasPage, citasLimit, filtroEstadoCita);
       }
     }
-  }, [citasPage, citasLimit, filtroEstadoCita, activeTab]);
-
-  // Filtrado dinámico en tiempo real
-  useEffect(() => {
-    const results = users.filter(user => 
-      user.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.apellidos?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.id.toString().includes(searchTerm)
-    );
-    setFilteredUsers(results);
-    setCurrentPage(1); // Reiniciar a la primera página al buscar
-  }, [searchTerm, users]);
-
-  // Carga forzada de datos cuando cambia el usuario seleccionado
-  useEffect(() => {
-    if (selectedUser && showModal) {
-      fetchUserDetails(selectedUser.id);
-    }
-  }, [selectedUser, showModal]);
-
-  const fetchUsers = async (token) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const sortedUsers = data.sort((a, b) => a.id - b.id);
-        setUsers(sortedUsers);
-        setFilteredUsers(sortedUsers);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Error al obtener usuarios');
-      }
-    } catch (err) {
-      setError('No se pudo conectar con el servidor');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchUserDetails = async (userId) => {
-    setUserDetails(prev => ({ ...prev, vehiculos: [], citas: [], loading: true }));
-    const token = localStorage.getItem('token');
-    try {
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
-
-      const [vehiculosRes, citasRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/vehiculos?userId=${userId}`, { headers }),
-        fetch(`${API_BASE_URL}/citas?userId=${userId}`, { headers })
-      ]);
-
-      if (vehiculosRes.ok && citasRes.ok) {
-        const [vehiculos, citas] = await Promise.all([
-          vehiculosRes.json(),
-          citasRes.json()
-        ]);
-
-        setUserDetails({
-          vehiculos: vehiculos,
-          citas: citas,
-          loading: false
-        });
-      } else {
-        throw new Error('Error al obtener datos del servidor');
-      }
-    } catch (err) {
-      console.error('Error al obtener detalles:', err);
-      setUserDetails(prev => ({ ...prev, loading: false }));
-    }
-  };
+  }, [citasPage, citasLimit, filtroEstadoCita, activeTab, fetchCitasPaginadas]);
 
   const handleOpenDetails = (user) => {
     setSelectedUser(user);
     setShowModal(true);
+    fetchUserDetails(user.id);
   };
 
   const handleCloseModal = () => {
@@ -466,6 +374,80 @@ const UsersList = (props) => {
       alert('Error de conexión al intentar actualizar el rol');
     } finally {
       setUpdatingRole(false);
+    }
+  };
+
+  const fetchUsers = useCallback(async (token) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const sortedUsers = data.sort((a, b) => a.id - b.id);
+        setUsers(sortedUsers);
+        setFilteredUsers(sortedUsers);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || 'Error al obtener usuarios');
+      }
+    } catch (err) {
+      setError('No se pudo conectar con el servidor');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const role = localStorage.getItem('role');
+    const token = localStorage.getItem('token');
+
+    if (role === 'admin' && token) {
+      setIsAdmin(true);
+      fetchUsers(token);
+      fetchAdminData(token);
+    } else {
+      setLoading(false);
+      setIsAdmin(false);
+    }
+  }, [fetchUsers, fetchAdminData]);
+
+  const fetchUserDetails = async (userId) => {
+    setUserDetails(prev => ({ ...prev, vehiculos: [], citas: [], loading: true }));
+    const token = localStorage.getItem('token');
+    try {
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+
+      const [vehiculosRes, citasRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/vehiculos?userId=${userId}`, { headers }),
+        fetch(`${API_BASE_URL}/citas?userId=${userId}`, { headers })
+      ]);
+
+      if (vehiculosRes.ok && citasRes.ok) {
+        const [vehiculos, citas] = await Promise.all([
+          vehiculosRes.json(),
+          citasRes.json()
+        ]);
+
+        setUserDetails({
+          vehiculos: vehiculos,
+          citas: citas,
+          loading: false
+        });
+      } else {
+        throw new Error('Error al obtener datos del servidor');
+      }
+    } catch (err) {
+      console.error('Error al obtener detalles:', err);
+      setUserDetails(prev => ({ ...prev, loading: false }));
     }
   };
 

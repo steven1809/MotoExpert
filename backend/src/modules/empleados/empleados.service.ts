@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import { Empleado } from './entities/empleado.entity';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 import { CreateEmpleadoDto } from './dto/create-empleado.dto';
@@ -8,7 +8,7 @@ import { UpdateEmpleadoDto } from './dto/update-empleado.dto';
 import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
-export class EmpleadosService {
+export class EmpleadosService implements OnApplicationBootstrap {
   constructor(
     @InjectRepository(Empleado)
     private readonly repo: Repository<Empleado>,
@@ -17,50 +17,58 @@ export class EmpleadosService {
     private readonly activityService: ActivityService,
   ) {}
 
-  async findAll() {
-    // Sincronización proactiva: Buscar usuarios con rol 'empleado' que no tengan registro de empleado
-    const usuariosEmpleados = await this.usuarioRepo
-      .createQueryBuilder('usuario')
-      .where('LOWER(usuario.role) = :role', { role: 'empleado' })
-      .getMany();
+  async onApplicationBootstrap() {
+    console.log('[EmpleadosService] Running initial synchronization...');
+    try {
+      // Sincronización proactiva secuencial: Buscar usuarios con rol 'empleado'
+      const usuariosEmpleados = await this.usuarioRepo.find({
+        where: { role: ILike('empleado') }
+      });
 
-    for (const usuario of usuariosEmpleados) {
-      const exists = await this.repo.findOne({ where: { usuarioId: usuario.id } });
-      if (!exists) {
-        console.log(`[EmpleadosService] Sync: Creating missing employee record for user ${usuario.id}`);
-        await this.create({
-          usuarioId: usuario.id,
-          documentNumber: usuario.documento || undefined,
-          cargo: 'Mecánico',
-          especialidad: 'Mecánica General',
-          estado: 'activo',
-        });
+      for (const usuario of usuariosEmpleados) {
+        const exists = await this.repo.findOne({ where: { usuarioId: usuario.id } });
+        if (!exists) {
+          console.log(`[EmpleadosService] Sync: Creating missing employee record for user ${usuario.id}`);
+          const newEmpleado = this.repo.create({
+            usuarioId: usuario.id,
+            documentNumber: usuario.documento || undefined,
+            cargo: 'Mecánico',
+            especialidad: 'Mecánica General',
+            estado: 'activo',
+          });
+          await this.repo.save(newEmpleado);
+        }
       }
+      console.log('[EmpleadosService] Synchronization completed.');
+    } catch (error) {
+      console.error('[EmpleadosService] Sync error:', error.message);
     }
+  }
 
+  async findAll() {
     return this.repo.find({ 
       relations: ['usuario', 'citas'],
       order: { id: 'DESC' }
     });
   }
 
-  findByUsuarioId(usuarioId: number) {
-    return this.repo.findOne({
+  async findByUsuarioId(usuarioId: number) {
+    return await this.repo.findOne({
       where: { usuarioId },
       relations: ['usuario', 'citas'],
     });
   }
 
-  findOne(id: number) {
-    return this.repo.findOne({
+  async findOne(id: number) {
+    return await this.repo.findOne({
       where: { id },
       relations: ['usuario', 'citas'],
     });
   }
 
-  create(data: CreateEmpleadoDto) {
+  async create(data: CreateEmpleadoDto) {
     const newEmpleado = this.repo.create(data);
-    return this.repo.save(newEmpleado);
+    return await this.repo.save(newEmpleado);
   }
 
   async update(id: number, data: UpdateEmpleadoDto) {
@@ -76,13 +84,13 @@ export class EmpleadosService {
       'admin'
     );
 
-    return this.repo.findOne({ 
+    return await this.repo.findOne({ 
       where: { id }, 
       relations: ['usuario'] 
     });
   }
 
-  delete(id: number) {
-    return this.repo.delete(id);
+  async delete(id: number) {
+    return await this.repo.delete(id);
   }
 }

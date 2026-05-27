@@ -48,9 +48,18 @@ const WompiCheckout = ({
     const cleanPublicKey = publicKey.trim();
 
     // 4. Inicializar la pasarela oficial flotante de Wompi
+    const amountInCents = Math.round(Number(amountCOP) * 100);
+    console.log('[Wompi Widget] Iniciando con:', {
+      currency: 'COP',
+      amountInCents,
+      reference,
+      publicKey: cleanPublicKey,
+      signature: integritySignature,
+    });
+
     const checkout = new window.WidgetCheckout({
       currency: 'COP',
-      amountInCents: Math.round(amountCOP * 100), // Convierte el total a centavos de forma segura
+      amountInCents: amountInCents, // Convierte el total a centavos de forma segura
       reference: reference,
       publicKey: cleanPublicKey,
       signature: integritySignature,
