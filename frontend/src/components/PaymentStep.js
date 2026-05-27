@@ -106,6 +106,7 @@ export default function PaymentStep({ apiBaseUrl, onNavigate }) {
       });
 
       const data = await response.json().catch(() => null);
+      console.log('[PaymentStep.js] /payments/wompi/init response:', data);
       if (!response.ok) {
         throw new Error(typeof data?.message === 'string' ? data.message : 'Error al iniciar Wompi');
       }
