@@ -10,7 +10,7 @@ class DashboardAdmin extends Component {
 
     // Router de Roles
     if (userRole === 'admin') {
-      return <AdminDashboard setView={setView} unreadNotifications={unreadNotifications} />;
+      return <AdminDashboard setView={setView} showToast={showToast} unreadNotifications={unreadNotifications} />;
     } else if (userRole === 'trabajador' || userRole === 'empleado') {
       return <EmployeeDashboard setView={setView} />;
     } else if (['user', 'cliente', 'usuario'].includes(userRole)) {

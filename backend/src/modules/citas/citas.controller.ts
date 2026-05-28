@@ -129,7 +129,8 @@ export class CitasController {
     @Request() req,
   ) {
     const userRole = (req.user.rol || req.user.role)?.toLowerCase();
-    return this.service.updateEstado(+id, body.estado, body.report, userRole);
+    const userId = req.user.userId;
+    return this.service.updateEstado(+id, body.estado, body.report, userRole, userId);
   }
 
   @Get(':id/chat')
@@ -152,15 +153,17 @@ export class CitasController {
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Body('motivo') motivo: string, @Request() req) {
-    const cita = await this.service.findOne(+id);
-    if (!cita) throw new NotFoundException('Cita no encontrada');
-    
     const userRole = (req.user.rol || req.user.role)?.toLowerCase();
-    // Solo admin puede forzar eliminar desde este nuevo flujo
-    if (userRole !== 'admin') {
-      throw new ForbiddenException('No tienes permisos para eliminar citas permanentemente');
+    
+    if (userRole === 'admin') {
+      // Admin: permanently delete the appointment
+      const cita = await this.service.findOne(+id);
+      if (!cita) throw new NotFoundException('Cita no encontrada');
+      return this.service.remove(+id, motivo);
+    } else {
+      // Regular user: cancel the appointment (don't delete)
+      const userId = req.user.userId;
+      return this.service.cancelarPorUsuario(+id, motivo || 'No especificado', userId);
     }
-
-    return this.service.remove(+id, motivo);
   }
 }

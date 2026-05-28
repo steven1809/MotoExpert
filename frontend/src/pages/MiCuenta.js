@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
+import { useWebAuthn } from '../hooks/useWebAuthn';
 import { API_BASE_URL } from '../apiConfig';
 import correoIcon from '../assets/iconos/correo.png';
 import telefonoIcon from '../assets/iconos/telefono.png';
@@ -301,6 +302,8 @@ const MiCuenta = ({ setView }) => {
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [showDevicesModal, setShowDevicesModal] = useState(false);
 
+  const { registerBiometric } = useWebAuthn();
+
   // --- CARGA DE SEGURIDAD (MOCK PERSISTENTE EN LOCALSTORAGE) ---
   useEffect(() => {
     const savedSecurity = localStorage.getItem('user_security_settings');
@@ -308,6 +311,25 @@ const MiCuenta = ({ setView }) => {
       setSecurity(JSON.parse(savedSecurity));
     }
   }, []);
+
+  const handleToggleBiometric = async (val) => {
+    if (val) {
+      try {
+        const res = await registerBiometric();
+        if (res.success) {
+          updateSecurity({ fingerprint: true });
+          showNotification(res.message);
+        }
+      } catch (err) {
+        showNotification(err.message, "error");
+      }
+    } else {
+      if (window.confirm("¿Estás seguro de desactivar el acceso biométrico?")) {
+        updateSecurity({ fingerprint: false });
+        showNotification("Acceso biométrico desactivado");
+      }
+    }
+  };
 
   const updateSecurity = (newSettings) => {
     const updated = { ...security, ...newSettings };
@@ -887,12 +909,8 @@ const MiCuenta = ({ setView }) => {
               
               <Toggle 
                 enabled={security.fingerprint} 
-                onChange={(val) => {
-                  if (!val && !window.confirm("¿Estás seguro de desactivar el acceso biométrico?")) return;
-                  updateSecurity({ fingerprint: val });
-                  showNotification(val ? "Huella Activada" : "Huella Desactivada");
-                }} 
-                label="Acceso por Huella Digital" 
+                onChange={handleToggleBiometric} 
+                label="Acceso por Huella / Face ID" 
               />
 
               <div className="h-px bg-gray-100 dark:bg-gray-800" />

@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Vehiculo } from '../../vehiculos/entities/vehiculo.entity';
 import { Cita } from '../../citas/entities/cita.entity';
+import { WebAuthnCredential } from '../../auth/entities/webauthn-credential.entity';
 
 @Entity('usuarios')
 export class Usuario {
@@ -55,9 +56,27 @@ export class Usuario {
   @Column('json', { nullable: true, default: [] })
   bonuses: { code: string; discount: number; createdAt: string }[];
 
+<<<<<<< Updated upstream
+  @Column({ type: 'int', default: 0 })
+  cancelaciones_sin_aviso: number;
+
+  @Column({ type: 'int', default: 0 })
+  numCancelaciones: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  bloqueadoHasta: Date;
+=======
+  // Campo temporal para guardar el challenge de WebAuthn
+  @Column({ nullable: true })
+  currentWebAuthnChallenge?: string;
+>>>>>>> Stashed changes
+
   @OneToMany(() => Vehiculo, (vehiculo) => vehiculo.usuario)
   vehiculos: Vehiculo[];
 
   @OneToMany(() => Cita, (cita) => cita.usuario)
   citas: Cita[];
+
+  @OneToMany(() => WebAuthnCredential, (cred) => cred.usuario)
+  webAuthnCredentials: WebAuthnCredential[];
 }

@@ -9,8 +9,15 @@ const Toast = ({ message, type, onClose }) => {
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const bgColor = type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-blue-500/10 border-blue-500/20 text-blue-500';
-  const icon = type === 'success' ? '✅' : '🔧';
+  const bgColor = 
+    type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 
+    type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+    'bg-blue-500/10 border-blue-500/20 text-blue-500';
+    
+  const icon = 
+    type === 'success' ? '✅' : 
+    type === 'error' ? '❌' : 
+    '🔧';
 
   return (
     <div className={`fixed top-20 right-6 z-[9999] flex items-center space-x-3 px-6 py-4 rounded-2xl border shadow-2xl backdrop-blur-xl animate-in slide-in-from-right fade-in duration-500 ${bgColor}`}>

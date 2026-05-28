@@ -37,6 +37,12 @@ export class Cita {
   @Column({ type: 'timestamp', nullable: true })
   completedAt: Date;
 
+  @Column({ type: 'timestamp', nullable: true })
+  canceladaAt: Date;
+
+  @Column({ nullable: true })
+  motivo_cancelacion: string;
+
   @Column('json', { nullable: true })
   report: {
     workPerformed: string;
