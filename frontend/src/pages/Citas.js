@@ -14,6 +14,7 @@ import finalizarIcon from '../assets/iconos/finalizar.png';
 import relojIcon from '../assets/iconos/reloj.png';
 import ubicIcon from '../assets/iconos/ubicacion.png';
 
+
 import { API_BASE_URL } from '../apiConfig';
 
 const getConditionStyle = (condition) => {
@@ -966,6 +967,12 @@ const Citas = ({
   };
 
 
+<<<<<<< Updated upstream
+=======
+  useEffect(() => {
+  }, [currentTime, citas, processedCitas, getCitaTimeInfo]);
+
+>>>>>>> Stashed changes
   const handleDateChange = (e) => {
     const fecha = e.target.value;
     setFormData({ ...formData, fecha, hora_inicio: '' });
