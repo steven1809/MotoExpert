@@ -4,6 +4,8 @@ import { ThemeContext } from '../context/ThemeContext';
 
 
 class Navbar extends Component {
+  static contextType = ThemeContext;
+
   constructor(props) {
     super(props);
     this.state = {
@@ -147,6 +149,10 @@ class Navbar extends Component {
   renderNavItem = (item, isHorizontal = false) => {
     const { setView, view } = this.props;
     const isActive = view === item.view || (item.view === "dashboard" && view === "dashboard");
+    const isDark = this.context?.isDark ?? true;
+
+    const horizontalBase = "relative group flex items-center h-full px-5 gap-2.5";
+    const verticalBase = "relative group flex items-center w-full gap-3 px-4 py-3.5 text-left border-l-2";
 
     return (
       <button
@@ -155,22 +161,24 @@ class Navbar extends Component {
           setView(item.view);
           if (this.state.open) this.toggleMenu();
         }}
-        className={`relative group flex items-center transition-all duration-300 ${
-          isHorizontal 
-            ? "h-full px-5 gap-2.5" 
-            : "w-full gap-3 px-4 py-3.5 text-left border-l-2"
-        } ${
-          isActive
-            ? isHorizontal 
-              ? "text-white" 
-              : "bg-purple-600/10 border-purple-500 text-white shadow-[inset_4px_0_15px_rgba(168,85,247,0.05)]"
-            : isHorizontal
-              ? "text-slate-400 hover:text-white"
-              : "border-transparent text-slate-400 hover:bg-white/[0.02] hover:text-white"
-        }`}
+        className={
+          isHorizontal && !isDark
+            ? `${horizontalBase} !text-white opacity-100 hover:!text-white${isActive ? " border-b-2 border-white font-semibold" : ""}`
+            : `relative group flex items-center transition-all duration-300 ${isHorizontal ? horizontalBase : verticalBase} ${
+                isActive
+                  ? isHorizontal
+                    ? "text-white"
+                    : "bg-purple-600/10 border-purple-500 text-white shadow-[inset_4px_0_15px_rgba(168,85,247,0.05)]"
+                  : isHorizontal
+                    ? "text-slate-400 hover:text-white"
+                    : "border-transparent text-slate-400 hover:bg-white/[0.02] hover:text-white"
+              }`
+        }
       >
         <span className={`transition-transform duration-300 group-hover:scale-110 ${
-          isActive ? "text-purple-400" : "text-slate-500 group-hover:text-purple-400"
+          isHorizontal && !isDark
+            ? "text-white/80 group-hover:text-white"
+            : (isActive ? "text-purple-400" : "text-slate-500 group-hover:text-purple-400")
         }`}>
           {this.renderIcon(item.icon)}
         </span>
@@ -181,7 +189,9 @@ class Navbar extends Component {
         {/* Underline effect for horizontal */}
         {isHorizontal && (
           <div className={`absolute bottom-0 left-0 right-0 h-[2px] transition-all duration-300 ${
-            isActive ? "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" : "bg-transparent group-hover:bg-white/10"
+            isActive
+              ? (isDark ? "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" : "bg-white")
+              : "bg-transparent group-hover:bg-white/10"
           }`} />
         )}
       </button>

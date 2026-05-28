@@ -23,6 +23,860 @@
 }
 
 @layer utilities {
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] {
+    background-color: #F8FAFC;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .min-h-screen.bg-white {
+    background-color: #F8FAFC;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .bg-white.rounded-xl,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .bg-white.rounded-2xl,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .bg-white.rounded-3xl {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .text-gray-900 {
+    color: #0F172A;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .text-gray-700,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .text-gray-600 {
+    color: #475569;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .text-gray-500 {
+    color: #94A3B8;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] input,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] select,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] textarea {
+    background-color: #F8FAFC;
+    border-color: #CBD5E1;
+    color: #0F172A;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] input::placeholder,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] textarea::placeholder {
+    color: #94A3B8;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .text-center.text-gray-400,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .italic.text-gray-400 {
+    color: #6B7280;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] {
+    background: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 45%, #1E40AF 100%) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav button {
+    color: #FFFFFF !important;
+    opacity: 1 !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    letter-spacing: 0.04em !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button span[class*="font-mono"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav button span[class*="font-mono"] {
+    color: #FFFFFF !important;
+    opacity: 1 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button:hover,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav button:hover {
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-radius: 8px !important;
+    transition: all 0.18s ease !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button[class*="text-white"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav button[class*="text-white"] {
+    color: #FFFFFF !important;
+    opacity: 1 !important;
+    font-weight: 600 !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.95) !important;
+    padding-bottom: 2px !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button span[class*="transition-transform"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav button span[class*="transition-transform"] {
+    color: rgba(255, 255, 255, 0.78) !important;
+    opacity: 1 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button:hover span[class*="transition-transform"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav button:hover span[class*="transition-transform"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button[class*="text-white"] span[class*="transition-transform"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav button[class*="text-white"] span[class*="transition-transform"] {
+    color: #FFFFFF !important;
+    opacity: 1 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav svg,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav svg {
+    color: rgba(255, 255, 255, 0.78) !important;
+    opacity: 1 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button:hover svg,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav button:hover svg,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button[class*="text-white"] svg,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav button[class*="text-white"] svg {
+    color: #FFFFFF !important;
+    opacity: 1 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav div[class*="bg-purple-500"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav div[class*="bg-purple-500"] {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: none !important;
+    height: 2px !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header img[alt="Logo"] {
+    filter: brightness(0) invert(1) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header button[class*="border-[#2a2d3a]"][class*="rounded-full"][class*="w-9"][class*="h-9"] {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 9999px !important;
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header button[class*="border-[#2a2d3a]"][class*="rounded-full"][class*="w-9"][class*="h-9"] svg {
+    color: #FFFFFF !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header button[class*="border-[#2a2d3a]"][class*="rounded-full"][class*="w-9"][class*="h-9"]:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header div[class*="bg-[#7b9cff]/10"][class*="border-[#7b9cff]/20"] {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 9999px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    color: #1D4ED8 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.20) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-white/10"][class*="rounded-2xl"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-[#2563EB]/10"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-[#2563EB]/15"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-emerald-500/10"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-purple-500/10"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-amber-500/10"] {
+    background-color: #EFF6FF !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] svg[class*="text-[#2563EB]"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] svg[class*="text-[#60A5FA]"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] [class*="text-[#2563EB]"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] [class*="text-[#60A5FA]"] {
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="rounded-2xl"][class*="bg-white"] div[class*="bg-white/10"][class*="rounded-2xl"] {
+    background-color: #DBEAFE !important;
+    color: #1D4ED8 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="bg-[#2563EB]/15"][class*="text-[#60A5FA]"] {
+    background-color: #2563EB !important;
+    border-color: transparent !important;
+    border: none !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.30) !important;
+    font-weight: 600 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="bg-white"][class*="border-slate-200"][class*="text-slate-700"]:hover {
+    background-color: #F1F5F9 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-black/60"] {
+    background-color: rgba(0, 0, 0, 0.4) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] {
+    background-color: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] div[class*="text-sm"][class*="text-white"] {
+    color: #0F172A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] div[class*="text-xs"][class*="text-[#94A3B8]"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] label[class*="text-[#94A3B8]"] {
+    color: #374151 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] input:not([type="file"]) {
+    background-color: #F8FAFC !important;
+    border-color: #CBD5E1 !important;
+    color: #0F172A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] input:not([type="file"])::placeholder {
+    color: #94A3B8 !important;
+    opacity: 1 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] input:not([type="file"]):focus {
+    border-color: #2563EB !important;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] button[aria-label="Cerrar"] {
+    background-color: #F1F5F9 !important;
+    border-color: #CBD5E1 !important;
+    color: #374151 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] label[class*="cursor-pointer"][class*="bg-white/5"] {
+    background-color: #F1F5F9 !important;
+    border-color: #CBD5E1 !important;
+    color: #374151 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] label[class*="cursor-pointer"][class*="bg-white/5"] svg {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] button[type="button"][class*="bg-white/5"][class*="border-white/10"] {
+    background-color: transparent !important;
+    border-color: #CBD5E1 !important;
+    color: #374151 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-[#2563EB]/25"][class*="bg-[#0b1220]"] button[type="button"][class*="bg-white/5"][class*="border-white/10"]:hover {
+    background-color: #F1F5F9 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="bg-[#0b1220]/50"][class*="border-white/10"] {
+    background-color: #F8FAFC !important;
+    border-color: #CBD5E1 !important;
+    color: #0F172A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="bg-[#0b1220]/50"][class*="border-white/10"] span[class*="text-white/40"] {
+    color: #94A3B8 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="bg-[#0b1220]/50"][class*="border-white/10"] span[class*="text-white"] {
+    color: #0F172A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="bg-[#0b1220]/50"][class*="border-white/10"] svg[class*="text-white/50"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-[#0F172A]/95"][class*="border-white/10"] {
+    background-color: #FFFFFF !important;
+    border-color: #CBD5E1 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-[#0F172A]/95"][class*="border-white/10"] button[role="option"] {
+    color: #374151 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-[#0F172A]/95"][class*="border-white/10"] button[role="option"]:hover {
+    background-color: #F1F5F9 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="border-slate-200"][class*="bg-white"] div[class*="h-11"][class*="w-11"][class*="rounded-2xl"][class*="bg-[#2563EB]/15"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="border-slate-200"][class*="bg-white"] div[class*="h-9"][class*="w-9"][class*="rounded-2xl"][class*="bg-[#2563EB]/15"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="border-slate-200"][class*="bg-white"] div[class*="h-9"][class*="w-9"][class*="rounded-2xl"][class*="bg-emerald-500/10"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="border-slate-200"][class*="bg-white"] div[class*="h-9"][class*="w-9"][class*="rounded-2xl"][class*="bg-purple-500/10"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="border-slate-200"][class*="bg-white"] div[class*="h-9"][class*="w-9"][class*="rounded-2xl"][class*="bg-amber-500/10"] {
+    background-color: #EFF6FF !important;
+    border-color: #DBEAFE !important;
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="border-slate-200"][class*="bg-white"] div[class*="h-11"][class*="w-11"][class*="rounded-2xl"] img,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="border-slate-200"][class*="bg-white"] div[class*="h-9"][class*="w-9"][class*="rounded-2xl"] img {
+    filter: brightness(0) saturate(100%) invert(23%) sepia(92%) saturate(2024%) hue-rotate(213deg) brightness(96%) contrast(93%);
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="border-slate-200"][class*="bg-white"] div[class*="tracking-widest"][class*="text-slate-500"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="border-slate-200"][class*="bg-white"] div[class*="text-slate-900"] {
+    color: #0F172A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="border-slate-200"][class*="bg-white"] div[class*="text-slate-600"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] {
+    background-color: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] > div[class*="border-b"][class*="border-white/10"] {
+    background-color: #F8FAFC !important;
+    border-bottom-color: #E2E8F0 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] div[class*="text-sm"][class*="text-white"] {
+    color: #0F172A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] div[class*="text-xs"][class*="text-[#94A3B8]"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] button[class*="bg-white/5"][class*="border-white/10"][class*="text-white"] {
+    background-color: #F1F5F9 !important;
+    border-color: #E2E8F0 !important;
+    color: #374151 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] button[class*="bg-white/5"][class*="border-white/10"][class*="text-white"]:hover {
+    background-color: #E2E8F0 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] div[class*="grid"][class*="grid-cols-5"] div[class*="h-6"][class*="w-6"][class*="bg-white/5"][class*="border-white/10"] {
+    background-color: #F1F5F9 !important;
+    border-color: #CBD5E1 !important;
+    color: #94A3B8 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] div[class*="grid"][class*="grid-cols-5"] div[class*="h-6"][class*="w-6"][class*="bg-[#2563EB]/10"] {
+    background-color: #2563EB !important;
+    border-color: #2563EB !important;
+    color: #FFFFFF !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] div[class*="grid"][class*="grid-cols-5"] div[class*="text-[10px]"][class*="tracking-widest"][class*="text-white/40"] {
+    color: #94A3B8 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] div[class*="grid"][class*="grid-cols-5"] div[class*="text-[10px]"][class*="tracking-widest"][class*="text-white"] {
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] div[class*="text-[10px]"][class*="tracking-widest"][class*="text-[#94A3B8]"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] button[class*="rounded-2xl"][class*="overflow-hidden"][class*="text-left"][class*="border"] {
+    background-color: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] button[class*="rounded-2xl"][class*="overflow-hidden"][class*="text-left"][class*="border"] div[class*="text-white/50"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] button[class*="rounded-2xl"][class*="overflow-hidden"][class*="text-left"][class*="border"] div[class*="text-white"] {
+    color: #0F172A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] button[class*="border-[#2563EB]/50"] {
+    background-color: #0F172A !important;
+    border-color: #2563EB !important;
+    border-width: 2px !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] button[class*="border-[#2563EB]/50"] div[class*="text-white"] {
+    color: #F8FAFC !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] button[class*="border-[#2563EB]/50"] div[class*="text-white/50"] {
+    color: #CBD5E1 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-2xl"][class*="border-dashed"][class*="border-white/10"][class*="bg-white/5"] {
+    background-color: #F8FAFC !important;
+    border-color: #CBD5E1 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="bg-[#2563EB]/15"][class*="text-[#60A5FA]"] {
+    background-color: #EFF6FF !important;
+    border-color: #DBEAFE !important;
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-2xl"][class*="border-dashed"][class*="border-white/10"][class*="bg-white/5"] div[class*="text-white"] {
+    color: #374151 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] div[class*="text-white/50"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] div[class*="text-sm"][class*="text-white"] {
+    color: #0F172A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] input,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] textarea {
+    background-color: #F8FAFC !important;
+    border-color: #CBD5E1 !important;
+    color: #0F172A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] textarea::placeholder {
+    color: #94A3B8 !important;
+    opacity: 1 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] input:focus,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-3xl"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"] textarea:focus {
+    border-color: #2563EB !important;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="rounded-2xl"][class*="border-white/10"][class*="bg-white/5"][class*="text-white/50"] {
+    background-color: #F8FAFC !important;
+    border-color: #E2E8F0 !important;
+    color: #94A3B8 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="h-10"][class*="rounded-2xl"][class*="border-white/10"][class*="bg-white/5"][class*="text-white"] {
+    background-color: #FFFFFF !important;
+    border-color: #CBD5E1 !important;
+    color: #374151 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="h-10"][class*="rounded-2xl"][class*="border-white/10"][class*="bg-white/5"][class*="text-white"]:hover {
+    background-color: #F1F5F9 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button:disabled[class*="disabled:bg-white/10"] {
+    background-color: #94A3B8 !important;
+    color: #FFFFFF !important;
+    cursor: not-allowed !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="flex"][class*="flex-wrap"][class*="gap-4"][class*="text-xs"][class*="text-white/50"] {
+    color: #374151 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] span[class*="bg-emerald-400"] {
+    background-color: #16A34A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] span[class*="bg-white/30"] {
+    background-color: #94A3B8 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] span[class*="bg-[#60A5FA]"] {
+    background-color: #2563EB !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav button {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav button:hover {
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav button[class*="text-white"] {
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav button span[class*="text-purple-400"],
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav button span[class*="text-slate-500"],
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav button span[class*="text-slate-400"] {
+    color: #94A3B8 !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav button[class*="text-white"] span {
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav div[class*="bg-purple-500"] {
+    background-color: #2563EB !important;
+    box-shadow: none !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="border-[#2a2d3a]"][class*="rounded-full"][class*="w-9"][class*="h-9"] {
+    background-color: #F8FAFC !important;
+    border-color: #E2E8F0 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="border-[#2a2d3a]"][class*="rounded-full"][class*="w-9"][class*="h-9"]:hover {
+    background-color: #E2E8F0 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="border-[#2a2d3a]"][class*="rounded-full"][class*="w-9"][class*="h-9"] svg[class*="text-[#94A3B8]"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-[#0f1117]"][class*="border-[#2a2d3a]"] {
+    background-color: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-[#0f1117]"][class*="border-[#2a2d3a]"] h3[class*="text-[#F8FAFC]"] {
+    color: #0F172A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-[#0f1117]"][class*="border-[#2a2d3a]"] p[class*="text-[#94A3B8]"] {
+    color: #6B7280 !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] div[class*="bg-[#7b9cff]/10"][class*="border-[#7b9cff]/20"] {
+    background-color: #EFF6FF !important;
+    border-color: #DBEAFE !important;
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"][class*="p-4"][class*="text-left"] {
+    border-color: #E2E8F0 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
+    transition: box-shadow 200ms ease, transform 200ms ease, border-color 200ms ease !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"][class*="p-4"][class*="text-left"]:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"][class*="p-4"][class*="text-left"] div[class*="h-10"][class*="w-10"][class*="rounded-2xl"][class*="bg-white/10"][class*="border-white/10"] {
+    background-color: #EFF6FF !important;
+    border-color: #DBEAFE !important;
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"][class*="p-4"][class*="text-left"] div[class*="h-10"][class*="w-10"][class*="rounded-2xl"][class*="bg-white/10"][class*="border-white/10"] img {
+    filter: brightness(0) saturate(100%) invert(23%) sepia(92%) saturate(2024%) hue-rotate(213deg) brightness(96%) contrast(93%);
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"][class*="p-4"][class*="text-left"] div[class*="text-slate-900"] {
+    color: #0F172A !important;
+    font-weight: 600 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"][class*="p-4"][class*="text-left"] div[class*="text-slate-600"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav button {
+    color: #1E293B !important;
+    font-weight: 500 !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav button:hover {
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav button[class*="text-white"] {
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav svg {
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] nav div[class*="bg-purple-500"] {
+    background-color: #2563EB !important;
+    height: 2px !important;
+    box-shadow: none !important;
+  }
+
+  html:not(.dark) header[class*="bg-[#050507]/80"] div[class*="bg-[#7b9cff]/10"][class*="border-[#7b9cff]/20"] {
+    background-color: #2563EB !important;
+    border-color: #2563EB !important;
+    color: #FFFFFF !important;
+    border-radius: 9999px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="border-[#2a2d3a]"][class*="rounded-full"][class*="w-9"][class*="h-9"] {
+    background-color: #F8FAFC !important;
+    border-color: #E2E8F0 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="border-[#2a2d3a]"][class*="rounded-full"][class*="w-9"][class*="h-9"] svg {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="border-[#2a2d3a]"][class*="rounded-full"][class*="w-9"][class*="h-9"]:hover {
+    background-color: #EFF6FF !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="border-[#2a2d3a]"][class*="rounded-full"][class*="w-9"][class*="h-9"]:hover svg {
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-[#0f1117]"][class*="border-[#2a2d3a]"] {
+    background-color: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-[#0f1117]"][class*="border-[#2a2d3a]"] h3 {
+    color: #0F172A !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="bg-[#0f1117]"][class*="border-[#2a2d3a]"] p {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] main {
+    background-color: #F8FAFC;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"][class*="hover:bg-white/5"] {
+    background-color: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    overflow: hidden !important;
+    transition: all 0.2s ease !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"][class*="hover:bg-white/5"]:hover {
+    transform: scale(1.02) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+    cursor: pointer !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"][class*="hover:bg-white/5"]::after {
+    content: none !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"][class*="hover:bg-white/5"] div[class*="h-24"][class*="w-full"][class*="overflow-hidden"] {
+    height: 140px !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"][class*="hover:bg-white/5"] div[class*="p-4"] {
+    padding: 10px 12px !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"][class*="hover:bg-white/5"] div[class*="h-24"][class*="w-full"][class*="overflow-hidden"] img {
+    opacity: 1 !important;
+    filter: none !important;
+    transition: filter 0.2s ease, transform 0.2s ease !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"][class*="hover:bg-white/5"]:hover div[class*="h-24"][class*="w-full"][class*="overflow-hidden"] img {
+    filter: brightness(1.08) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"][class*="hover:bg-white/5"] div[class*="text-sm"][class*="text-white"] {
+    color: #0F172A !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    text-shadow: none !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"][class*="hover:bg-white/5"] div[class*="text-xs"][class*="text-[#94A3B8]"] {
+    color: #64748B !important;
+    font-size: 11px !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="overflow-hidden"][class*="bg-[#0b1220]"][class*="border-white/10"][class*="hover:bg-white/5"] div[class*="text-[#60A5FA]"] {
+    color: #2563EB !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    text-shadow: none !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="group"][class*="relative"][class*="rounded-3xl"][class*="overflow-hidden"][class*="hover:bg-slate-50"][class*="bg-white"] {
+    transition: all 0.25s ease !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="group"][class*="relative"][class*="rounded-3xl"][class*="overflow-hidden"][class*="hover:bg-slate-50"][class*="bg-white"]:hover {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.20) !important;
+    transform: scale(1.02) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="group"][class*="relative"][class*="rounded-3xl"][class*="overflow-hidden"][class*="hover:bg-slate-50"][class*="bg-white"] div[class*="h-40"][class*="bg-[#0b1220]"] div[class*="bg-gradient-to-t"] {
+    background: linear-gradient(to top, rgba(15, 23, 42, 0.90) 0%, rgba(15, 23, 42, 0.50) 45%, rgba(15, 23, 42, 0.10) 100%) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="group"][class*="relative"][class*="rounded-3xl"][class*="overflow-hidden"][class*="hover:bg-slate-50"][class*="bg-white"] div[class*="h-40"][class*="bg-[#0b1220]"] img {
+    transition: filter 0.25s ease !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="group"][class*="relative"][class*="rounded-3xl"][class*="overflow-hidden"][class*="hover:bg-slate-50"][class*="bg-white"]:hover div[class*="h-40"][class*="bg-[#0b1220]"] img {
+    filter: brightness(1.08) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="group"][class*="relative"][class*="rounded-3xl"][class*="overflow-hidden"][class*="hover:bg-slate-50"][class*="bg-white"] div[class*="h-40"][class*="bg-[#0b1220]"] span[class*="bg-amber-500/10"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="group"][class*="relative"][class*="rounded-3xl"][class*="overflow-hidden"][class*="hover:bg-slate-50"][class*="bg-white"] div[class*="h-40"][class*="bg-[#0b1220]"] span[class*="bg-purple-500/10"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="group"][class*="relative"][class*="rounded-3xl"][class*="overflow-hidden"][class*="hover:bg-slate-50"][class*="bg-white"] div[class*="h-40"][class*="bg-[#0b1220]"] span[class*="bg-cyan-500/10"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="group"][class*="relative"][class*="rounded-3xl"][class*="overflow-hidden"][class*="hover:bg-slate-50"][class*="bg-white"] div[class*="h-40"][class*="bg-[#0b1220]"] span[class*="bg-emerald-500/10"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="group"][class*="relative"][class*="rounded-3xl"][class*="overflow-hidden"][class*="hover:bg-slate-50"][class*="bg-white"] div[class*="h-40"][class*="bg-[#0b1220]"] span[class*="bg-fuchsia-500/10"],
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="group"][class*="relative"][class*="rounded-3xl"][class*="overflow-hidden"][class*="hover:bg-slate-50"][class*="bg-white"] div[class*="h-40"][class*="bg-[#0b1220]"] span[class*="bg-[#2563EB]/10"] {
+    background-color: rgba(255, 255, 255, 0.20) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+    padding: 3px 10px !important;
+    border-radius: 999px !important;
+    backdrop-filter: blur(4px) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="bg-[#2563EB]/15"][class*="text-[#60A5FA]"] {
+    background-color: #2563EB !important;
+    border-color: transparent !important;
+    color: #FFFFFF !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="h-9"][class*="px-4"][class*="rounded-2xl"][class*="border"][class*="bg-white"][class*="border-slate-200"][class*="text-slate-700"] {
+    background-color: #F1F5F9 !important;
+    border-color: #CBD5E1 !important;
+    color: #475569 !important;
+    font-weight: 500 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="h-9"][class*="px-4"][class*="rounded-2xl"][class*="border"][class*="bg-white"][class*="border-slate-200"][class*="text-slate-700"]:hover {
+    background-color: #EFF6FF !important;
+    border-color: #BFDBFE !important;
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .bg-gray-900,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .bg-slate-900,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .bg-zinc-900 {
+    background-color: #FFFFFF !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .border-gray-700,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] .border-slate-700 {
+    border-color: #E2E8F0 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] section[class*="relative"][class*="overflow-hidden"][class*="rounded-3xl"][class*="dark:bg-[#0b1220]"] div[class*="text-3xl"][class*="text-slate-900"] {
+    color: #FFFFFF !important;
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] section[class*="relative"][class*="overflow-hidden"][class*="rounded-3xl"][class*="dark:bg-[#0b1220]"] div[class*="text-slate-600"] {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-size: 14px !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="relative"][class*="overflow-hidden"][class*="rounded-2xl"][class*="border-slate-200"][class*="p-4"][class*="text-left"][class*="hover:bg-slate-50"] {
+    background-color: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="relative"][class*="overflow-hidden"][class*="rounded-2xl"][class*="border-slate-200"][class*="p-4"][class*="text-left"][class*="hover:bg-slate-50"]:hover {
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="relative"][class*="overflow-hidden"][class*="rounded-2xl"][class*="border-slate-200"][class*="p-4"][class*="text-left"][class*="hover:bg-slate-50"] div[class*="h-10"][class*="w-10"][class*="rounded-2xl"][class*="bg-white/10"] {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 9999px !important;
+    background-color: #EFF6FF !important;
+    border-color: #DBEAFE !important;
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="relative"][class*="overflow-hidden"][class*="rounded-2xl"][class*="border-slate-200"][class*="p-4"][class*="text-left"][class*="hover:bg-slate-50"] div[class*="h-10"][class*="w-10"][class*="rounded-2xl"][class*="bg-white/10"] svg,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="relative"][class*="overflow-hidden"][class*="rounded-2xl"][class*="border-slate-200"][class*="p-4"][class*="text-left"][class*="hover:bg-slate-50"] div[class*="h-10"][class*="w-10"][class*="rounded-2xl"][class*="bg-white/10"] img {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="relative"][class*="overflow-hidden"][class*="rounded-2xl"][class*="border-slate-200"][class*="p-4"][class*="text-left"][class*="hover:bg-slate-50"] div[class*="h-10"][class*="w-10"][class*="rounded-2xl"][class*="bg-white/10"] img {
+    filter: brightness(0) saturate(100%) invert(22%) sepia(89%) saturate(2743%) hue-rotate(215deg) brightness(97%) contrast(97%);
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] section[class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"] button[class*="text-xs"][class*="text-[#60A5FA]"] {
+    color: #2563EB !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] section[class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"] div[class*="text-sm"][class*="font-black"][class*="text-slate-900"][class*="text-white"] {
+    color: #0F172A !important;
+    font-weight: 600 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-dashed"][class*="border-slate-200"][class*="bg-white/50"] {
+    background-color: #FFFFFF !important;
+    border-color: #CBD5E1 !important;
+    border-radius: 12px !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-dashed"][class*="border-slate-200"][class*="bg-white/50"][class*="text-slate-600"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] div[class*="border-dashed"][class*="border-slate-200"][class*="bg-white/50"] button[class*="bg-[#2563EB]"] {
+    border-radius: 8px !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] section[class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"] div[class*="text-sm"][class*="font-black"][class*="text-slate-900"] {
+    color: #0F172A !important;
+    font-weight: 600 !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="flex"][class*="flex-col"][class*="border-dashed"][class*="border-slate-200"][class*="bg-white/50"] {
+    background-color: #F8FAFC !important;
+    border-color: #CBD5E1 !important;
+    border-radius: 12px !important;
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] button[class*="group"][class*="flex"][class*="flex-col"][class*="border-dashed"][class*="border-slate-200"][class*="bg-white/50"] div[class*="h-12"][class*="w-12"][class*="rounded-2xl"] {
+    background-color: #EFF6FF !important;
+    border-color: #DBEAFE !important;
+    color: #2563EB !important;
+    border-radius: 9999px !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] img[alt="corona"] {
+    filter: brightness(0) saturate(100%) invert(69%) sepia(86%) saturate(2260%) hue-rotate(1deg) brightness(101%) contrast(96%);
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] section[class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"] div[class*="text-[10px]"][class*="text-white/60"] {
+    color: #64748B !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] section[class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"] div[class*="rounded-xl"][class*="border-dashed"][class*="border-white/10"][class*="bg-white/5"] {
+    background-color: #F8FAFC !important;
+    border-color: #CBD5E1 !important;
+    color: #94A3B8 !important;
+    font-style: italic !important;
+  }
+
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] section[class*="rounded-2xl"][class*="border-slate-200"][class*="bg-white"] div[class*="rounded-xl"][class*="border-dashed"][class*="border-white/10"][class*="bg-white/5"] * {
+    color: #94A3B8 !important;
+  }
+
   .reveal {
     opacity: 0;
     transform: translateY(14px);
