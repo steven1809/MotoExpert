@@ -239,15 +239,33 @@ const Login = (props) => {
 
   const handleFaceSuccess = (mode) => {
     setState(s => ({ ...s, showFaceAuth: false }));
+
     if (mode === 'enroll') {
       showMsg("¡Rostro registrado con éxito!", false);
-    } else {
-      // Si es verify, el componente onSuccess ya implica que pasó la validación.
-      // Aquí podrías disparar el login automático si tuvieras el token guardado o 
-      // si el backend lo validara. Como es demo local, simulamos el éxito:
-      showMsg("Identidad facial verificada.", false);
-      // En una app real, llamarías a un endpoint de login facial.
+      return;
     }
+
+    const email = state.email;
+    const token    = localStorage.getItem(`faceToken_${email}`);
+    const role     = localStorage.getItem(`faceRole_${email}`)    || 'user';
+    const userId   = localStorage.getItem(`faceUserId_${email}`)  || '';
+    const userName = localStorage.getItem(`faceUserName_${email}`) || '';
+    const picture  = localStorage.getItem(`facePicture_${email}`)  || '';
+
+    if (!token) {
+      showMsg("No se encontró sesión vinculada a este rostro. Inicia sesión con contraseña primero.", true);
+      return;
+    }
+
+    localStorage.setItem('token',       token);
+    localStorage.setItem('role',        role);
+    localStorage.setItem('userId',      userId);
+    localStorage.setItem('userName',    userName);
+    localStorage.setItem('userEmail',   email);
+    localStorage.setItem('userPicture', picture);
+
+    showMsg("Identidad facial verificada.", false);
+    setTimeout(() => props.onLoginSuccess(role), 800);
   };
 
   const showMsg = (text, isErr) => {

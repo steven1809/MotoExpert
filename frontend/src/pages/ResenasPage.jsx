@@ -55,6 +55,7 @@ const ResenasPage = () => {
   const [employeesError, setEmployeesError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [helpfulMap, setHelpfulMap] = useState({});
 
   // Obtener usuario actual
   const userId = localStorage.getItem('userId');
@@ -234,7 +235,6 @@ const ResenasPage = () => {
     return true;
   });
 
-<<<<<<< Updated upstream
   const handleHelpful = async (id) => {
     // Lógica local simplificada ya que no hay endpoint de helpful en el backend real
     setHelpfulMap(prev => ({ ...prev, [id]: !prev[id] }));
@@ -263,8 +263,6 @@ const ResenasPage = () => {
     }
   };
 
-=======
->>>>>>> Stashed changes
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!formRating || !formServiceRating || !formText.trim() || !formCitaId || !token) return;
