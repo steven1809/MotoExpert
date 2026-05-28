@@ -201,7 +201,7 @@ const STYLE = `
 `;
 
 const Login = (props) => {
-  const { loginWithBiometric } = useWebAuthn();
+  useWebAuthn();
   const [state, setState] = useState({
     isLogin: props.initialMode !== 'register',
     loading: false,
@@ -222,7 +222,20 @@ const Login = (props) => {
     message: { text: "", isErr: false }
   });
 
-  const isFaceEnrolled = state.email ? !!localStorage.getItem(`faceDescriptor_${state.email}`) : false;
+  const handleFaceIdClick = async () => {
+    if (!state.email) {
+      showMsg("Por favor, ingresa tu correo electrónico primero para usar la autenticación facial.", true);
+      return;
+    }
+
+    const hasFaceId = !!localStorage.getItem(`faceDescriptor_${state.email}`);
+    
+    if (hasFaceId) {
+      setState(s => ({ ...s, showFaceAuth: true, faceUserId: state.email }));
+    } else {
+      showMsg("No tienes un rostro registrado para este correo electrónico.", true);
+    }
+  };
 
   const handleFaceSuccess = (mode) => {
     setState(s => ({ ...s, showFaceAuth: false }));
@@ -240,24 +253,6 @@ const Login = (props) => {
   const showMsg = (text, isErr) => {
     setState(s => ({ ...s, message: { text, isErr } }));
     setTimeout(() => setState(s => ({ ...s, message: { text: "", isErr: false } })), 5000);
-  };
-
-  const handleBiometricLogin = async () => {
-    if (!state.email) {
-      showMsg("Ingresa tu correo para usar Face ID / Huella", true);
-      return;
-    }
-    setState(s => ({ ...s, loading: true }));
-    try {
-      const res = await loginWithBiometric(state.email);
-      if (res.success) {
-        props.onLoginSuccess(res.role);
-      }
-    } catch (err) {
-      showMsg(err.message, true);
-    } finally {
-      setState(s => ({ ...s, loading: false }));
-    }
   };
 
   const toggleMode = () => setState(s => ({ ...s, isLogin: !s.isLogin, message: { text: "", isErr: false } }));
@@ -502,7 +497,7 @@ const Login = (props) => {
                     <button type="submit" className="btn-primary" disabled={loading}>
                       {loading ? "Procesando..." : "Iniciar Sesión"}
                     </button>
-                    <button type="button" className="btn-webauthn" onClick={() => setState(s => ({ ...s, showFaceAuth: true }))} disabled={loading}>
+                    <button type="button" className="btn-webauthn" onClick={handleFaceIdClick} disabled={loading}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2z" />
                         <path d="M15 9H9v6h6V9z" />
@@ -627,8 +622,8 @@ const Login = (props) => {
 
           {state.showFaceAuth && (
             <FaceAuthModal
-              userId={state.email || 'guest'}
-              mode={isFaceEnrolled ? 'verify' : 'enroll'}
+              userId={state.faceUserId || state.email}
+              mode="verify"
               onSuccess={handleFaceSuccess}
               onError={(err) => showMsg(err, true)}
               onClose={() => setState(s => ({ ...s, showFaceAuth: false }))}

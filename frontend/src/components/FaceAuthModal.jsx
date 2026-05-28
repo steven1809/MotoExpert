@@ -1,20 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
 
-const FaceAuthModal = ({ userId, mode: initialMode, onSuccess, onError, onClose }) => {
+const FaceAuthModal = ({ userId, mode, onSuccess, onError, onClose }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const [mode, setMode] = useState(initialMode);
   const [status, setStatus] = useState('cargando'); // cargando | camara | capturando | resultado
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [stream, setStream] = useState(null);
   const [steps, setSteps] = useState([
     { id: 1, label: 'Modelos IA', status: 'wait' },
     { id: 2, label: 'Detección Rostro', status: 'wait' },
-    { id: 3, label: 'Verificación', status: 'wait' }
+    { id: 3, label: mode === 'enroll' ? 'Registro' : 'Verificación', status: 'wait' }
   ]);
 
-  const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+  const MODEL_URL = '/models';
 
   // Inyectar Estilos
   const styles = `
@@ -76,14 +75,6 @@ const FaceAuthModal = ({ userId, mode: initialMode, onSuccess, onError, onClose 
     .step-label { font-size: 0.6rem; font-weight: 900; color: rgba(255,255,255,0.4); text-transform: uppercase; }
     .step-item.active .step-label { color: #fff; }
 
-    .face-tabs { display: flex; gap: 10px; margin-bottom: 1.5rem; }
-    .face-tab { 
-      flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: none;
-      color: rgba(255,255,255,0.4); border-radius: 10px; cursor: pointer;
-      font-weight: 900; font-size: 0.7rem; text-transform: uppercase; transition: all 0.3s;
-    }
-    .face-tab.active { background: #00d4ff; color: #0f172a; }
-
     .face-actions { display: flex; flex-direction: column; gap: 10px; }
     .btn-face {
       padding: 1rem; border-radius: 1rem; font-weight: 900; text-transform: uppercase;
@@ -106,11 +97,13 @@ const FaceAuthModal = ({ userId, mode: initialMode, onSuccess, onError, onClose 
         setModelsLoaded(true);
         updateStep(1, 'done');
         updateStep(2, 'active');
+        startVideo();
       } catch (err) {
         onError('Error cargando modelos de IA');
       }
     };
     loadModels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Limpieza al desmontar
@@ -131,10 +124,12 @@ const FaceAuthModal = ({ userId, mode: initialMode, onSuccess, onError, onClose 
       const videoStream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: 'user', width: 640, height: 480 } 
       });
-      videoRef.current.srcObject = videoStream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = videoStream;
+      }
       setStream(videoStream);
       setStatus('camara');
-      detectFace();
+      // CORRECCIÓN: Quitamos detectFace() de aquí. Ahora se ejecutará automáticamente cuando el video reproduzca (onPlay).
     } catch (err) {
       onError('No se pudo acceder a la cámara');
     }
@@ -147,7 +142,8 @@ const FaceAuthModal = ({ userId, mode: initialMode, onSuccess, onError, onClose 
     faceapi.matchDimensions(canvasRef.current, displaySize);
 
     const interval = setInterval(async () => {
-      if (status === 'resultado') {
+      // Si el componente se desmontó o el video ya no existe, limpiar intervalo inmediatamente
+      if (!videoRef.current) {
         clearInterval(interval);
         return;
       }
@@ -158,6 +154,7 @@ const FaceAuthModal = ({ userId, mode: initialMode, onSuccess, onError, onClose 
       ).withFaceLandmarks(true).withFaceDescriptor();
 
       if (detection) {
+        if (!canvasRef.current) return;
         const resizedDetections = faceapi.resizeResults(detection, displaySize);
         const ctx = canvasRef.current.getContext('2d');
         ctx.clearRect(0, 0, displaySize.width, displaySize.height);
@@ -168,16 +165,20 @@ const FaceAuthModal = ({ userId, mode: initialMode, onSuccess, onError, onClose 
         ctx.lineWidth = 2;
         ctx.strokeRect(box.x, box.y, box.width, box.height);
 
-        if (status === 'camara') {
-          processFace(detection.descriptor);
-          clearInterval(interval);
-        }
+        // CORRECCIÓN: Validamos usando una función de callback para asegurar el estado más reciente
+        setStatus(currentStatus => {
+          if (currentStatus === 'camara') {
+            clearInterval(interval);
+            processFace(detection.descriptor);
+            return 'capturando';
+          }
+          return currentStatus;
+        });
       }
-    }, 100);
+    }, 200); // 200ms es un tiempo óptimo para no saturar el procesador de tu PC
   };
 
   const processFace = async (descriptor) => {
-    setStatus('capturando');
     updateStep(2, 'done');
     updateStep(3, 'active');
 
@@ -218,28 +219,20 @@ const FaceAuthModal = ({ userId, mode: initialMode, onSuccess, onError, onClose 
       <style>{styles}</style>
       <div className="face-modal-content">
         <div className="face-header">
-          <h2>Reconocimiento Facial</h2>
-        </div>
-
-        <div className="face-tabs">
-          <button 
-            className={`face-tab ${mode === 'verify' ? 'active' : ''}`}
-            onClick={() => setMode('verify')}
-          >Verificar</button>
-          <button 
-            className={`face-tab ${mode === 'enroll' ? 'active' : ''}`}
-            onClick={() => setMode('enroll')}
-          >Registrar</button>
+          <h2>{mode === 'enroll' ? 'Registro Facial' : 'Verificación Facial'}</h2>
         </div>
 
         <div className="face-viewport">
+          {/* CORRECCIÓN: Añadido onPlay y playsInline */}
           <video 
             ref={videoRef} 
             className="face-video" 
             autoPlay 
             muted 
+            playsInline
             width="640" 
             height="480"
+            onPlay={detectFace} 
           />
           <canvas ref={canvasRef} className="face-canvas" />
           <div className="face-guide" />

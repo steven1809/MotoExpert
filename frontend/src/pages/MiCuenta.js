@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTheme } from '../context/ThemeContext';
+import FaceAuthModal from '../components/FaceAuthModal';
 import { useWebAuthn } from '../hooks/useWebAuthn';
 import { API_BASE_URL } from '../apiConfig';
 import correoIcon from '../assets/iconos/correo.png';
@@ -109,6 +109,8 @@ const Toast = ({ message, type = 'success', onClose }) => (
 const MiCuenta = ({ setView }) => {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showFaceAuth, setShowFaceAuth] = useState(false);
+  const [isFaceRegistered, setIsFaceRegistered] = useState(false);
   const fileInputRef = useRef(null);
   const bannerInputRef = useRef(null);
 
@@ -124,6 +126,13 @@ const MiCuenta = ({ setView }) => {
     fotoBanner: null,
     memberSince: 'Mayo 2023'
   });
+
+  useEffect(() => {
+    if (profile.email) {
+      const registered = !!localStorage.getItem(`faceDescriptor_${profile.email}`);
+      setIsFaceRegistered(registered);
+    }
+  }, [profile.email, showFaceAuth]);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editForm, setEditForm] = useState({ ...profile });
 
@@ -159,9 +168,21 @@ const MiCuenta = ({ setView }) => {
   ]);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
 
+  // --- AYUDANTES ---
+
+  const showNotification = useCallback((msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const handleFaceSuccess = useCallback(() => {
+    setShowFaceAuth(false);
+    showNotification("¡Rostro vinculado correctamente!");
+  }, [showNotification]);
+
   // --- CARGA DE DATOS REALES ---
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -282,11 +303,11 @@ const MiCuenta = ({ setView }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showNotification]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   // 5. Seguridad
   const [security, setSecurity] = useState({
@@ -335,13 +356,6 @@ const MiCuenta = ({ setView }) => {
     const updated = { ...security, ...newSettings };
     setSecurity(updated);
     localStorage.setItem('user_security_settings', JSON.stringify(updated));
-  };
-
-  // --- AYUDANTES ---
-
-  const showNotification = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
   };
 
   const mainVehicle = useMemo(() => vehicles.find(v => v.principal) || vehicles[0], [vehicles]);
@@ -915,6 +929,45 @@ const MiCuenta = ({ setView }) => {
 
               <div className="h-px bg-gray-100 dark:bg-gray-800" />
 
+              <div 
+                className={`flex items-center justify-between group cursor-pointer p-4 rounded-2xl transition-all border ${
+                  isFaceRegistered 
+                    ? 'bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10' 
+                    : 'bg-[#3b82f6]/5 border-[#3b82f6]/20 hover:bg-[#3b82f6]/10'
+                }`}
+                onClick={() => setShowFaceAuth(true)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isFaceRegistered ? 'bg-emerald-500/20 text-emerald-500' : 'bg-[#3b82f6]/20 text-[#3b82f6]'
+                  }`}>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 11l3 3L22 4m-2-2v10a8 8 0 01-8 8 8 8 0 01-8-8V4a8 8 0 018-8h4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight italic">
+                      {isFaceRegistered ? 'Rostro Vinculado' : 'Registrar Rostro'}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">
+                        {isFaceRegistered ? 'Estado: Activo' : 'No configurado'}
+                      </p>
+                      {isFaceRegistered && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                  isFaceRegistered ? 'text-emerald-500' : 'text-[#3b82f6]'
+                }`}>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                </div>
+              </div>
+
+              <div className="h-px bg-gray-100 dark:bg-gray-800" />
+
               <div className="flex items-center justify-between group cursor-pointer" onClick={() => setShowDevicesModal(true)}>
                 <div className="space-y-0.5">
                   <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">Dispositivos Activos</p>
@@ -1188,6 +1241,16 @@ const MiCuenta = ({ setView }) => {
           ))}
         </div>
       </Modal>
+
+      {showFaceAuth && (
+        <FaceAuthModal 
+          userId={profile.email}
+          mode="enroll"
+          onSuccess={handleFaceSuccess}
+          onError={(err) => showNotification(err, "error")}
+          onClose={() => setShowFaceAuth(false)}
+        />
+      )}
 
       {/* Notificación Toast */}
       <AnimatePresence>

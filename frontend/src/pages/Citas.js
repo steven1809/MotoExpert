@@ -277,71 +277,6 @@ const limpiarTexto = (texto) => {
     .trim();
 };
 
-const getServicioDedupeKey = (nombre) => {
-  const base = limpiarTexto(nombre);
-  const normalized = (base || '')
-    .toString()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-  const alnum = normalized.replace(/[^a-z0-9]/g, '');
-  const consonants = alnum.replace(/[aeiou]/g, '');
-
-  if (consonants.includes('lvd') && consonants.includes('bsc')) return 'lavado_basico';
-  if (consonants.includes('lvd') && consonants.includes('xprs')) return 'lavado_express';
-  if (consonants.includes('lvd') && consonants.includes('spcl')) return 'lavado_especial';
-  if (consonants.includes('lvd') && consonants.includes('prmm')) return 'lavado_premium';
-
-  return consonants;
-};
-
-const getServicioScore = (s) => {
-  const descripcionLen = (s?.descripcion || '').toString().trim().length;
-  const incluyeLen = Array.isArray(s?.incluye)
-    ? s.incluye.length
-    : (s?.incluye || '').toString().split(',').filter(Boolean).length;
-  const beneficiosLen = Array.isArray(s?.beneficios)
-    ? s.beneficios.length
-    : (s?.beneficios || '').toString().split(',').filter(Boolean).length;
-  const hasPrecio = Number.isFinite(Number(s?.precio)) && Number(s?.precio) > 0 ? 1 : 0;
-  const hasDuracion = Number.isFinite(Number(s?.duracion)) && Number(s?.duracion) > 0 ? 1 : 0;
-  return Math.min(descripcionLen, 120) + incluyeLen * 10 + beneficiosLen * 10 + hasPrecio * 5 + hasDuracion * 5;
-};
-
-const dedupeServicios = (list) => {
-  const input = Array.isArray(list) ? list : [];
-  const map = new Map();
-
-  for (const servicio of input) {
-    const nombreLimpio = limpiarTexto(servicio?.nombre);
-    const key = getServicioDedupeKey(servicio?.nombre);
-    if (!key) continue;
-
-    const prev = map.get(key);
-    if (!prev) {
-      map.set(key, { ...servicio, nombre: nombreLimpio });
-      continue;
-    }
-
-    const prevScore = getServicioScore(prev);
-    const nextScore = getServicioScore(servicio);
-    if (nextScore > prevScore) {
-      map.set(key, { ...servicio, nombre: nombreLimpio });
-      continue;
-    }
-
-    if (nextScore === prevScore) {
-      const prevId = Number(prev?.id);
-      const nextId = Number(servicio?.id);
-      if (Number.isFinite(prevId) && Number.isFinite(nextId) && nextId > prevId) {
-        map.set(key, { ...servicio, nombre: nombreLimpio });
-      }
-    }
-  }
-
-  return Array.from(map.values()).sort((a, b) => Number(a?.id ?? 0) - Number(b?.id ?? 0));
-};
-
 const TokenCodeModal = ({ isOpen, onClose, tokenCode }) => {
   if (!isOpen) return null;
 
@@ -699,20 +634,6 @@ const Citas = ({
     });
   };
 
-  const formatRelativeTime = (dateStr) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'Ahora';
-    if (diffMins < 60) return `${diffMins}m`;
-    if (diffHours < 24) return `${diffHours}h`;
-    return `${diffDays}d`;
-  };
-
   const [formData, setFormData] = useState({
     fecha: '',
     hora_inicio: '',
@@ -720,18 +641,6 @@ const Citas = ({
     servicioId: '',
     empleadoId: ''
   });
-
-  useEffect(() => {
-    fetchInitialData();
-    checkPendingAction();
-    
-    // Update current time every second
-    const timeInterval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    
-    return () => clearInterval(timeInterval);
-  }, []);
 
   useEffect(() => {
     if (loading) return;
@@ -744,22 +653,32 @@ const Citas = ({
     }
   }, [loading, citas]);
 
-  const checkPendingAction = () => {
-    const pendingAction = localStorage.getItem('pendingAction');
-    const selectedServiceId = localStorage.getItem('selectedServiceId');
-
-    if (pendingAction === 'agendar_cita') {
-      setShowForm(true);
-      if (selectedServiceId) {
-        setFormData(prev => ({ ...prev, servicioId: selectedServiceId }));
+  const fetchRatingsForCitas = useCallback(async (citasArray, headers) => {
+    const ratingsList = [];
+    for (const cita of citasArray.filter(c => c.estado === 'FINALIZADO')) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/ratings/cita/${cita.id}`, { headers });
+        if (response.ok) {
+          // Safely parse response (handle empty or non-JSON responses)
+          const text = await response.text();
+          let rating = null;
+          if (text) {
+            try {
+              rating = JSON.parse(text);
+            } catch (parseErr) {
+              console.error(`Failed to parse rating JSON for cita ${cita.id}:`, parseErr);
+            }
+          }
+          if (rating) ratingsList.push(rating);
+        }
+      } catch (err) {
+        console.error(`Error fetching rating for cita ${cita.id}:`, err);
       }
-      // Limpiar para que no se abra solo la próxima vez
-      localStorage.removeItem('pendingAction');
-      localStorage.removeItem('selectedServiceId');
     }
-  };
+    setRatings(ratingsList);
+  }, []);
 
-  const fetchInitialData = async () => {
+  const fetchInitialData = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const userId = localStorage.getItem('userId');
@@ -807,7 +726,34 @@ const Citas = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchRatingsForCitas]);
+
+  const checkPendingAction = useCallback(() => {
+    const pendingAction = localStorage.getItem('pendingAction');
+    const selectedServiceId = localStorage.getItem('selectedServiceId');
+
+    if (pendingAction === 'agendar_cita') {
+      setShowForm(true);
+      if (selectedServiceId) {
+        setFormData(prev => ({ ...prev, servicioId: selectedServiceId }));
+      }
+      // Limpiar para que no se abra solo la próxima vez
+      localStorage.removeItem('pendingAction');
+      localStorage.removeItem('selectedServiceId');
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchInitialData();
+    checkPendingAction();
+    
+    // Update current time every second
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timeInterval);
+  }, [fetchInitialData, checkPendingAction]);
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -817,32 +763,7 @@ const Citas = ({
     return () => {
       window.removeEventListener('motoexpert:refresh_notifications', handleRefresh);
     };
-  }, []);
-
-  const fetchRatingsForCitas = async (citasArray, headers) => {
-    const ratingsList = [];
-    for (const cita of citasArray.filter(c => c.estado === 'FINALIZADO')) {
-      try {
-        const response = await fetch(`${API_BASE_URL}/ratings/cita/${cita.id}`, { headers });
-        if (response.ok) {
-          // Safely parse response (handle empty or non-JSON responses)
-          const text = await response.text();
-          let rating = null;
-          if (text) {
-            try {
-              rating = JSON.parse(text);
-            } catch (parseErr) {
-              console.error(`Failed to parse rating JSON for cita ${cita.id}:`, parseErr);
-            }
-          }
-          if (rating) ratingsList.push(rating);
-        }
-      } catch (err) {
-        console.error(`Error fetching rating for cita ${cita.id}:`, err);
-      }
-    }
-    setRatings(ratingsList);
-  };
+  }, [fetchInitialData]);
 
   const submitRating = async ({ citaId, specialistRating, serviceRating, comment }) => {
     const token = localStorage.getItem('token');
@@ -967,10 +888,16 @@ const Citas = ({
   };
 
 
+<<<<<<< Updated upstream
 
   useEffect(() => {
   }, [currentTime, citas, processedCitas, getCitaTimeInfo]);
 
+=======
+  useEffect(() => {
+    // Check for overdue appointments logic removed per requirement
+  }, [currentTime, citas, processedCitas, getCitaTimeInfo]);
+>>>>>>> Stashed changes
 
   const handleDateChange = (e) => {
     const fecha = e.target.value;

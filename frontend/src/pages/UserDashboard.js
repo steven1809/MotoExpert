@@ -1,5 +1,4 @@
-import React, { Component, useEffect, useMemo, useRef, useState } from 'react';
-import premiumImg from "../assets/services/premium.jpg";
+import React, { Component, useEffect, useState } from 'react';
 import carHeroImg from "../assets/images/1.png";
 import expressImg from "../assets/services/express.jpeg";
 import interiorImg from "../assets/services/limpiezap.jpeg";
@@ -71,8 +70,6 @@ const TokenCodeModal = ({ isOpen, onClose, tokenCode }) => {
   );
 };
 
-const REPORTS_PER_PAGE = 6;
-
 const getConditionStyle = (condition) => {
   switch (condition) {
     case 'optimal':
@@ -105,225 +102,6 @@ const formatCompletedDateTime = (completedAt) => {
     date: d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' }),
     time: d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
   };
-};
-
-const ServiceIcon = ({ name }) => {
-  const n = (name || '').toLowerCase();
-  const wrapperClassName =
-    'w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#7b9cff]';
-
-  if (n.includes('lavado')) {
-    return (
-      <div className={wrapperClassName} aria-hidden="true">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-          <path d="M12 2.25c.31 0 .61.16.75.43 2.25 4.34 6 7.2 6 11.07a6.75 6.75 0 11-13.5 0c0-3.87 3.75-6.73 6-11.07.14-.27.44-.43.75-.43z" />
-        </svg>
-      </div>
-    );
-  }
-
-  if (n.includes('mantenimiento') || n.includes('preventivo') || n.includes('aceite') || n.includes('cambio')) {
-    return (
-      <div className={wrapperClassName} aria-hidden="true">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-          <path fillRule="evenodd" d="M2.25 12a9.75 9.75 0 0114.79-8.36.75.75 0 01.16 1.17l-2.1 2.1a.75.75 0 00-.18.76l.8 2.4a.75.75 0 01-.48.95l-2.4.8a.75.75 0 00-.48.48l-.8 2.4a.75.75 0 01-.95.48l-2.4-.8a.75.75 0 00-.76.18l-2.1 2.1a.75.75 0 01-1.17-.16A9.708 9.708 0 012.25 12zm10.06 2.31a.75.75 0 01.53.22l6.44 6.44a1.5 1.5 0 102.12-2.12l-6.44-6.44a.75.75 0 10-1.06 1.06z" clipRule="evenodd" />
-        </svg>
-      </div>
-    );
-  }
-
-  if (n.includes('detailing') || n.includes('pulido') || n.includes('encerado')) {
-    return (
-      <div className={wrapperClassName} aria-hidden="true">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-          <path d="M12 2.25c.31 0 .6.2.7.5l.86 2.63c.1.3.33.53.63.63l2.63.86c.3.1.5.39.5.7s-.2.6-.5.7l-2.63.86c-.3.1-.53.33-.63.63l-.86 2.63c-.1.3-.39.5-.7.5s-.6-.2-.7-.5l-.86-2.63a.87.87 0 00-.63-.63l-2.63-.86a.75.75 0 010-1.4l2.63-.86c.3-.1.53-.33.63-.63l.86-2.63c.1-.3.39-.5.7-.5z" />
-          <path d="M5.25 13.5c.31 0 .6.2.7.5l.46 1.4c.1.3.33.53.63.63l1.4.46c.3.1.5.39.5.7s-.2.6-.5.7l-1.4.46c-.3.1-.53.33-.63.63l-.46 1.4c-.1.3-.39.5-.7.5s-.6-.2-.7-.5l-.46-1.4a.87.87 0 00-.63-.63l-1.4-.46a.75.75 0 010-1.4l1.4-.46c.3-.1.53-.33.63-.63l.46-1.4c.1-.3.39-.5.7-.5z" />
-        </svg>
-      </div>
-    );
-  }
-
-  return (
-    <div className={wrapperClassName} aria-hidden="true">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-        <path fillRule="evenodd" d="M6.75 3A2.25 2.25 0 004.5 5.25v13.5A2.25 2.25 0 006.75 21h10.5A2.25 2.25 0 0019.5 18.75V9.621a2.25 2.25 0 00-.659-1.591l-3.371-3.37A2.25 2.25 0 0013.879 4.5H6.75zm6.75 1.5v3.75A1.5 1.5 0 0015 9.75h3.75V18.75a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V5.25a.75.75 0 01.75-.75H13.5z" clipRule="evenodd" />
-      </svg>
-    </div>
-  );
-};
-
-const getVisiblePageNumbers = (currentPage, totalPages, maxVisible = 5) => {
-  const safeTotalPages = Math.max(1, totalPages);
-  const safeCurrentPage = Math.min(Math.max(1, currentPage), safeTotalPages);
-
-  const visible = Math.min(maxVisible, safeTotalPages);
-  const half = Math.floor(visible / 2);
-
-  let start = safeCurrentPage - half;
-  let end = start + visible - 1;
-
-  if (start < 1) {
-    start = 1;
-    end = visible;
-  }
-
-  if (end > safeTotalPages) {
-    end = safeTotalPages;
-    start = Math.max(1, end - visible + 1);
-  }
-
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
-};
-
-const ServiceReportsPanel = ({ items, onOpenReport }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const sectionTopRef = useRef(null);
-  const hasMountedRef = useRef(false);
-
-  const totalResults = items.length;
-  const totalPages = Math.max(1, Math.ceil(totalResults / REPORTS_PER_PAGE));
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
-
-  useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      return;
-    }
-    sectionTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [currentPage]);
-
-  const startIndex = (currentPage - 1) * REPORTS_PER_PAGE;
-  const endIndexExclusive = Math.min(startIndex + REPORTS_PER_PAGE, totalResults);
-  const visibleItems = useMemo(
-    () => items.slice(startIndex, endIndexExclusive),
-    [items, startIndex, endIndexExclusive]
-  );
-
-  const visiblePages = useMemo(
-    () => getVisiblePageNumbers(currentPage, totalPages, 5),
-    [currentPage, totalPages]
-  );
-
-  const showingFrom = totalResults === 0 ? 0 : startIndex + 1;
-  const showingTo = totalResults === 0 ? 0 : endIndexExclusive;
-
-  const goToPage = (page) => {
-    const next = Math.min(Math.max(1, page), totalPages);
-    setCurrentPage(next);
-  };
-
-  return (
-    <div ref={sectionTopRef} className="space-y-6">
-      <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-2xl overflow-hidden">
-        <div className="divide-y divide-white/5">
-          {visibleItems.map((cita) => {
-            const condition = getConditionStyle(cita.report?.condition);
-            const { date, time } = formatCompletedDateTime(cita.completedAt || cita.fecha);
-            return (
-              <button
-                key={cita.id}
-                type="button"
-                onClick={() => onOpenReport?.(cita.id)}
-                className="w-full px-4 py-3 flex items-center gap-4 text-left hover:bg-white/5 transition-colors cursor-pointer"
-              >
-                <ServiceIcon name={cita.servicio?.nombre} />
-
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-black text-[#F8FAFC] truncate">
-                    {cita.servicio?.nombre || 'Servicio'}
-                  </div>
-                  <div className="text-xs text-[#94A3B8] truncate">
-                    {cita.vehiculo?.placa || '—'}
-                  </div>
-                </div>
-
-                <div className="flex justify-center">
-                  <span
-                    className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${condition.className}`}
-                  >
-                    {condition.label}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="text-xs text-[#94A3B8]">{date}</div>
-                    <div className="text-xs text-[#94A3B8]">{time}</div>
-                  </div>
-
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="w-5 h-5 text-white/40"
-                    aria-hidden="true"
-                  >
-                    <path fillRule="evenodd" d="M8.22 19.28a.75.75 0 010-1.06L14.44 12 8.22 5.78a.75.75 0 111.06-1.06l6.75 6.75a.75.75 0 010 1.06l-6.75 6.75a.75.75 0 01-1.06 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="text-xs text-slate-500 dark:text-[#94A3B8] font-medium">
-          Showing {showingFrom}–{showingTo} of {totalResults} results
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            aria-label="Previous page"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-              <path fillRule="evenodd" d="M15.78 4.72a.75.75 0 010 1.06L9.56 12l6.22 6.22a.75.75 0 11-1.06 1.06l-6.75-6.75a.75.75 0 010-1.06l6.75-6.75a.75.75 0 011.06 0z" clipRule="evenodd" />
-            </svg>
-          </button>
-
-          {visiblePages.map((page) => {
-            const isActive = page === currentPage;
-            return (
-              <button
-                key={page}
-                type="button"
-                onClick={() => goToPage(page)}
-                className={`h-10 min-w-10 px-3 inline-flex items-center justify-center rounded-xl border text-sm font-bold transition-all ${
-                  isActive
-                    ? 'bg-[#2563EB] border-[#2563EB] text-white shadow-lg shadow-[#2563EB]/20'
-                    : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {page}
-              </button>
-            );
-          })}
-
-          <button
-            type="button"
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            aria-label="Next page"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-              <path fillRule="evenodd" d="M8.22 19.28a.75.75 0 010-1.06L14.44 12 8.22 5.78a.75.75 0 111.06-1.06l6.75 6.75a.75.75 0 010 1.06l-6.75 6.75a.75.75 0 01-1.06 0z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 };
 
 const ServiceReportModal = ({ report, rating, onClose, onSubmitRating }) => {
@@ -796,7 +574,6 @@ class UserDashboard extends Component {
   render() {
     const { servicios, loading, citas, misVehiculos, ratings } = this.state;
     const { setView } = this.props;
-    const showReports = process.env.REACT_APP_ENABLE_REPORTS === 'true';
     
     const userNameRaw = (localStorage.getItem('userName') || '').trim();
     const userName = userNameRaw || 'Usuario';
@@ -894,7 +671,7 @@ class UserDashboard extends Component {
       .sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0))
       .slice(0, 2);
 
-    const serviceImageForIndex = [expressImg, premiumImg, interiorImg, motorImg, protectionImg];
+    const serviceImageForIndex = [expressImg, interiorImg, protectionImg, motorImg];
     const getServiceImage = (idx) => serviceImageForIndex[idx % serviceImageForIndex.length];
 
     if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500"></div></div>;
@@ -1003,7 +780,7 @@ class UserDashboard extends Component {
                   {upcomingCita ? (
                     <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0b1220]">
                       <div className="absolute inset-0">
-                        <img src={premiumImg} alt="" className="w-full h-full object-cover opacity-20" />
+                        <img src={protectionImg} alt="" className="w-full h-full object-cover opacity-20" />
                         <div className="absolute inset-0 bg-gradient-to-r from-[#0b1220] via-[#0b1220]/90 to-transparent" />
                       </div>
                       <div className="relative z-10 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1252,7 +1029,7 @@ class UserDashboard extends Component {
 
               <section className="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
                 <div className="absolute inset-0">
-                  <img src={premiumImg} alt="" className="w-full h-full object-cover opacity-20" />
+                  <img src={protectionImg} alt="" className="w-full h-full object-cover opacity-20" />
                   <div className="absolute inset-0 bg-gradient-to-r from-[#0b1220] via-[#0b1220]/90 to-transparent" />
                 </div>
               </section>

@@ -31,13 +31,11 @@ class AdminDashboard extends Component {
       // Nuevo Usuario (Quick Register)
       newUserNombre: '',
       newUserApellido: '',
-      newUserTipoDoc: 'Cédula de Ciudadanía',
       newUserNumDoc: '',
       newUserTelefono: '',
       newUserEmail: '',
       
       users: [],
-      placaError: '',
       
       // Programar Servicio
       servicios: [],
@@ -55,11 +53,9 @@ class AdminDashboard extends Component {
       vehicleSearchTerm: '',
       availableSlots: [],
       selectedTimeSlot: '',
-      loadingSlots: false,
 
       // Nuevo estado para selección de cliente
       selectedClientId: '',
-      clientSearchTerm: '',
       selectedPaymentMethod: '', // 'Efectivo', 'Tarjeta', 'Transferencia'
       showQR: false,
       validationErrors: {}, // Para resaltar campos faltantes
@@ -68,10 +64,8 @@ class AdminDashboard extends Component {
       showSpecialistModal: false,
       specialistSlotTime: '',
       appointmentsAtSelectedDate: [], // Todas las citas del día para calcular disponibilidad local
-      loadingAppointments: false,
 
       submittingVehicle: false,
-      submittingAppointment: false
     };
   }
 
@@ -101,7 +95,6 @@ class AdminDashboard extends Component {
     const { fechaIngreso } = this.state;
     if (!fechaIngreso) return;
 
-    this.setState({ loadingAppointments: true });
     const token = localStorage.getItem('token');
     const headers = { 'Authorization': `Bearer ${token}` };
     
@@ -111,11 +104,10 @@ class AdminDashboard extends Component {
         const citasData = await res.json();
         const allAppointments = Array.isArray(citasData) ? citasData : (citasData.data ?? []);
         const filtered = allAppointments.filter(a => a.fecha === fechaIngreso && a.estado !== 'CANCELADO');
-        this.setState({ appointmentsAtSelectedDate: filtered, loadingAppointments: false });
+        this.setState({ appointmentsAtSelectedDate: filtered });
       }
     } catch (error) {
       console.error('Error fetching appointments for date:', error);
-      this.setState({ loadingAppointments: false });
     }
   };
 
@@ -123,7 +115,6 @@ class AdminDashboard extends Component {
     const { fechaIngreso, selectedServicioId, selectedEmpleadoId } = this.state;
     if (!fechaIngreso || !selectedServicioId) return;
 
-    this.setState({ loadingSlots: true });
     const token = localStorage.getItem('token');
     const headers = { 'Authorization': `Bearer ${token}` };
     
@@ -157,10 +148,10 @@ class AdminDashboard extends Component {
         finalSlots = businessSlots.map(time => ({ hora: time, disponible: true }));
       }
       
-      this.setState({ availableSlots: finalSlots, loadingSlots: false });
+      this.setState({ availableSlots: finalSlots });
     } catch (error) {
       console.error('Error fetching slots:', error);
-      this.setState({ availableSlots: [], loadingSlots: false });
+      this.setState({ availableSlots: [] });
     }
   };
 
@@ -182,14 +173,12 @@ class AdminDashboard extends Component {
     const token = localStorage.getItem('token');
     const headers = { 'Authorization': `Bearer ${token}` };
     try {
-      const [usersRes, citasRes, empRes] = await Promise.all([
+      const [usersRes, empRes] = await Promise.all([
         fetch(`${API_BASE_URL}/auth`, { headers }),
-        fetch(`${API_BASE_URL}/citas`, { headers }),
         fetch(`${API_BASE_URL}/empleados`, { headers })
       ]);
       
       const users = usersRes.ok ? await usersRes.json().catch(() => []) : [];
-      const citas = citasRes.ok ? await citasRes.json().catch(() => []) : [];
       const employees = empRes.ok ? await empRes.json().catch(() => []) : [];
       
       this.setState({
@@ -252,7 +241,7 @@ class AdminDashboard extends Component {
     const { 
       placa, marca, modelo, anio, tipo, color, imagenFile,
       userId, showQuickUser, 
-      newUserNombre, newUserApellido, newUserTipoDoc, newUserNumDoc, newUserTelefono, newUserEmail,
+      newUserNombre, newUserApellido, newUserNumDoc, newUserTelefono, newUserEmail,
       submittingVehicle 
     } = this.state;
 
@@ -424,9 +413,7 @@ class AdminDashboard extends Component {
       selectedTimeSlot, 
       selectedVehicleType,
       selectedClientId,
-      clientSearchTerm,
       selectedPaymentMethod,
-      submittingAppointment 
     } = this.state;
     
     // VALIDACIÓN DE CAMPOS OBLIGATORIOS
@@ -485,7 +472,7 @@ class AdminDashboard extends Component {
       return;
     }
 
-    this.setState({ submittingAppointment: true, validationErrors: {} });
+    this.setState({ validationErrors: {} });
     const token = localStorage.getItem('token');
     const headers = { 
       'Authorization': `Bearer ${token}`,
@@ -580,12 +567,10 @@ class AdminDashboard extends Component {
       showQuickUser,
       newUserNombre,
       newUserApellido,
-      newUserTipoDoc,
       newUserNumDoc,
       newUserTelefono,
       newUserEmail,
       users, 
-      placaError,
       servicios,
       vehiculos,
       empleados,
@@ -599,18 +584,14 @@ class AdminDashboard extends Component {
       vehicleSearchTerm,
       availableSlots,
       selectedTimeSlot,
-      loadingSlots,
       showSpecialistModal,
       specialistSlotTime,
       appointmentsAtSelectedDate,
-      loadingAppointments,
       selectedClientId,
-      clientSearchTerm,
       selectedPaymentMethod,
       validationErrors,
       showQR,
       submittingVehicle,
-      submittingAppointment
     } = this.state;
 
     const filteredUsers = this.getFilteredUsers();
@@ -639,16 +620,6 @@ class AdminDashboard extends Component {
       return types.includes(vehicleTypeLower);
     });
 
-    // Filtrar vehículos según búsqueda de placa/unidad
-    const filteredVehiculos = vehiculos.filter(v => {
-      const search = vehicleSearchTerm.toLowerCase();
-      return (
-        v.placa?.toLowerCase().includes(search) ||
-        v.marca?.toLowerCase().includes(search) ||
-        v.modelo?.toLowerCase().includes(search)
-      );
-    });
-
     const isFormComplete = selectedServicioId && selectedVehiculoId && fechaIngreso && selectedTimeSlot && selectedClientId && selectedPaymentMethod;
 
     // Calcular disponibilidad de especialistas para el slot seleccionado
@@ -663,13 +634,6 @@ class AdminDashboard extends Component {
     }) : [];
 
     const anySpecialistAvailable = specialistsAvailability.some(s => !s.isOccupied);
-
-    // Filtrar clientes para el Paso 3
-    const filteredClients = clientSearchTerm ? users.filter(u => 
-      u.nombre?.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
-      u.apellidos?.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
-      u.email?.toLowerCase().includes(clientSearchTerm.toLowerCase())
-    ).slice(0, 5) : [];
 
     // Filtrar vehículos según cliente seleccionado (Paso 4)
     const filteredVehiculosForProgramar = vehiculos.filter(v => {
@@ -946,16 +910,6 @@ class AdminDashboard extends Component {
                       onChange={(e) => this.setState({ newUserApellido: e.target.value })}
                       className="w-full px-4 py-3 bg-black/40 border border-white/5 rounded-xl text-white text-sm font-bold outline-none focus:border-[#2563EB]/50"
                     />
-                    <CustomSelect 
-                      value={newUserTipoDoc}
-                      onChange={(val) => this.setState({ newUserTipoDoc: val })}
-                      options={[
-                        { value: 'Cédula de Ciudadanía', label: 'Cédula de Ciudadanía' },
-                        { value: 'Cédula de Extranjería', label: 'Cédula de Extranjería' },
-                        { value: 'Pasaporte', label: 'Pasaporte' }
-                      ]}
-                      placeholder="Tipo de documento"
-                    />
                     <input 
                       placeholder="Número de Documento" 
                       value={newUserNumDoc}
@@ -1056,13 +1010,16 @@ class AdminDashboard extends Component {
                   <input 
                     type="text"
                     placeholder="Buscar cliente por nombre o email..."
-                    value={selectedClientId ? users.find(u => u.id === parseInt(selectedClientId))?.nombre + ' ' + (users.find(u => u.id === parseInt(selectedClientId))?.apellidos || '') : clientSearchTerm}
-                    onChange={(e) => this.setState({ clientSearchTerm: e.target.value, selectedClientId: '', selectedVehiculoId: '' })}
+                    value={selectedClientId ? users.find(u => u.id === parseInt(selectedClientId))?.nombre + ' ' + (users.find(u => u.id === parseInt(selectedClientId))?.apellidos || '') : ''}
+                    onChange={(e) => {
+                      this.setState({ selectedClientId: '', selectedVehiculoId: '' });
+                      // Aquí podrías implementar una búsqueda local simple si es necesario
+                    }}
                     className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#8B5CF6]/50 transition-all"
                   />
                   {selectedClientId && (
                     <button 
-                      onClick={() => this.setState({ selectedClientId: '', clientSearchTerm: '', selectedVehiculoId: '' })}
+                      onClick={() => this.setState({ selectedClientId: '', selectedVehiculoId: '' })}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
                     >
                       ✕
@@ -1071,22 +1028,19 @@ class AdminDashboard extends Component {
                 </div>
                 
                 {/* Dropdown de búsqueda de clientes */}
-                {!selectedClientId && clientSearchTerm && (
+                {!selectedClientId && (
                   <div className="absolute left-0 right-0 top-full mt-2 bg-[#161b27] border border-white/10 rounded-2xl shadow-2xl z-[60] overflow-hidden max-h-48 overflow-y-auto">
-                    {filteredClients.length > 0 ? (
-                      filteredClients.map(u => (
-                        <button 
-                          key={u.id}
-                          onClick={() => this.setState({ selectedClientId: u.id, clientSearchTerm: '', validationErrors: { ...validationErrors, client: false } })}
-                          className="w-full px-5 py-3 text-left hover:bg-white/5 transition-all border-b border-white/5 last:border-0"
-                        >
-                          <div className="text-sm font-bold text-white">{u.nombre} {u.apellidos}</div>
-                          <div className="text-[10px] text-slate-500 font-mono">{u.email}</div>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-5 py-3 text-sm text-slate-500 italic">No se encontraron clientes</div>
-                    )}
+                    {/* Lista simplificada de clientes */}
+                    {users.slice(0, 5).map(u => (
+                      <button 
+                        key={u.id}
+                        onClick={() => this.setState({ selectedClientId: u.id, validationErrors: { ...validationErrors, client: false } })}
+                        className="w-full px-5 py-3 text-left hover:bg-white/5 transition-all border-b border-white/5 last:border-0"
+                      >
+                        <div className="text-sm font-bold text-white">{u.nombre} {u.apellidos}</div>
+                        <div className="text-[10px] text-slate-500 font-mono">{u.email}</div>
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1270,10 +1224,9 @@ class AdminDashboard extends Component {
 
               <button 
                 onClick={this.handleScheduleService}
-                disabled={submittingAppointment}
-                className={`w-full py-5 ${submittingAppointment ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-[#8B5CF6] hover:bg-[#7C3AED] text-white shadow-xl shadow-[#8B5CF6]/30'} font-mono text-[10px] uppercase tracking-[0.3em] rounded-2xl transition-all font-black`}
+                className={`w-full py-5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white shadow-xl shadow-[#8B5CF6]/30 font-mono text-[10px] uppercase tracking-[0.3em] rounded-2xl transition-all font-black`}
               >
-                {submittingAppointment ? 'PROCESANDO...' : 'CONFIRMAR Y PROGRAMAR'}
+                CONFIRMAR Y PROGRAMAR
               </button>
             </div>
           </div>

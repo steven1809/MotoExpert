@@ -8,6 +8,11 @@ const InactivityHandler = ({ onLogout }) => {
   const warningTimerRef = useRef(null);
   const logoutTimerRef = useRef(null);
 
+  const handleAutoLogout = useCallback(() => {
+    setShowWarning(false);
+    onLogout();
+  }, [onLogout]);
+
   const resetTimers = useCallback(() => {
     // Si el modal de advertencia está visible, no reiniciamos por actividad automática
     if (showWarning) return;
@@ -25,12 +30,7 @@ const InactivityHandler = ({ onLogout }) => {
     logoutTimerRef.current = setTimeout(() => {
       handleAutoLogout();
     }, LOGOUT_TIME);
-  }, [showWarning]);
-
-  const handleAutoLogout = () => {
-    setShowWarning(false);
-    onLogout();
-  };
+  }, [showWarning, handleAutoLogout]);
 
   const handleContinueSession = () => {
     setShowWarning(false);
