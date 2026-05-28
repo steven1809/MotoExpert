@@ -967,12 +967,11 @@ const Citas = ({
   };
 
 
-<<<<<<< Updated upstream
-=======
+
   useEffect(() => {
   }, [currentTime, citas, processedCitas, getCitaTimeInfo]);
 
->>>>>>> Stashed changes
+
   const handleDateChange = (e) => {
     const fecha = e.target.value;
     setFormData({ ...formData, fecha, hora_inicio: '' });

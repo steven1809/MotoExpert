@@ -47,6 +47,7 @@ class Navbar extends Component {
         { key: "users", label: "Gestion de Usuarios", view: "users", icon: "users" },
         { key: "empleados", label: "Gestion de Empleados", view: "admin_empleados", icon: "tool" },
         { key: "citas_admin", label: "Gestion de Citas", view: "admin_citas", icon: "clock" },
+        { key: "resenas_admin", label: "Gestión de Reseñas", view: "resenas", icon: "star" },
         { key: "actividad", label: "Logs de Actividad", view: "admin_actividad", icon: "history" },
         { key: "cuenta", label: "Mi Cuenta", view: "cuenta", icon: "shield" },
       ];
@@ -214,7 +215,7 @@ class Navbar extends Component {
         {/* Sidebar for Admin/Employee */}
         {!isStandardUser && (
           <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 bg-[#050507] border-r border-white/[0.05] flex-col z-[60]">
-            <div className="px-8 pt-8 pb-6">
+            <div className="px-8 pt-8 pb-6 flex-shrink-0">
               <button onClick={() => setView("dashboard")} className="group text-left w-full">
                 <div className="text-white font-black text-2xl tracking-tighter transition-colors group-hover:text-[#7b9cff]">
                   MOTO<span className="text-[#7b9cff]">EXPERT</span>
@@ -226,16 +227,44 @@ class Navbar extends Component {
               </button>
             </div>
 
-            <nav className="px-4 py-6 flex-1 space-y-1">
+            <nav className="px-4 py-6 space-y-1 flex-1 overflow-y-auto">
               {items.map(item => this.renderNavItem(item))}
             </nav>
 
-            <div className="px-6 pb-8 space-y-6">
+            <div className="px-6 py-8 space-y-6 flex-shrink-0 border-t border-white/[0.05] bg-black/20">
+              {/* Theme Toggle Button */}
+              <ThemeContext.Consumer>
+                {({ isDark, toggleTheme }) => (
+                  <button
+                    onClick={toggleTheme}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-white/[0.05] hover:bg-white/[0.02] transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-400">
+                        {isDark ? (
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                          </svg>
+                        )}
+                      </span>
+                      <span className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-400">
+                        {isDark ? 'Modo Claro' : 'Modo Oscuro'}
+                      </span>
+                    </div>
+                    <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${isDark ? 'bg-[#7b9cff]/20' : 'bg-slate-700'}`}>
+                      <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all duration-300 ${isDark ? 'right-0.5 bg-[#7b9cff]' : 'left-0.5 bg-slate-400'}`} />
+                    </div>
+                  </button>
+                )}
+              </ThemeContext.Consumer>
 
-              <div className="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.05]">
-                <button
+              <button
                   onClick={() => setView("cuenta")}
-                  className="flex items-center gap-3 group min-w-0"
+                  className="flex items-center gap-3 group w-full px-4 py-3 rounded-xl border border-white/[0.05] hover:bg-white/[0.02] transition-all"
                 >
                   <div className="w-10 h-10 rounded-xl bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center text-[#7b9cff] font-mono text-sm transition-all group-hover:bg-[#7b9cff]/20 overflow-hidden">
                     {userPicture ? (
@@ -244,19 +273,21 @@ class Navbar extends Component {
                       initial
                     )}
                   </div>
-                  
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-400">Mi Cuenta</div>
+                  </div>
                 </button>
 
                 <button
                   onClick={handleLogout}
-                  className="p-2.5 rounded-xl border border-white/[0.05] text-slate-400 hover:text-[#ff4d4d] hover:bg-[#ff4d4d]/5 transition-all"
+                  className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-[#ff4d4d]/10 border border-[#ff4d4d]/20 text-[#ff4d4d] font-mono text-xs uppercase tracking-[0.2em] hover:bg-[#ff4d4d]/20 transition-all"
                   title="Salir"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
                   </svg>
+                  <span>Cerrar Sesión</span>
                 </button>
-              </div>
             </div>
           </aside>
         )}

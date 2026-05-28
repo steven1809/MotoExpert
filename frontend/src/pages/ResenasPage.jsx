@@ -56,6 +56,7 @@ const ResenasPage = () => {
   const [error, setError] = useState(null);
   const [employeesError, setEmployeesError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   // Obtener usuario actual
   const userId = localStorage.getItem('userId');
@@ -247,6 +248,29 @@ const ResenasPage = () => {
   const handleHelpful = async (id) => {
     // Lógica local simplificada ya que no hay endpoint de helpful en el backend real
     setHelpfulMap(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleDeleteReview = async (id) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta reseña?')) return;
+    
+    setDeletingId(id);
+    try {
+      const response = await fetch(`${API_BASE_URL}/ratings/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        setReviews(prev => prev.filter(r => r.id !== id));
+      } else {
+        throw new Error('Error al eliminar la reseña');
+      }
+    } catch (err) {
+      console.error('Error deleting review:', err);
+      alert(err.message || 'Error al eliminar la reseña');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleSubmitReview = async (e) => {
@@ -673,6 +697,8 @@ const ResenasPage = () => {
               {filteredReviews.map(review => {
                 const userName = review.usuario ? `${review.usuario.nombre} ${review.usuario.apellidos || ''}` : 'Usuario';
                 const serviceName = review.cita?.servicio?.nombre || 'Servicio';
+                const userRole = localStorage.getItem('role')?.toLowerCase();
+                const isAdmin = userRole === 'admin';
                 
                 return (
                   <div
@@ -696,11 +722,28 @@ const ResenasPage = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <StarRating rating={review.specialistRating} size="sm" />
-                        <span className="text-[10px] text-slate-500 dark:text-[#94A3B8] uppercase">
-                          Especialista
-                        </span>
+                      <div className="flex items-start gap-3">
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDeleteReview(review.id)}
+                            disabled={deletingId === review.id}
+                            className="p-2 rounded-full hover:bg-red-500/10 text-slate-500 hover:text-red-500 transition-colors disabled:opacity-50"
+                          >
+                            {deletingId === review.id ? (
+                              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+                        <div className="flex flex-col items-end gap-1">
+                          <StarRating rating={review.specialistRating} size="sm" />
+                          <span className="text-[10px] text-slate-500 dark:text-[#94A3B8] uppercase">
+                            Especialista
+                          </span>
+                        </div>
                       </div>
                     </div>
 

@@ -6,6 +6,7 @@ import {
   Param,
   UseGuards,
   Request,
+  Delete,
 } from '@nestjs/common';
 import { RatingsService } from './ratings.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -53,5 +54,11 @@ export class RatingsController {
   @Get('empleado/:empleadoId/stats')
   getEmpleadoStats(@Param('empleadoId') empleadoId: string) {
     return this.service.getEmpleadoStats(+empleadoId);
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard('jwt'))
+  remove(@Param('id') id: string) {
+    return this.service.remove(+id);
   }
 }
