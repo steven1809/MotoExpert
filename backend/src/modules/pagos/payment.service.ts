@@ -105,33 +105,43 @@ export class PaymentService {
     valid: true;
     appointmentId: number;
   }> {
+    // 1. Intentar buscar en la tabla de pagos (tokenCode)
     const payment = await this.paymentRepo.findOne({
       where: { tokenCode },
-      select: {
-        id: true,
-        appointmentId: true,
-        tokenCode: true,
-        tokenUsed: true,
-        tokenExpiresAt: true,
-      },
     });
 
-    if (!payment) {
+    if (payment) {
+      if (payment.tokenUsed) {
+        throw new ConflictException('Token ya fue usado');
+      }
+
+      if (!payment.tokenExpiresAt || payment.tokenExpiresAt.getTime() <= Date.now()) {
+        throw new GoneException('Token expirado');
+      }
+
+      payment.tokenUsed = true;
+      await this.paymentRepo.save(payment);
+
+      return { valid: true, appointmentId: payment.appointmentId };
+    }
+
+    // 2. Si no se encuentra en pagos, buscar en la tabla de citas (codigoEntrega)
+    const cita = await this.citaRepo.findOne({
+      where: { codigoEntrega: tokenCode },
+    });
+
+    if (!cita) {
       throw new NotFoundException('Token no encontrado');
     }
 
-    if (payment.tokenUsed) {
-      throw new ConflictException('Token ya fue usado');
+    // Si la cita tiene un pago asociado, lo marcamos como usado para permitir finalizar el servicio
+    const associatedPayment = await this.paymentRepo.findOneBy({ appointmentId: cita.id });
+    if (associatedPayment) {
+      associatedPayment.tokenUsed = true;
+      await this.paymentRepo.save(associatedPayment);
     }
 
-    if (!payment.tokenExpiresAt || payment.tokenExpiresAt.getTime() <= Date.now()) {
-      throw new GoneException('Token expirado');
-    }
-
-    payment.tokenUsed = true;
-    await this.paymentRepo.save(payment);
-
-    return { valid: true, appointmentId: payment.appointmentId };
+    return { valid: true, appointmentId: cita.id };
   }
 
   async getTokenInfoForUser(userId: number, appointmentId: number): Promise<{

@@ -966,6 +966,12 @@ const Citas = ({
   };
 
 
+<<<<<<< Updated upstream
+=======
+  useEffect(() => {
+    // Check for overdue appointments logic removed per requirement
+  }, [currentTime, citas, processedCitas, cancelCita, getCitaTimeInfo]);
+>>>>>>> Stashed changes
 
   const handleDateChange = (e) => {
     const fecha = e.target.value;
@@ -2428,10 +2434,10 @@ const Citas = ({
               {filteredPendientes.length > 0 ? (
                 filteredPendientes.map((cita) => {
                   const payment = paymentByAppointment?.[cita.id] ?? cita.payment ?? null;
-                  const tokenCode = payment?.tokenCode || '';
+                  const tokenCode = cita.codigoEntrega || payment?.tokenCode || '';
                   const tokenUsed = Boolean(payment?.tokenUsed);
                   const tokenExpiresAt = payment?.tokenExpiresAt;
-                  const tokenExpired = tokenExpiresAt ? new Date(tokenExpiresAt).getTime() <= Date.now() : true;
+                  const tokenExpired = tokenExpiresAt ? new Date(tokenExpiresAt).getTime() <= Date.now() : false;
                   const canViewToken = Boolean(tokenCode) && !tokenUsed && !tokenExpired;
                   const dateObj = cita?.fecha ? new Date(cita.fecha) : null;
                   const day = dateObj && Number.isFinite(dateObj.getTime()) ? dateObj.getDate() : null;
