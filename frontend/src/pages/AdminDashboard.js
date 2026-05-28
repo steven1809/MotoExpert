@@ -143,7 +143,7 @@ class AdminDashboard extends Component {
       let finalSlots = [];
       
       if (res.ok) {
-        const apiSlots = await res.json();
+        const apiSlots = await res.json().catch(() => []);
         // Mapeamos los slots del negocio con la disponibilidad de la API
         finalSlots = businessSlots.map(time => {
           const apiSlot = apiSlots.find(s => s.hora === time);
@@ -188,9 +188,9 @@ class AdminDashboard extends Component {
         fetch(`${API_BASE_URL}/empleados`, { headers })
       ]);
       
-      const users = usersRes.ok ? await usersRes.json() : [];
-      const citas = citasRes.ok ? await citasRes.json() : [];
-      const employees = empRes.ok ? await empRes.json() : [];
+      const users = usersRes.ok ? await usersRes.json().catch(() => []) : [];
+      const citas = citasRes.ok ? await citasRes.json().catch(() => []) : [];
+      const employees = empRes.ok ? await empRes.json().catch(() => []) : [];
       
       this.setState({
         stats: {
@@ -221,12 +221,12 @@ class AdminDashboard extends Component {
         fetch(`${API_BASE_URL}/empleados`, { headers })
       ]);
 
-      const servData = servRes.ok ? await servRes.json() : { data: [] };
+      const servData = servRes.ok ? await servRes.json().catch(() => ({ data: [] })) : { data: [] };
 
       this.setState({
         servicios: Array.isArray(servData) ? servData : (servData.data ?? []),
-        vehiculos: vehRes.ok ? await vehRes.json() : [],
-        empleados: empRes.ok ? await empRes.json() : []
+        vehiculos: vehRes.ok ? await vehRes.json().catch(() => []) : [],
+        empleados: empRes.ok ? await empRes.json().catch(() => []) : []
       });
     } catch (error) {
       console.error('Error fetching form configs:', error);
@@ -262,8 +262,6 @@ class AdminDashboard extends Component {
     if (!placa || !marca || !modelo || !anio || !tipo || !color) {
       if (this.props.showToast) {
         this.props.showToast('Por favor complete todos los campos obligatorios del vehículo.', 'error');
-      } else {
-        alert('Por favor complete todos los campos obligatorios del vehículo.');
       }
       return;
     }
@@ -271,8 +269,6 @@ class AdminDashboard extends Component {
     if (!showQuickUser && !userId) {
       if (this.props.showToast) {
         this.props.showToast('Por favor seleccione un propietario o registre uno nuevo.', 'error');
-      } else {
-        alert('Por favor seleccione un propietario o registre uno nuevo.');
       }
       return;
     }
@@ -280,8 +276,6 @@ class AdminDashboard extends Component {
     if (showQuickUser && (!newUserNombre || !newUserApellido || !newUserNumDoc || !newUserTelefono || !newUserEmail)) {
       if (this.props.showToast) {
         this.props.showToast('Por favor complete todos los campos del nuevo usuario.', 'error');
-      } else {
-        alert('Por favor complete todos los campos del nuevo usuario.');
       }
       return;
     }
@@ -301,8 +295,7 @@ class AdminDashboard extends Component {
         const userPayload = {
           nombre: newUserNombre,
           apellidos: newUserApellido,
-          documentType: newUserTipoDoc,
-          documentNumber: newUserNumDoc,
+          documento: newUserNumDoc,
           telefono: newUserTelefono,
           email: newUserEmail,
           password: `MotoExpert${newUserNumDoc}`,
@@ -318,11 +311,11 @@ class AdminDashboard extends Component {
         });
 
         if (!userRes.ok) {
-          const errorData = await userRes.json();
+          const errorData = await userRes.json().catch(() => ({ message: 'Error desconocido al registrar usuario' }));
           console.error('Error registro usuario:', errorData);
           throw new Error(errorData.message || 'Error al registrar el nuevo usuario');
         }
-        const newUser = await userRes.json();
+        const newUser = await userRes.json().catch(() => ({}));
         finalUserId = newUser.id;
       }
 
@@ -339,7 +332,7 @@ class AdminDashboard extends Component {
       console.log('Vehiculo payload:', vehicleBody);
 
       const checkRes = await fetch(`${API_BASE_URL}/vehiculos/placa/${placa.trim()}`, { headers });
-      const existingVehicle = checkRes.ok ? await checkRes.json() : null;
+      const existingVehicle = checkRes.ok ? await checkRes.json().catch(() => null) : null;
 
       let vehicleId;
       if (existingVehicle) {
@@ -350,7 +343,7 @@ class AdminDashboard extends Component {
           body: JSON.stringify(vehicleBody)
         });
         if (!updateRes.ok) {
-          const errorData = await updateRes.json();
+          const errorData = await updateRes.json().catch(() => ({ message: 'Error al actualizar el vehículo' }));
           console.error('Error actualizando vehiculo:', errorData);
           throw new Error(errorData.message || 'Error al actualizar el vehículo');
         }
@@ -363,11 +356,11 @@ class AdminDashboard extends Component {
           body: JSON.stringify(vehicleBody)
         });
         if (!createRes.ok) {
-          const errorData = await createRes.json();
+          const errorData = await createRes.json().catch(() => ({ message: 'Error al crear el vehículo' }));
           console.error('Error creando vehiculo:', errorData);
           throw new Error(errorData.message || 'Error al crear el vehículo');
         }
-        const newVehicle = await createRes.json();
+        const newVehicle = await createRes.json().catch(() => ({}));
         vehicleId = newVehicle.id;
       }
 
@@ -390,8 +383,6 @@ class AdminDashboard extends Component {
 
       if (this.props.showToast) {
         this.props.showToast('Vehículo y propietario procesados correctamente.', 'success');
-      } else {
-        alert('Vehículo y propietario procesados correctamente.');
       }
       
       this.setState({
@@ -407,8 +398,6 @@ class AdminDashboard extends Component {
       console.error('Error general en handleSyncVehicle:', error);
       if (this.props.showToast) {
         this.props.showToast(error.message, 'error');
-      } else {
-        alert(error.message);
       }
     } finally {
       this.setState({ submittingVehicle: false });
@@ -484,8 +473,6 @@ class AdminDashboard extends Component {
       const firstErrorKey = Object.keys(errors)[0];
       if (this.props.showToast) {
         this.props.showToast(messages[firstErrorKey], 'error');
-      } else {
-        alert(messages[firstErrorKey]);
       }
 
       // Scroll automático al primer error
@@ -528,8 +515,6 @@ class AdminDashboard extends Component {
       if (res.ok) {
         if (this.props.showToast) {
           this.props.showToast('Servicio programado correctamente. Código de entrega enviado.', 'success');
-        } else {
-          alert('Servicio programado correctamente. Código de entrega enviado.');
         }
         
         if (selectedPaymentMethod === 'Transferencia') {
@@ -550,18 +535,14 @@ class AdminDashboard extends Component {
         });
         this.fetchDashboardData();
       } else {
-        const error = await res.json();
+        const error = await res.json().catch(() => ({ message: 'Error al programar servicio' }));
         if (this.props.showToast) {
           this.props.showToast(error.message || 'Error al programar servicio', 'error');
-        } else {
-          alert(error.message || 'Error al programar servicio');
         }
       }
     } catch (error) {
       if (this.props.showToast) {
         this.props.showToast('Error de conexión', 'error');
-      } else {
-        alert('Error de conexión');
       }
     } finally {
       this.setState({ submittingAppointment: false });
@@ -650,9 +631,9 @@ class AdminDashboard extends Component {
 
       const types = s.tipoVehiculo.split(',').map(t => t.trim().toLowerCase());
       
-      // Mapeo flexible para Carro -> Auto/Carro
-      if (vehicleTypeLower === 'carro') {
-        return types.includes('carro') || types.includes('auto');
+      // Mapeo flexible para Carro/Camioneta -> Auto/Carro
+      if (vehicleTypeLower === 'carro' || vehicleTypeLower === 'camioneta') {
+        return types.includes('carro') || types.includes('auto') || types.includes('camioneta');
       }
       
       return types.includes(vehicleTypeLower);
@@ -828,6 +809,7 @@ class AdminDashboard extends Component {
                   >
                     <option value="Moto">Moto</option>
                     <option value="Carro">Carro</option>
+                    <option value="Camioneta">Camioneta</option>
                   </select>
                 </div>
                 <div>

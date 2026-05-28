@@ -30,6 +30,9 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
   };
 
   const handleSubmit = async () => {
+    // 1. Validar campos locales primero para no "gastar" el código si falta algo
+    if (!validate()) return;
+
     setIsSubmitting(true);
     const token = localStorage.getItem('token');
     
@@ -38,9 +41,11 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
       const sanitized = String(tokenCode || '').replace(/\D/g, '').slice(0, 6);
       if (sanitized.length !== 6) {
         setTokenError('Ingresa un código válido de 6 dígitos');
+        setIsSubmitting(false);
         return;
       }
 
+      // 2. Validar el código con el servidor
       const validateRes = await fetch(`${API_BASE_URL}/payments/validate`, {
         method: 'POST',
         headers: {
@@ -53,34 +58,26 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
       if (!validateRes.ok) {
         if (validateRes.status === 404) {
           setTokenError('Código no encontrado');
-          return;
-        }
-        if (validateRes.status === 409) {
+        } else if (validateRes.status === 409) {
           setTokenError('Código ya fue usado');
-          return;
-        }
-        if (validateRes.status === 410) {
+        } else if (validateRes.status === 410) {
           setTokenError('Código expirado');
-          return;
+        } else {
+          const errData = await validateRes.json().catch(() => null);
+          setTokenError(errData?.message || 'No se pudo validar el código');
         }
-
-        const errData = await validateRes.json().catch(() => null);
-        const msg =
-          typeof errData?.message === 'string'
-            ? errData.message
-            : 'No se pudo validar el código';
-        setTokenError(msg);
+        setIsSubmitting(false);
         return;
       }
 
       const validated = await validateRes.json().catch(() => null);
       if (!validated || validated.valid !== true) {
         setTokenError('No se pudo validar el código');
+        setIsSubmitting(false);
         return;
       }
 
-      if (!validate()) return;
-
+      // 3. Si el código es válido, proceder a finalizar el servicio
       const report = {
         workPerformed,
         partsUsed: partsUsed.trim() || undefined,
@@ -102,10 +99,14 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
 
       if (response.ok) {
         onSuccess();
-        showToast('Service finalized. Customer has been notified.', 'success');
+        showToast('Servicio finalizado. El cliente ha sido notificado.', 'success');
+      } else {
+        const errorData = await response.json().catch(() => null);
+        showToast(errorData?.message || 'Error al finalizar el servicio', 'error');
       }
     } catch (err) {
       console.error('Error:', err);
+      showToast('Error de conexión', 'error');
     } finally {
       setIsSubmitting(false);
     }
