@@ -721,11 +721,9 @@ class AdminDashboard extends Component {
               Panel de Administración
             </div>
             <h1 className="text-5xl md:text-6xl font-black text-[#F8FAFC] italic uppercase tracking-tighter mb-4">
-              HOLA, <span className="text-purple-500">{userName.split(' ')[0]}</span>
+              HOLA <span className="text-purple-500">{userName.split(' ')[0]}</span>
             </h1>
-            <p className="text-slate-400 text-sm max-w-lg mx-auto font-medium leading-relaxed">
-              Bienvenido de nuevo al centro de control de MotoExpert. Aquí puedes gestionar vehículos, programar servicios y supervisar el rendimiento global del negocio.
-            </p>
+           
           </div>
         </div>
 
