@@ -71,7 +71,13 @@ export class AuthService {
       return userWithoutPassword;
     } catch (error) {
       if (error.code === '23505') {
-        throw new BadRequestException('Ese correo ya está registrado');
+        if (error.detail && error.detail.includes('email')) {
+          throw new BadRequestException('Ese correo ya está registrado');
+        }
+        if (error.detail && error.detail.includes('documento')) {
+          throw new BadRequestException('Ese número de documento ya está registrado');
+        }
+        throw new BadRequestException('Ya existe un registro con esos datos (correo o documento)');
       }
       throw new BadRequestException('Error al crear el usuario');
     }

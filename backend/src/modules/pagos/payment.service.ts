@@ -15,6 +15,8 @@ import { PaymentMethod } from './enums/payment-method.enum';
 import { PaymentStatus } from './enums/payment-status.enum';
 import { ActivityService } from '../activity/activity.service';
 
+import { createHash } from 'crypto';
+
 @Injectable()
 export class PaymentService {
   constructor(
@@ -103,33 +105,43 @@ export class PaymentService {
     valid: true;
     appointmentId: number;
   }> {
+    // 1. Intentar buscar en la tabla de pagos (tokenCode)
     const payment = await this.paymentRepo.findOne({
       where: { tokenCode },
-      select: {
-        id: true,
-        appointmentId: true,
-        tokenCode: true,
-        tokenUsed: true,
-        tokenExpiresAt: true,
-      },
     });
 
-    if (!payment) {
+    if (payment) {
+      if (payment.tokenUsed) {
+        throw new ConflictException('Token ya fue usado');
+      }
+
+      if (!payment.tokenExpiresAt || payment.tokenExpiresAt.getTime() <= Date.now()) {
+        throw new GoneException('Token expirado');
+      }
+
+      payment.tokenUsed = true;
+      await this.paymentRepo.save(payment);
+
+      return { valid: true, appointmentId: payment.appointmentId };
+    }
+
+    // 2. Si no se encuentra en pagos, buscar en la tabla de citas (codigoEntrega)
+    const cita = await this.citaRepo.findOne({
+      where: { codigoEntrega: tokenCode },
+    });
+
+    if (!cita) {
       throw new NotFoundException('Token no encontrado');
     }
 
-    if (payment.tokenUsed) {
-      throw new ConflictException('Token ya fue usado');
+    // Si la cita tiene un pago asociado, lo marcamos como usado para permitir finalizar el servicio
+    const associatedPayment = await this.paymentRepo.findOneBy({ appointmentId: cita.id });
+    if (associatedPayment) {
+      associatedPayment.tokenUsed = true;
+      await this.paymentRepo.save(associatedPayment);
     }
 
-    if (!payment.tokenExpiresAt || payment.tokenExpiresAt.getTime() <= Date.now()) {
-      throw new GoneException('Token expirado');
-    }
-
-    payment.tokenUsed = true;
-    await this.paymentRepo.save(payment);
-
-    return { valid: true, appointmentId: payment.appointmentId };
+    return { valid: true, appointmentId: cita.id };
   }
 
   async getTokenInfoForUser(userId: number, appointmentId: number): Promise<{
@@ -168,7 +180,9 @@ export class PaymentService {
     };
   }
 
-  async initWompi(appointmentId: number): Promise<{
+  async initWompi(
+    appointmentId: number,
+  ): Promise<{
     publicKey: string;
     reference: string;
     integritySignature: string;
@@ -180,31 +194,94 @@ export class PaymentService {
       relations: { servicio: true },
     });
 
-    if (!cita) throw new NotFoundException('Cita no encontrada');
-    if (!cita.servicio?.precio) throw new BadRequestException('El servicio no tiene precio definido');
+    if (!cita) {
+      throw new NotFoundException(
+        'Cita no encontrada',
+      );
+    }
 
-    const amountCOP = Number(cita.servicio.precio);
-    const amountInCents = Math.round(amountCOP * 100);
+    if (!cita.servicio?.precio) {
+      throw new BadRequestException(
+        'El servicio no tiene precio definido',
+      );
+    }
+
+    // PRECIO
+    const amountCOP = Number(
+      cita.servicio.precio,
+    );
+
+    // WOMPI USA CENTAVOS
+    const amountInCents = Math.round(
+      amountCOP * 100,
+    );
+
     const currency = 'COP';
-    const ts = Date.now().toString(36); 
-    const reference = `me-${appointmentId}-${Date.now().toString(36)}`;
-    const integritySecret = (process.env.WOMPI_INTEGRITY_SECRET ?? '').trim();
-    const publicKey = (process.env.WOMPI_PUBLIC_KEY ?? '').trim();
 
-    console.log(`[Wompi Debug] secret length: ${integritySecret.length}`);
-    console.log(`[Wompi Debug] first charCode: ${integritySecret.charCodeAt(0)}`);
-    console.log(`[Wompi Debug] last charCode: ${integritySecret.charCodeAt(integritySecret.length - 1)}`);
-    const redirectUrl = `${process.env.FRONTEND_URL ?? 'http://localhost:3002'}/appointments/payment-confirmation`;
+    // REFERENCIA ÚNICA
+    const reference = `me-${appointmentId}-${Date.now()}`;
 
-    // Firma SHA-256 según spec Wompi: reference + amountInCents + currency + integritySecret
-    const { createHash } = await import('crypto');
-    const raw = `${reference}${amountInCents}${currency}${integritySecret}`;
-    
-    console.log(`[Wompi] STRING A ENCRIPTAR: ${raw}`);
-    const integritySignature = createHash('sha256').update(raw).digest('hex');
+    // VARIABLES .ENV
+    const integritySecret =
+      process.env.WOMPI_INTEGRITY_SECRET?.trim() || '';
 
-    return { publicKey, reference, integritySignature, amountCOP, redirectUrl };
+    const publicKey =
+      process.env.WOMPI_PUBLIC_KEY?.trim() || '';
+
+    // URL REDIRECT
+    const redirectUrl = `${
+      process.env.FRONTEND_URL ??
+      'http://localhost:3002'
+    }/appointments/payment-confirmation`;
+
+    console.log(
+      '[Wompi Debug] amountInCents:',
+      amountInCents,
+    );
+
+    console.log(
+      '[Wompi Debug] currency:',
+      currency,
+    );
+
+    console.log(
+      '[Wompi Debug] reference:',
+      reference,
+    );
+
+    console.log(
+      '[Wompi Debug] integritySecret:',
+      integritySecret,
+    );
+
+    // ORDEN CORRECTO WOMPI:
+    // amountInCents + currency + reference + integritySecret
+
+    const raw = `${amountInCents}${currency}${reference}${integritySecret}`;
+
+    console.log(
+      '[Wompi] STRING A ENCRIPTAR:',
+      raw,
+    );
+
+    const integritySignature = createHash('sha256')
+      .update(raw, 'utf8')
+      .digest('hex');
+
+    console.log(
+      '[Wompi] SIGNATURE:',
+      integritySignature,
+    );
+
+    return {
+      publicKey,
+      reference,
+      integritySignature,
+      amountCOP,
+      redirectUrl,
+    };
   }
+
 
   async verifyWompi(
     transactionId: string,
