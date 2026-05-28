@@ -9,14 +9,13 @@ import MiRendimiento from '../components/empleado/MiRendimiento';
 
 import { API_BASE_URL } from '../apiConfig';
 
-const EmpleadoDashboard = ({ showToast, activeTab: propActiveTab }) => {
-  const [activeTab, setActiveTab] = useState(propActiveTab || 'inicio');
+const EmpleadoDashboard = ({ activeTab: propActiveTab }) => {
   const [loading, setLoading] = useState(true);
-  const [employeeInfo, setEmployeeInfo] = useState({
+  const employeeInfo = {
     nombre: localStorage.getItem('userName') || 'Empleado',
     especialidad: 'Especialista Premium',
     foto: localStorage.getItem('userPicture') || null
-  });
+  };
   const [stats, setStats] = useState({
     today: 0,
     completed: 0,
@@ -32,18 +31,11 @@ const EmpleadoDashboard = ({ showToast, activeTab: propActiveTab }) => {
   const [recentHistory, setRecentHistory] = useState([]);
 
   useEffect(() => {
-    if (propActiveTab) {
-      setActiveTab(propActiveTab);
-    }
-  }, [propActiveTab]);
-
-  useEffect(() => {
     fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
     const token = localStorage.getItem('token');
-    const employeeUserId = localStorage.getItem('userId');
     const headers = { 'Authorization': `Bearer ${token}` };
 
     try {
@@ -135,11 +127,6 @@ const EmpleadoDashboard = ({ showToast, activeTab: propActiveTab }) => {
       console.error('Error fetching dashboard data:', err);
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = '/';
   };
 
   if (loading) {

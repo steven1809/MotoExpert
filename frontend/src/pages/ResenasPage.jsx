@@ -42,7 +42,6 @@ const ResenasPage = () => {
   
   // Estados para el formulario
   const [activeFilter, setActiveFilter] = useState('all');
-  const [helpfulMap, setHelpfulMap] = useState({});
   const [formRating, setFormRating] = useState(0);
   const [formServiceRating, setFormServiceRating] = useState(0);
   const [formText, setFormText] = useState('');
@@ -52,7 +51,6 @@ const ResenasPage = () => {
   // Estados de carga y error
   const [loading, setLoading] = useState(true);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
-  const [loadingPending, setLoadingPending] = useState(false);
   const [error, setError] = useState(null);
   const [employeesError, setEmployeesError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -71,12 +69,6 @@ const ResenasPage = () => {
         if (response.ok) {
           const data = await response.json();
           setReviews(data);
-          // Inicializar helpfulMap
-          const helpMap = {};
-          data.forEach(review => {
-            helpMap[review.id] = false;
-          });
-          setHelpfulMap(helpMap);
         } else {
           throw new Error('Error al cargar las reseñas');
         }
@@ -97,7 +89,6 @@ const ResenasPage = () => {
 
     const fetchPending = async () => {
       try {
-        setLoadingPending(true);
         const response = await fetch(`${API_BASE_URL}/citas`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -110,8 +101,6 @@ const ResenasPage = () => {
         }
       } catch (err) {
         console.error('Error fetching pending appointments:', err);
-      } finally {
-        setLoadingPending(false);
       }
     };
 
@@ -245,6 +234,7 @@ const ResenasPage = () => {
     return true;
   });
 
+<<<<<<< Updated upstream
   const handleHelpful = async (id) => {
     // Lógica local simplificada ya que no hay endpoint de helpful en el backend real
     setHelpfulMap(prev => ({ ...prev, [id]: !prev[id] }));
@@ -273,6 +263,8 @@ const ResenasPage = () => {
     }
   };
 
+=======
+>>>>>>> Stashed changes
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!formRating || !formServiceRating || !formText.trim() || !formCitaId || !token) return;
@@ -297,7 +289,6 @@ const ResenasPage = () => {
       });
 
       if (response.ok) {
-        const createdReview = await response.json();
         // Recargar reseñas para ver la nueva
         const refreshRes = await fetch(`${API_BASE_URL}/ratings`);
         if (refreshRes.ok) {

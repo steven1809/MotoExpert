@@ -4,7 +4,6 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-import premiumImg from "../assets/services/premium.jpg";
 import expressImg from "../assets/services/express.jpeg";
 import interiorImg from "../assets/services/limpiezap.jpeg";
 import motorImg from "../assets/services/motor.jpeg";
@@ -123,17 +122,6 @@ const dedupeServicios = (list) => {
   }
 
   return Array.from(map.values());
-};
-
-const getCategoryTags = (servicio) => {
-  const n = normalizeText(limpiarTexto(servicio?.nombre));
-  const tags = [];
-  if (n.includes("interior")) tags.push("Interior");
-  if (n.includes("exterior")) tags.push("Exterior");
-  if (n.includes("detailing") || n.includes("detail")) tags.push("Detailing");
-  if (n.includes("express")) tags.push("Express");
-  if (n.includes("premium")) tags.push("Premium");
-  return tags.length ? tags : ["Todos"];
 };
 
 export default function Servicios({ setView }) {

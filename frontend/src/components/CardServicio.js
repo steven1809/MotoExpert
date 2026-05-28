@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
 
-import premiumImg from "../assets/services/premium.jpg";
 import expressImg from "../assets/services/express.jpeg";
 import interiorImg from "../assets/services/limpiezap.jpeg";
 import motorImg from "../assets/services/motor.jpeg";

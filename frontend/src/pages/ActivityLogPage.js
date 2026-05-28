@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -17,7 +17,7 @@ const ActivityLogPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -47,11 +47,11 @@ const ActivityLogPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, filter]);
 
   useEffect(() => {
     fetchActivities();
-  }, [page, limit, filter]);
+  }, [fetchActivities]);
 
   const getBadgeColor = (type) => {
     switch (type?.toLowerCase()) {

@@ -56,7 +56,6 @@ export class Usuario {
   @Column('json', { nullable: true, default: [] })
   bonuses: { code: string; discount: number; createdAt: string }[];
 
-<<<<<<< Updated upstream
   @Column({ type: 'int', default: 0 })
   cancelaciones_sin_aviso: number;
 
@@ -65,11 +64,9 @@ export class Usuario {
 
   @Column({ type: 'timestamp', nullable: true })
   bloqueadoHasta: Date;
-=======
   // Campo temporal para guardar el challenge de WebAuthn
   @Column({ nullable: true })
   currentWebAuthnChallenge?: string;
->>>>>>> Stashed changes
 
   @OneToMany(() => Vehiculo, (vehiculo) => vehiculo.usuario)
   vehiculos: Vehiculo[];
