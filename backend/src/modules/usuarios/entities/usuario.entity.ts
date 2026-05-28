@@ -55,6 +55,15 @@ export class Usuario {
   @Column('json', { nullable: true, default: [] })
   bonuses: { code: string; discount: number; createdAt: string }[];
 
+  @Column({ type: 'int', default: 0 })
+  cancelaciones_sin_aviso: number;
+
+  @Column({ type: 'int', default: 0 })
+  numCancelaciones: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  bloqueadoHasta: Date;
+
   @OneToMany(() => Vehiculo, (vehiculo) => vehiculo.usuario)
   vehiculos: Vehiculo[];
 

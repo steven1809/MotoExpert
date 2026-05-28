@@ -681,6 +681,9 @@ const Citas = ({
   const [notes, setNotes] = useState('');
   const [activeReportCitaId, setActiveReportCitaId] = useState(null);
   const [ratings, setRatings] = useState([]);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [selectedCitaForCancel, setSelectedCitaForCancel] = useState(null);
+  const [motivoCancelacion, setMotivoCancelacion] = useState('');
   const formSectionRef = useRef(null);
   const pendingSectionRef = useRef(null);
   const historySectionRef = useRef(null);
@@ -821,7 +824,16 @@ const Citas = ({
       try {
         const response = await fetch(`${API_BASE_URL}/ratings/cita/${cita.id}`, { headers });
         if (response.ok) {
-          const rating = await response.json();
+          // Safely parse response (handle empty or non-JSON responses)
+          const text = await response.text();
+          let rating = null;
+          if (text) {
+            try {
+              rating = JSON.parse(text);
+            } catch (parseErr) {
+              console.error(`Failed to parse rating JSON for cita ${cita.id}:`, parseErr);
+            }
+          }
           if (rating) ratingsList.push(rating);
         }
       } catch (err) {
@@ -907,30 +919,51 @@ const Citas = ({
     };
   }, [currentTime]);
 
-  const cancelCita = useCallback(async (citaId) => {
+  const openCancelModal = (cita) => {
+    setSelectedCitaForCancel(cita);
+    setMotivoCancelacion('');
+    setIsCancelModalOpen(true);
+  };
+
+  const confirmCancelCita = async () => {
+    if (!selectedCitaForCancel) return;
+    const citaId = selectedCitaForCancel.id;
     if (processedCitas.has(citaId)) return;
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/citas/${citaId}/estado`, {
-        method: 'PATCH',
+      const response = await fetch(`${API_BASE_URL}/citas/${citaId}`, {
+        method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ estado: 'CANCELADO' }),
+        body: JSON.stringify({ motivo: motivoCancelacion }),
       });
       
       if (response.ok) {
+        const data = await response.json();
+        if (data.aviso) {
+          alert(data.aviso);
+        }
         setProcessedCitas(prev => new Set([...prev, citaId]));
         setCitas(prev => prev.map(c => 
-          c.id === citaId ? { ...c, estado: 'CANCELADO' } : c
+          c.id === citaId ? { ...c, estado: 'CANCELADA' } : c
         ));
+        fetchInitialData();
+      } else {
+        const errorData = await response.json().catch(() => null);
+        alert(errorData?.message || 'Error al cancelar la cita');
       }
     } catch (err) {
       console.error('Error canceling cita:', err);
+      alert('Error de conexión al cancelar la cita');
+    } finally {
+      setIsCancelModalOpen(false);
+      setSelectedCitaForCancel(null);
+      setMotivoCancelacion('');
     }
-  }, [processedCitas]);
+  };
 
 
 
@@ -1343,22 +1376,8 @@ const Citas = ({
       });
     };
 
-    const handleCancelAppointment = async (cita) => {
-      if (!window.confirm('Are you sure you want to cancel this appointment?')) return;
-      
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/citas/${cita.id}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          fetchInitialData();
-        }
-      } catch (err) {
-        console.error('Error canceling appointment:', err);
-      }
+    const handleCancelAppointment = (cita) => {
+      openCancelModal(cita);
     };
 
     const getAlertStyle = (type) => {
@@ -1565,6 +1584,75 @@ const Citas = ({
               setTokenModalCode('');
             }}
           />
+
+          {isCancelModalOpen && selectedCitaForCancel && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+              <div className="w-full max-w-md bg-white dark:bg-[#0b1220] rounded-3xl border border-slate-200 dark:border-white/10 p-6 space-y-6">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                    ¿Cancelar esta cita?
+                  </h3>
+                  <div className="text-sm text-slate-600 dark:text-[#94A3B8] space-y-2">
+                    <p>Servicio: {selectedCitaForCancel.servicio?.nombre || '—'}</p>
+                    <p>Fecha: {selectedCitaForCancel.fecha || '—'}, {selectedCitaForCancel.hora_inicio?.substring(0, 5) || '—'}</p>
+                    <p>Vehículo: {selectedCitaForCancel.vehiculo?.placa || '—'}</p>
+                  </div>
+                  {(() => {
+                    const citaDate = new Date(`${selectedCitaForCancel.fecha}T${selectedCitaForCancel.hora_inicio}`);
+                    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+                    const diffMs = citaDate - now;
+                    const diffHours = diffMs / (1000 * 60 * 60);
+                    const isLessThan24Hours = diffHours < 24;
+                    if (isLessThan24Hours) {
+                      return (
+                        <div className="mt-4 p-3 rounded-xl border border-orange-500/20 bg-orange-500/10 text-orange-400 text-sm font-black">
+                          ⚠️ Cancelar con menos de 24 horas de anticipación puede generar una penalización.
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  <div className="mt-4 space-y-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-[#94A3B8]">
+                      Motivo de cancelación (opcional)
+                    </label>
+                    <textarea
+                      value={motivoCancelacion}
+                      onChange={(e) => setMotivoCancelacion(e.target.value)}
+                      placeholder="Escribe el motivo de la cancelación..."
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl bg-[#0b1220] border border-white/10 text-white placeholder-white/40 outline-none focus:border-[#2563EB]/40"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCancelModalOpen(false);
+                      setSelectedCitaForCancel(null);
+                    }}
+                    className="flex-1 py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                  >
+                    Volver
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmCancelCita}
+                    className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-black uppercase tracking-widest transition-colors"
+                  >
+                    Sí, cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200">
