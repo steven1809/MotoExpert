@@ -11,16 +11,24 @@ class Navbar extends Component {
     this.state = {
       open: false,
       dropdownOpen: false,
+      scrolled: false,
     };
     this.dropdownRef = React.createRef();
+    this.handleScroll = this.handleScroll.bind(this);
+  }
+
+  handleScroll() {
+    this.setState({ scrolled: window.scrollY > 10 });
   }
 
   componentDidMount() {
     document.addEventListener("mousedown", this.handleClickOutside);
+    window.addEventListener('scroll', this.handleScroll, { passive: true });
   }
 
   componentWillUnmount() {
     document.removeEventListener("mousedown", this.handleClickOutside);
+    window.removeEventListener('scroll', this.handleScroll);
   }
 
   handleClickOutside = (event) => {
@@ -294,7 +302,11 @@ class Navbar extends Component {
 
         {/* Top Navbar for Standard User (Desktop) */}
         {isStandardUser && (
-          <header className="hidden md:flex fixed top-0 left-0 right-0 h-20 bg-[#050507]/80 backdrop-blur-xl border-b border-white/[0.05] z-[60] items-center justify-between px-10">
+          <header className={`hidden md:flex fixed top-0 left-0 right-0 h-20 z-[60] items-center justify-between px-10 transition-all duration-300 ${
+            this.state.scrolled
+              ? 'bg-[#022873] shadow-lg shadow-black/20 backdrop-blur-sm border-b border-white/10'
+              : 'bg-transparent border-b border-transparent'
+          }`}>
             <button onClick={() => setView("dashboard")} className="group text-left">
                 <img 
                      src="/logoMotoExpert.png" 
@@ -402,7 +414,13 @@ class Navbar extends Component {
         )}
 
         {/* Mobile Header */}
-        <header className="md:hidden fixed top-0 left-0 right-0 z-[60] bg-[#050507]/90 backdrop-blur-lg border-b border-white/[0.05]">
+        <header className={`md:hidden fixed top-0 left-0 right-0 z-[60] transition-all duration-300 ${
+          isStandardUser
+            ? (this.state.scrolled
+                ? 'bg-[#022873] shadow-lg shadow-black/20 backdrop-blur-sm border-b border-white/10'
+                : 'bg-transparent border-b border-transparent')
+            : 'bg-[#050507]/90 backdrop-blur-lg border-b border-white/[0.05]'
+        }`}>
           <div className="h-18 px-5 flex items-center justify-between py-4">
             <button onClick={() => setView("dashboard")} className="text-left flex items-center gap-3">
               <img 
