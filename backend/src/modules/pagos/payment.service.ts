@@ -15,8 +15,6 @@ import { PaymentMethod } from './enums/payment-method.enum';
 import { PaymentStatus } from './enums/payment-status.enum';
 import { ActivityService } from '../activity/activity.service';
 
-import { createHash } from 'crypto';
-
 @Injectable()
 export class PaymentService {
   constructor(
@@ -60,20 +58,6 @@ export class PaymentService {
       const { tokenCode, tokenExpiresAt } = await this.buildToken();
       payment.tokenCode = tokenCode;
       payment.tokenExpiresAt = tokenExpiresAt;
-    } else if (method === PaymentMethod.WOMPI) {
-      if (typeof mockApproved !== 'boolean') {
-        throw new BadRequestException(
-          'mockApproved es requerido para wompi',
-        );
-      }
-
-      payment.status = mockApproved ? PaymentStatus.PAID : PaymentStatus.FAILED;
-
-      if (payment.status === PaymentStatus.PAID) {
-        const { tokenCode, tokenExpiresAt } = await this.buildToken();
-        payment.tokenCode = tokenCode;
-        payment.tokenExpiresAt = tokenExpiresAt;
-      }
     } else {
       throw new BadRequestException('Método de pago inválido');
     }
@@ -178,169 +162,6 @@ export class PaymentService {
         tokenExpiresAt: payment.tokenExpiresAt,
       },
     };
-  }
-
-  async initWompi(
-    appointmentId: number,
-  ): Promise<{
-    publicKey: string;
-    reference: string;
-    integritySignature: string;
-    amountCOP: number;
-    redirectUrl: string;
-  }> {
-    const cita = await this.citaRepo.findOne({
-      where: { id: appointmentId },
-      relations: { servicio: true },
-    });
-
-    if (!cita) {
-      throw new NotFoundException(
-        'Cita no encontrada',
-      );
-    }
-
-    if (!cita.servicio?.precio) {
-      throw new BadRequestException(
-        'El servicio no tiene precio definido',
-      );
-    }
-
-    // PRECIO
-    const amountCOP = Number(
-      cita.servicio.precio,
-    );
-
-    // WOMPI USA CENTAVOS
-    const amountInCents = Math.round(
-      amountCOP * 100,
-    );
-
-    const currency = 'COP';
-
-    // REFERENCIA ÚNICA
-    const reference = `me-${appointmentId}-${Date.now()}`;
-
-    // VARIABLES .ENV
-    const integritySecret =
-      process.env.WOMPI_INTEGRITY_SECRET?.trim() || '';
-
-    const publicKey =
-      process.env.WOMPI_PUBLIC_KEY?.trim() || '';
-
-    // URL REDIRECT
-    const redirectUrl = `${
-      process.env.FRONTEND_URL ??
-      'http://localhost:3002'
-    }/appointments/payment-confirmation`;
-
-    console.log(
-      '[Wompi Debug] amountInCents:',
-      amountInCents,
-    );
-
-    console.log(
-      '[Wompi Debug] currency:',
-      currency,
-    );
-
-    console.log(
-      '[Wompi Debug] reference:',
-      reference,
-    );
-
-    console.log(
-      '[Wompi Debug] integritySecret:',
-      integritySecret,
-    );
-
-    // ORDEN CORRECTO WOMPI:
-    // amountInCents + currency + reference + integritySecret
-
-    const raw = `${amountInCents}${currency}${reference}${integritySecret}`;
-
-    console.log(
-      '[Wompi] STRING A ENCRIPTAR:',
-      raw,
-    );
-
-    const integritySignature = createHash('sha256')
-      .update(raw, 'utf8')
-      .digest('hex');
-
-    console.log(
-      '[Wompi] SIGNATURE:',
-      integritySignature,
-    );
-
-    return {
-      publicKey,
-      reference,
-      integritySignature,
-      amountCOP,
-      redirectUrl,
-    };
-  }
-
-
-  async verifyWompi(
-    transactionId: string,
-  ): Promise<{ status: string; appointmentId: number | null }> {
-    const wompiResponse = await fetch(
-      `https://sandbox.wompi.co/v1/transactions/${transactionId}`,
-      { headers: { Authorization: `Bearer ${process.env.WOMPI_PRIVATE_KEY}` } },
-    );
-    if (!wompiResponse.ok)
-      throw new NotFoundException('Transacción no encontrada en Wompi');
-
-    const wompiData = await wompiResponse.json();
-    const transaction = wompiData?.data;
-    const wompiStatus = transaction?.status;
-    const reference = transaction?.reference as string | undefined;
-
-    if (!reference)
-      throw new BadRequestException('Referencia no encontrada en la transacción');
-
-    const appointmentId = Number(reference.split('-')[1]);
-    if (!appointmentId || isNaN(appointmentId))
-      throw new BadRequestException(
-        'No se pudo extraer el appointmentId de la referencia',
-      );
-
-    if (wompiStatus !== 'APPROVED') return { status: wompiStatus, appointmentId };
-
-    const existing = await this.paymentRepo.findOneBy({ appointmentId });
-    if (existing) return { status: wompiStatus, appointmentId };
-
-    const cita = await this.citaRepo.findOneBy({ id: appointmentId });
-    if (!cita) throw new NotFoundException('Cita no encontrada');
-
-    const { tokenCode, tokenExpiresAt } = await this.buildToken();
-    const payment = this.paymentRepo.create({
-      appointmentId,
-      appointment: cita,
-      method: PaymentMethod.WOMPI,
-      status: PaymentStatus.PAID,
-      tokenCode,
-      tokenExpiresAt,
-      tokenUsed: false,
-    });
-    const saved = await this.paymentRepo.save(payment);
-
-    try {
-      await this.activityService.logActivity(
-        'PAGO_COMPLETADO',
-        `Pago Wompi aprobado para cita #${appointmentId}`,
-        'pago',
-        appointmentId.toString(),
-        'sistema',
-        'sistema',
-      );
-    } catch (error) {
-      console.error('Error logging activity:', error);
-    }
-
-    return { status: 'APPROVED', appointmentId };
   }
 
   private async buildToken(): Promise<{

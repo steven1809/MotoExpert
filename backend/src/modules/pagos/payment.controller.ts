@@ -15,7 +15,6 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { GeneratePaymentDto } from './dto/generate-payment.dto';
 import { ValidateTokenDto } from './dto/validate-token.dto';
 import { PaymentService } from './payment.service';
-import { WompiInitDto } from './dto/wompi-init.dto';
 
 @Injectable()
 export class UsuarioRoleGuard implements CanActivate {
@@ -68,16 +67,5 @@ export class PaymentController {
       req.user.userId,
       Number(appointmentId),
     );
-  }
-
-  @Post('wompi/init')
-  @UseGuards(JwtAuthGuard, UsuarioRoleGuard)
-  async wompiInit(@Body() dto: WompiInitDto) {
-    return this.paymentService.initWompi(dto.appointmentId);
-  }
-
-  @Get('wompi/verify/:transactionId')
-  async wompiVerify(@Param('transactionId') transactionId: string) {
-    return this.paymentService.verifyWompi(transactionId);
   }
 }
