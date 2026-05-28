@@ -1,4 +1,5 @@
 import React, { Component, useEffect, useState } from 'react';
+import { lightTheme, darkTheme } from '../styles/theme';
 import carHeroImg from "../assets/images/1.png";
 import expressImg from "../assets/services/express.jpeg";
 import interiorImg from "../assets/services/limpiezap.jpeg";
@@ -22,7 +23,7 @@ const TokenCodeModal = ({ isOpen, onClose, tokenCode }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[#0f1117] border border-[#2a2d3a] p-8 rounded-[2.5rem] shadow-2xl max-w-md w-full mx-4 animate-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#0f1117] border border-[#2a2d3a] p-8 shadow-2xl max-w-md w-full mx-4 animate-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-black text-[#F8FAFC] italic uppercase tracking-tighter">
@@ -35,7 +36,7 @@ const TokenCodeModal = ({ isOpen, onClose, tokenCode }) => {
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-[#1a1d27] border border-[#2a2d3a] text-[#94A3B8] hover:text-white hover:border-white/20 transition-all"
+            className="p-2 bg-[#1a1d27] border border-[#2a2d3a] text-[#94A3B8] hover:text-white hover:border-white/20 transition-all"
             aria-label="Cerrar"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,7 +46,7 @@ const TokenCodeModal = ({ isOpen, onClose, tokenCode }) => {
         </div>
 
         <div className="space-y-5 text-center">
-          <div className="px-6 py-4 rounded-2xl bg-[#1a1d27] border border-[#2a2d3a]">
+          <div className="px-6 py-4 bg-[#1a1d27] border border-[#2a2d3a]">
             <div className="text-4xl font-black tracking-[0.25em] text-[#F8FAFC] font-mono">
               {tokenCode || '------'}
             </div>
@@ -53,7 +54,7 @@ const TokenCodeModal = ({ isOpen, onClose, tokenCode }) => {
 
           {tokenCode ? (
             <div className="flex justify-center">
-              <div className="p-4 rounded-2xl border border-white/10 bg-[#0b0d12]">
+              <div className="p-4 border border-white/10 bg-[#0b0d12]">
                 <QRCodeCanvas
                   value={tokenCode}
                   size={176}
@@ -161,7 +162,7 @@ const ServiceReportModal = ({ report, rating, onClose, onSubmitRating }) => {
       aria-modal="true"
     >
       <div
-        className={`w-full max-w-[520px] max-h-[80vh] overflow-y-auto rounded-2xl bg-[#0b1220] border border-white/10 shadow-2xl transform transition-all duration-200 ${
+        className={`w-full max-w-[520px] max-h-[80vh] overflow-y-auto bg-[#0b1220] border border-white/10 shadow-2xl transform transition-all duration-200 ${
           visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         }`}
         onMouseDown={(e) => e.stopPropagation()}
@@ -174,7 +175,7 @@ const ServiceReportModal = ({ report, rating, onClose, onSubmitRating }) => {
                   {report.servicio?.nombre || 'Servicio'}
                 </h3>
                 <span
-                  className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${condition.className}`}
+                  className={`shrink-0 px-3 py-1 text-[10px] font-black uppercase tracking-wider border ${condition.className}`}
                 >
                   {condition.label}
                 </span>
@@ -187,7 +188,7 @@ const ServiceReportModal = ({ report, rating, onClose, onSubmitRating }) => {
             <button
               type="button"
               onClick={() => onClose?.()}
-              className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all"
+              className="h-10 w-10 inline-flex items-center justify-center bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all"
               aria-label="Close"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -202,39 +203,20 @@ const ServiceReportModal = ({ report, rating, onClose, onSubmitRating }) => {
         <div className="p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">
-                Trabajo Realizado
-              </div>
-              <div className="text-sm text-[#F8FAFC] leading-relaxed">
-                {report.report?.workPerformed || '—'}
-              </div>
+              <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Trabajo Realizado</div>
+              <div className="text-sm text-[#F8FAFC] leading-relaxed">{report.report?.workPerformed || '—'}</div>
             </div>
-
             <div className="space-y-1">
-              <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">
-                Piezas Utilizadas
-              </div>
-              <div className="text-sm text-[#F8FAFC] leading-relaxed">
-                {report.report?.partsUsed || '—'}
-              </div>
+              <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Piezas Utilizadas</div>
+              <div className="text-sm text-[#F8FAFC] leading-relaxed">{report.report?.partsUsed || '—'}</div>
             </div>
-
             <div className="space-y-1">
-              <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">
-                Observaciones
-              </div>
-              <div className="text-sm text-[#F8FAFC] leading-relaxed">
-                {report.report?.observations || '—'}
-              </div>
+              <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Observaciones</div>
+              <div className="text-sm text-[#F8FAFC] leading-relaxed">{report.report?.observations || '—'}</div>
             </div>
-
             <div className="space-y-1">
-              <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">
-                Fecha y Hora
-              </div>
-              <div className="text-sm text-[#F8FAFC] leading-relaxed">
-                {date} • {time}
-              </div>
+              <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Fecha y Hora</div>
+              <div className="text-sm text-[#F8FAFC] leading-relaxed">{date} • {time}</div>
             </div>
           </div>
         </div>
@@ -242,46 +224,34 @@ const ServiceReportModal = ({ report, rating, onClose, onSubmitRating }) => {
         <div className="h-px bg-white/10" />
 
         <div className="p-5 space-y-4">
-          <div className="text-sm font-black text-[#F8FAFC] uppercase tracking-wider">
-            Calificación
-          </div>
+          <div className="text-sm font-black text-[#F8FAFC] uppercase tracking-wider">Calificación</div>
 
           {isAlreadyRated ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">
-                  Especialista
-                </div>
+                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Especialista</div>
                 <StarRating value={rating?.specialistRating || 0} readOnly size="md" />
               </div>
               <div className="flex items-center justify-between">
-                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">
-                  Calidad del Servicio
-                </div>
+                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Calidad del Servicio</div>
                 <StarRating value={rating?.serviceRating || 0} readOnly size="md" />
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">
-                  Especialista
-                </div>
+                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Especialista</div>
                 <StarRating value={specialistRating} onChange={setSpecialistRating} size="md" />
               </div>
-
               <div className="flex items-center justify-between">
-                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">
-                  Calidad del Servicio
-                </div>
+                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Calidad del Servicio</div>
                 <StarRating value={serviceRating} onChange={setServiceRating} size="md" />
               </div>
-
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={!specialistRating || !serviceRating || isSubmitting}
-                className="w-full py-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-[#2563EB]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                className="w-full py-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-[#2563EB]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
               >
                 {isSubmitting ? 'Enviando...' : 'Enviar Calificación'}
               </button>
@@ -321,7 +291,6 @@ class UserDashboard extends Component {
     this.fetchCitas();
     this.fetchUserProfile();
     this.fetchNotifications();
-    // Poll every 12 seconds
     this.pollingInterval = setInterval(() => {
       this.fetchCitas();
       this.fetchUserProfile();
@@ -333,9 +302,7 @@ class UserDashboard extends Component {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/notificaciones`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.ok) {
         const data = await response.json();
@@ -351,15 +318,12 @@ class UserDashboard extends Component {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/notificaciones/${id}/marcar-leida`, {
         method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.ok) {
         this.setState(prev => ({
           notifications: prev.notifications.map(n => n.id === id ? { ...n, leida: true } : n)
         }));
-        // Notify the bell to refresh
         window.dispatchEvent(new CustomEvent('motoexpert:refresh_notifications'));
       }
     } catch (err) {
@@ -368,59 +332,47 @@ class UserDashboard extends Component {
   };
 
   fetchUserProfile = async () => {
-     const token = localStorage.getItem('token');
-     const userId = localStorage.getItem('userId');
-     if (!token) return;
- 
-     try {
-       const response = await fetch(`${API_BASE_URL}/usuarios/me`, {
-         headers: { Authorization: `Bearer ${token}` },
-       });
- 
-       if (response.ok) {
-         const userData = await response.json();
-         const lastSeenLevelKey = `last_seen_level_${userId}`;
-         const lastSeenLevel =
-           parseInt(localStorage.getItem(lastSeenLevelKey), 10) || 1;
- 
-         // Check for level up (either during session or since last login)
-         if (userData.level > lastSeenLevel) {
-           const newBonus = userData.bonuses?.[userData.bonuses.length - 1];
-           if (newBonus && this.props.showToast) {
-             this.props.showToast(
-               `¡Felicidades! Subiste al Nivel ${userData.level}. Has ganado un bono: ${newBonus.code}`,
-               'success'
-             );
-           }
-           localStorage.setItem(lastSeenLevelKey, userData.level);
-         } else if (!localStorage.getItem(lastSeenLevelKey)) {
-           // First time setting the level
-           localStorage.setItem(lastSeenLevelKey, userData.level);
-         }
- 
-         this.setState({ userProfile: userData });
-       }
-     } catch (err) {
-       console.error('Error fetching user profile:', err);
-     }
-   };
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/usuarios/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        const lastSeenLevelKey = `last_seen_level_${userId}`;
+        const lastSeenLevel = parseInt(localStorage.getItem(lastSeenLevelKey), 10) || 1;
+        if (userData.level > lastSeenLevel) {
+          const newBonus = userData.bonuses?.[userData.bonuses.length - 1];
+          if (newBonus && this.props.showToast) {
+            this.props.showToast(
+              `¡Felicidades! Subiste al Nivel ${userData.level}. Has ganado un bono: ${newBonus.code}`,
+              'success'
+            );
+          }
+          localStorage.setItem(lastSeenLevelKey, userData.level);
+        } else if (!localStorage.getItem(lastSeenLevelKey)) {
+          localStorage.setItem(lastSeenLevelKey, userData.level);
+        }
+        this.setState({ userProfile: userData });
+      }
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+    }
+  };
 
   componentWillUnmount() {
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-    }
+    if (this.pollingInterval) clearInterval(this.pollingInterval);
   }
 
   checkAndUpdateOnboarding = (vehiculos, citas) => {
     const userId = localStorage.getItem('userId');
     const hasVehicles = vehiculos && vehiculos.length > 0;
     const hasCompletedCitas = citas && citas.some(c => c.estado === 'FINALIZADO');
-    
     if (hasVehicles && hasCompletedCitas) {
       localStorage.setItem(`onboarding_seen_${userId}`, 'true');
-      if (!this.state.onboardingSeen) {
-        this.setState({ onboardingSeen: true });
-      }
+      if (!this.state.onboardingSeen) this.setState({ onboardingSeen: true });
     }
   };
 
@@ -438,7 +390,6 @@ class UserDashboard extends Component {
           vehiculosRes.json()
         ]);
         this.setState({ servicios: serviciosData.data || serviciosData, misVehiculos: vehiculosData, loading: false });
-        // Check onboarding after we have data
         this.checkAndUpdateOnboarding(vehiculosData, this.state.citas);
       } else {
         this.setState({ loading: false });
@@ -458,13 +409,8 @@ class UserDashboard extends Component {
         const data = await response.json();
         const citasArray = data.data || data;
         this.checkForStatusChanges(citasArray);
-        this.setState(prev => ({ 
-          citas: citasArray, 
-          previousCitas: prev.citas 
-        }));
-        // Check onboarding after we have citas
+        this.setState(prev => ({ citas: citasArray, previousCitas: prev.citas }));
         this.checkAndUpdateOnboarding(this.state.misVehiculos, citasArray);
-        // Fetch ratings for citas
         this.fetchRatingsForCitas(citasArray, headers);
       }
     } catch (err) {
@@ -490,28 +436,20 @@ class UserDashboard extends Component {
 
   submitRating = async ({ citaId, specialistRating, serviceRating, comment }) => {
     const token = localStorage.getItem('token');
-    const headers = { 
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
+    const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
     try {
       const response = await fetch(`${API_BASE_URL}/ratings`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ citaId, specialistRating, serviceRating, comment }),
       });
-
       if (response.ok) {
         const newRating = await response.json();
-        this.setState(prev => ({ 
+        this.setState(prev => ({
           ratings: [...prev.ratings, newRating],
-          citas: prev.citas.map(c => 
-            c.id === citaId ? { ...c, rated: true } : c
-          )
+          citas: prev.citas.map(c => c.id === citaId ? { ...c, rated: true } : c)
         }));
-        if (this.props.showToast) {
-          this.props.showToast('Thank you for your feedback!', 'success');
-        }
+        if (this.props.showToast) this.props.showToast('Thank you for your feedback!', 'success');
       }
     } catch (err) {
       console.error('Error submitting rating:', err);
@@ -521,14 +459,10 @@ class UserDashboard extends Component {
   checkForStatusChanges = (newCitas) => {
     const { previousCitas } = this.state;
     const { showToast } = this.props;
-
     if (!showToast) return;
-
     newCitas.forEach(newCita => {
       const oldCita = previousCitas.find(c => c.id === newCita.id);
-      
       if (oldCita && oldCita.estado !== newCita.estado) {
-        // Status changed!
         if (oldCita.estado === 'PENDIENTE' && newCita.estado === 'EN PROCESO') {
           showToast(`Tu servicio ${newCita.servicio?.nombre} ha comenzado. ¡Estamos trabajando en tu vehículo!`, 'info');
         } else if (oldCita.estado === 'EN PROCESO' && newCita.estado === 'FINALIZADO') {
@@ -540,10 +474,9 @@ class UserDashboard extends Component {
 
   handleSaberMas = (servicio) => {
     const slug = servicio.nombre.toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar tildes
-      .replace(/\s+/g, '-') // Espacios por guiones
-      .replace(/[^\w-]/g, ''); // Quitar caracteres especiales
-    
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, '-')
+      .replace(/[^\w-]/g, '');
     window.location.hash = slug;
     this.props.setView('servicios');
   };
@@ -551,9 +484,7 @@ class UserDashboard extends Component {
   handleAgendarServicio = (servicio) => {
     const { misVehiculos } = this.state;
     const { setView } = this.props;
-
     localStorage.setItem('selectedServiceId', servicio.id);
-
     if (misVehiculos && misVehiculos.length > 0) {
       localStorage.setItem('pendingAction', 'agendar_cita');
       setView('citas');
@@ -563,13 +494,8 @@ class UserDashboard extends Component {
     }
   };
 
-  handleOpenReport = (reportId) => {
-    this.setState({ activeReportCitaId: reportId });
-  };
-
-  handleCloseReport = () => {
-    this.setState({ activeReportCitaId: null });
-  };
+  handleOpenReport = (reportId) => this.setState({ activeReportCitaId: reportId });
+  handleCloseReport = () => this.setState({ activeReportCitaId: null });
 
   render() {
     const { servicios, loading, citas, misVehiculos, ratings } = this.state;
@@ -580,11 +506,7 @@ class UserDashboard extends Component {
     const firstName = userName.split(' ')[0] || userName;
 
     const normalizeEstado = (estado) =>
-      (estado || '')
-        .toString()
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, '_');
+      (estado || '').toString().toLowerCase().trim().replace(/\s+/g, '_');
 
     const isActiveAppointment = (cita) => {
       const estado = normalizeEstado(cita?.estado);
@@ -602,25 +524,16 @@ class UserDashboard extends Component {
     const formatDateLong = (date) => {
       if (!date) return '—';
       try {
-        return date.toLocaleDateString('es-ES', {
-          weekday: 'long',
-          day: '2-digit',
-          month: 'long',
-        });
-      } catch {
-        return date.toLocaleDateString();
-      }
+        return date.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long' });
+      } catch { return date.toLocaleDateString(); }
     };
 
     const formatTime = (timeStr) => {
       if (!timeStr) return '—';
       const d = new Date(`1970-01-01T${timeStr}`);
       if (!Number.isFinite(d.getTime())) return timeStr;
-      try {
-        return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-      } catch {
-        return timeStr;
-      }
+      try { return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }); }
+      catch { return timeStr; }
     };
 
     const formatRelativeTime = (dateStr) => {
@@ -630,7 +543,6 @@ class UserDashboard extends Component {
       const diffMins = Math.floor(diffMs / 60000);
       const diffHours = Math.floor(diffMins / 60);
       const diffDays = Math.floor(diffHours / 24);
-
       if (diffMins < 1) return 'Ahora';
       if (diffMins < 60) return `${diffMins}m`;
       if (diffHours < 24) return `${diffHours}h`;
@@ -644,26 +556,19 @@ class UserDashboard extends Component {
       .map((cita) => ({ cita, start: parseAppointmentStart(cita) }))
       .filter((x) => x.start)
       .filter((x) => {
-        // Si está en proceso, siempre es relevante
         if (normalizeEstado(x.cita.estado) === 'en_proceso') return true;
-        
         const diffMs = x.start - now;
-        const isFutureOrRecent = diffMs >= -oneDayMs;
-        return isFutureOrRecent;
+        return diffMs >= -oneDayMs;
       })
       .sort((a, b) => {
         const statusA = normalizeEstado(a.cita.estado);
         const statusB = normalizeEstado(b.cita.estado);
-        
-        // Priorizar EN PROCESO
         if (statusA === 'en_proceso' && statusB !== 'en_proceso') return -1;
         if (statusA !== 'en_proceso' && statusB === 'en_proceso') return 1;
-        
         return a.start - b.start;
       });
 
     const upcomingCita = sortedActive[0]?.cita;
-
     const recommendedServices = (Array.isArray(servicios) ? servicios : []).slice(0, 4);
     const vehiclesPreview = (Array.isArray(misVehiculos) ? misVehiculos : []).slice(0, 2);
     const latestRatings = (Array.isArray(ratings) ? ratings : [])
@@ -674,119 +579,92 @@ class UserDashboard extends Component {
     const serviceImageForIndex = [expressImg, interiorImg, protectionImg, motorImg];
     const getServiceImage = (idx) => serviceImageForIndex[idx % serviceImageForIndex.length];
 
-    if (loading) return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500"></div></div>;
+    if (loading) return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin h-12 w-12 border-t-2 border-blue-500"></div>
+      </div>
+    );
 
     return (
-      <div className="animate-in fade-in duration-700 pb-24 bg-white dark:bg-[#020617]">
-        <div className="max-w-7xl mx-auto px-6 pt-8 space-y-8">
-          <section className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0b1220]">
+      <div className="animate-in fade-in duration-700 pb-24 bg-[#F4F6FA] dark:bg-[#020617]">
+        {/* SIN max-w ni px — ocupa el 100% */}
+        <div className="w-full">
+          {/* HERO (no padding-top to stick to navbar) */}
+          <section className="relative overflow-hidden bg-gradient-to-r from-[#022873] via-[#0468BF] to-[#05AFF2] -mt-20">
             <div className="absolute inset-0">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#020617] via-[#0b1220] to-[#0b1220]" />
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(37,99,235,0.22),transparent_55%)]" />
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(14,165,233,0.16),transparent_55%)]" />
             </div>
-
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 md:p-10">
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 pt-24 md:p-10 md:pt-28">
               <div className="space-y-4">
-                <div className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white">
+                <div className="text-3xl md:text-4xl font-black text-white">
                   ¡ Bienvenido, {firstName} !
                 </div>
-                <div className="text-slate-600 dark:text-[#94A3B8] text-sm md:text-base">
+                <div className="text-sm md:text-base text-white/80">
                   Bienvenido de vuelta. Al mejor sistema de automatizacion de citas.
                 </div>
               </div>
-
               <div className="relative h-40 md:h-56 lg:h-full min-h-[180px]">
-                <div className="absolute inset-0 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-                  <div className="absolute inset-0 bg-gradient-to-l from-[#2563EB]/25 via-transparent to-transparent" />
-                  <div className="absolute top-0 right-10 h-full w-[2px] bg-gradient-to-b from-transparent via-[#38BDF8]/60 to-transparent opacity-80" />
-                  <div className="absolute top-0 right-20 h-full w-[2px] bg-gradient-to-b from-transparent via-[#2563EB]/50 to-transparent opacity-70" />
+                <div className="absolute inset-0 overflow-hidden border border-white/20 bg-white/5 rounded-xl">
+                  <div className="absolute inset-0 bg-gradient-to-l from-[#05AFF2]/25 via-transparent to-transparent" />
+                  <div className="absolute top-0 right-10 h-full w-[2px] bg-gradient-to-b from-transparent via-white/60 to-transparent opacity-80" />
+                  <div className="absolute top-0 right-20 h-full w-[2px] bg-gradient-to-b from-transparent via-white/50 to-transparent opacity-70" />
                   <img
                     src={carHeroImg}
                     alt="Vehículo"
-                    className="absolute right-0 bottom-0 h-full w-auto object-contain opacity-95 drop-shadow-[0_20px_40px_rgba(37,99,235,0.25)]"
+                    className="absolute right-0 bottom-0 h-full w-auto object-contain opacity-95 drop-shadow-[0_20px_40px_rgba(0,0,0,0.25)]"
                   />
                 </div>
               </div>
             </div>
           </section>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-6 pt-8">
             <div className="lg:col-span-8 space-y-6">
+
+              {/* Accesos rápidos */}
               <section className="space-y-3">
-                <div className="text-sm font-black text-slate-900 dark:text-white">Accesos rápidos</div>
+                <div className="text-sm font-black text-gray-900 dark:text-[#F8FAFC]">Accesos rápidos</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setView('citas')}
-                    className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
-                  >
-                    <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">          
-                      <img src={agendarIcon} alt="agendar" className="w-5 h-5" bg="white"/>
-                    </div>
-                    <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Agendar cita</div>
-                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Nueva cita</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setView('vehiculos')}
-                    className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
-                  >
-                    <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">
-                      <img src={vehiculoIcon} alt="vehiculo" className="w-5 h-5" bg="white"/>
-                    </div>
-                    <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Mis vehículos</div>
-                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Ver y gestionar</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setView('citas')}
-                    className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
-                  >
-                    <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                        <path fillRule="evenodd" d="M7.5 2.25A.75.75 0 018.25 3v1.5h7.5V3a.75.75 0 011.5 0v1.5h.75A2.25 2.25 0 0121 6.75v12A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-12A2.25 2.25 0 015.25 4.5H6V3a.75.75 0 011.5 0v1.5zM4.5 9.75h15V6.75a.75.75 0 00-.75-.75H5.25a.75.75 0 00-.75.75v3z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Mis citas</div>
-                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Ver historial</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setView('resenas')}
-                    className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-4 text-left hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
-                  >
-                    <div className="h-10 w-10 rounded-2xl bg-white/10 text-[#94A3B8] flex items-center justify-center border border-white/10">
-                      <img src={reseñasIcon} alt="reseñas" className="w-5 h-5" bg="white"/>
-                    </div>
-                    <div className="mt-4 text-sm font-black text-slate-900 dark:text-white">Mis reseñas</div>
-                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Deja tu opinión</div>
-                  </button>
+                  {[
+                    { label: 'Agendar cita', sub: 'Nueva cita', icon: <img src={agendarIcon} alt="agendar" className="w-5 h-5"/>, view: 'citas' },
+                    { label: 'Mis vehículos', sub: 'Ver y gestionar', icon: <img src={vehiculoIcon} alt="vehiculo" className="w-5 h-5"/>, view: 'vehiculos' },
+                    { label: 'Mis citas', sub: 'Ver historial', icon: <img src={finalizarIcon} alt="citas" className="w-5 h-5"/>, view: 'citas' },
+                    { label: 'Mis reseñas', sub: 'Deja tu opinión', icon: <img src={reseñasIcon} alt="reseñas" className="w-5 h-5"/>, view: 'resenas' },
+                  ].map((item, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setView(item.view)}
+                      className="group relative overflow-hidden rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none p-4 text-left hover:shadow-md dark:hover:bg-white/10 transition-shadow"
+                    >
+                      <div className="h-10 w-10 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-[#94A3B8] flex items-center justify-center rounded-lg">
+                        {item.icon}
+                      </div>
+                      <div className="mt-4 text-sm font-black text-gray-900 dark:text-white">{item.label}</div>
+                      <div className="text-xs text-gray-500 dark:text-[#94A3B8]">{item.sub}</div>
+                    </button>
+                  ))}
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
+              {/* Próxima cita */}
+              <section className="rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none overflow-hidden">
                 <div className="px-5 pt-5 flex items-center justify-between">
-                  <div className="text-sm font-black text-slate-900 text-white">Próxima cita</div>
-                  <div className="text-xs text-[#60A5FA] cursor-pointer" onClick={() => setView('citas')} role="button" tabIndex={0}>
-                    ...
-                  </div>
+                  <div className="text-sm font-black text-gray-900 dark:text-[#F8FAFC]">Próxima cita</div>
+                  <div className="text-xs text-[#0468BF] cursor-pointer" onClick={() => setView('citas')} role="button" tabIndex={0}>...</div>
                 </div>
-
                 <div className="p-5 pt-4">
                   {upcomingCita ? (
-                    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0b1220]">
+                    <div className="relative overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-r from-[#022873] via-[#0468BF] to-[#05AFF2]">
                       <div className="absolute inset-0">
                         <img src={protectionImg} alt="" className="w-full h-full object-cover opacity-20" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#0b1220] via-[#0b1220]/90 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#022873]/80 via-[#0468BF]/60 to-transparent" />
                       </div>
                       <div className="relative z-10 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center">
-                            <div className="text-[10px] text-[#94A3B8] font-black uppercase">
+                          <div className="h-12 w-12 bg-white/20 border border-white/30 rounded-lg flex flex-col items-center justify-center">
+                            <div className="text-[10px] text-white/80 font-black uppercase">
                               {parseAppointmentStart(upcomingCita)?.toLocaleDateString('es-ES', { month: 'short' })}
                             </div>
                             <div className="text-lg text-white font-black">
@@ -797,25 +675,24 @@ class UserDashboard extends Component {
                             <div className="text-sm font-black text-white">
                               {formatDateLong(parseAppointmentStart(upcomingCita))}
                             </div>
-                            <div className="text-xs text-[#94A3B8]">
+                            <div className="text-xs text-white/80">
                               {formatTime(upcomingCita?.hora_inicio)} - {formatTime(upcomingCita?.hora_fin)}
                             </div>
                             <div className="mt-2 inline-flex items-center gap-2">
-                              <span className="px-2.5 py-1 rounded-full bg-[#2563EB]/15 text-[#60A5FA] text-[10px] font-black border border-[#2563EB]/20">
+                              <span className="px-2.5 py-1 bg-white/20 text-white text-[10px] font-black border border-white/30 rounded-full">
                                 {upcomingCita?.estado || 'Confirmada'}
                               </span>
-                              <span className="text-[10px] text-white/50">
+                              <span className="text-[10px] text-white/70">
                                 {upcomingCita?.servicio?.nombre || 'Servicio'}
                               </span>
                             </div>
                           </div>
                         </div>
-
                         <div className="flex gap-2">
                           <button
                             type="button"
                             onClick={() => setView('citas')}
-                            className="h-10 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black transition-colors"
+                            className="h-10 px-4 bg-[#0468BF] hover:bg-[#035ca8] text-white text-xs font-black transition-colors rounded-lg"
                           >
                             Ver detalles
                           </button>
@@ -823,7 +700,7 @@ class UserDashboard extends Component {
                             <button
                               type="button"
                               onClick={() => this.setState({ tokenModalOpen: true, tokenModalCode: upcomingCita.payment.tokenCode })}
-                              className="h-10 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-black transition-colors border border-white/10"
+                              className="h-10 px-4 bg-white/20 hover:bg-white/30 text-white text-xs font-black transition-colors border border-white/30 rounded-lg"
                             >
                               Ver código
                             </button>
@@ -832,13 +709,13 @@ class UserDashboard extends Component {
                       </div>
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-6 text-sm text-slate-600 dark:text-[#94A3B8]">
+                    <div className="rounded-xl border border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-6 text-sm text-gray-500 dark:text-[#94A3B8]">
                       No tienes citas próximas. Agenda una nueva cuando quieras.
                       <div className="mt-3">
                         <button
                           type="button"
                           onClick={() => setView('citas')}
-                          className="h-10 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black transition-colors"
+                          className="h-10 px-4 bg-[#0468BF] hover:bg-[#035ca8] text-white text-xs font-black transition-colors rounded-lg"
                         >
                           + Agendar cita
                         </button>
@@ -848,87 +725,72 @@ class UserDashboard extends Component {
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
+              {/* Mis vehículos */}
+              <section className="rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none">
                 <div className="px-5 pt-5 flex items-center justify-between">
-                  <div className="text-sm font-black text-slate-900 dark:text-white">Mis vehículos</div>
-                  <button
-                    type="button"
-                    onClick={() => setView('vehiculos')}
-                    className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
-                  >
-                    Ver todos
-                  </button>
+                  <div className="text-sm font-black text-gray-900 dark:text-[#F8FAFC]">Mis vehículos</div>
+                  <button type="button" onClick={() => setView('vehiculos')} className="text-xs text-[#0468BF] hover:text-[#035ca8] transition-colors">Ver todos</button>
                 </div>
-
                 <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
                   {vehiclesPreview.map((v, idx) => (
                     <button
                       key={v?.id || `${v?.placa || 'veh'}-${idx}`}
                       type="button"
                       onClick={() => setView('vehiculos')}
-                      className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#0b1220] text-left"
+                      className="group relative overflow-hidden rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none text-left hover:shadow-md transition-shadow"
                     >
                       <div className="absolute inset-0">
-                        <img 
-                          src={v?.imagen || carHeroImg} 
-                          alt="" 
-                          className={`w-full h-full object-cover transition-opacity duration-500 ${v?.imagen ? 'opacity-40' : 'opacity-10'}`} 
+                        <img
+                          src={v?.imagen || carHeroImg}
+                          alt=""
+                          className={`w-full h-full object-cover transition-opacity duration-500 ${v?.imagen ? 'opacity-70' : 'opacity-40'}`}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/80 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
                       </div>
                       <div className="relative z-10 p-4 space-y-2">
-                        <div className="text-xs text-white/60">{v?.placa || '—'}</div>
+                        <div className="text-xs text-white/80">{v?.placa || '—'}</div>
                         <div className="text-sm font-black text-white">
                           {(v?.marca || '').trim()} {(v?.modelo || '').trim()} {v?.anio ? String(v.anio) : ''}
                         </div>
-                        <div className="inline-flex px-2.5 py-1 rounded-full bg-[#2563EB]/15 text-[#60A5FA] text-[10px] font-black border border-[#2563EB]/20">
+                        <div className="inline-flex px-2.5 py-1 bg-[#0468BF]/20 text-[#0468BF] text-[10px] font-black border border-[#0468BF]/30 rounded-full">
                           Principal
                         </div>
                       </div>
                     </button>
                   ))}
-
                   <button
                     type="button"
                     onClick={() => setView('vehiculos')}
-                    className="group flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-6 text-slate-700 dark:text-white/80 hover:bg-white dark:hover:bg-white/10 transition-colors"
+                    className="group flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-6 text-gray-700 dark:text-[#94A3B8] hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                   >
-                    <div className="h-12 w-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-xl">
-                      +
-                    </div>
+                    <div className="h-12 w-12 bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 flex items-center justify-center text-xl rounded-lg">+</div>
                     <div className="text-xs font-black">Agregar vehículo</div>
                   </button>
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
+              {/* Servicios recomendados */}
+              <section className="rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none">
                 <div className="px-5 pt-5 flex items-center justify-between">
-                  <div className="text-sm font-black text-slate-900 dark:text-white">Servicios recomendados</div>
-                  <button
-                    type="button"
-                    onClick={() => setView('servicios')}
-                    className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
-                  >
-                    Ver todos
-                  </button>
+                  <div className="text-sm font-black text-gray-900 dark:text-[#F8FAFC]">Servicios recomendados</div>
+                  <button type="button" onClick={() => setView('servicios')} className="text-xs text-[#0468BF] hover:text-[#035ca8] transition-colors">Ver todos</button>
                 </div>
-
                 <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {recommendedServices.map((s, idx) => (
                     <button
                       key={s?.id || `svc-${idx}`}
                       type="button"
                       onClick={() => this.handleAgendarServicio(s)}
-                      className="group overflow-hidden rounded-2xl border border-white/10 bg-[#0b1220] text-left hover:bg-white/5 transition-colors"
+                      className="group overflow-hidden rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none text-left hover:shadow-md transition-shadow"
                     >
-                      <div className="h-24 w-full overflow-hidden">
+                      <div className="h-24 w-full overflow-hidden rounded-t-2xl">
                         <img src={getServiceImage(idx)} alt={s?.nombre || 'Servicio'} className="h-full w-full object-cover opacity-90 group-hover:scale-[1.02] transition-transform" />
                       </div>
                       <div className="p-4 space-y-2">
-                        <div className="text-sm font-black text-white">{s?.nombre || 'Servicio'}</div>
-                        <div className="flex items-center justify-between text-xs text-[#94A3B8]">
+                        <div className="text-sm font-black text-gray-900 dark:text-white">{s?.nombre || 'Servicio'}</div>
+                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#94A3B8]">
                           <div>{(s?.duration_minutes ?? s?.duracion) ? `${s.duration_minutes ?? s.duracion} min` : '—'}</div>
-                          <div className="text-[#60A5FA] font-black">
+                          <div className="text-[#0468BF] font-black">
                             {typeof s?.precio === 'number' ? `$${s.precio}` : s?.precio ? `$${s.precio}` : ''}
                           </div>
                         </div>
@@ -939,142 +801,114 @@ class UserDashboard extends Component {
               </section>
             </div>
 
+            {/* SIDEBAR */}
             <div className="lg:col-span-4 space-y-6">
-              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-5">
+
+              {/* Nivel */}
+              <section className="rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                     <img src={coronaIcon} alt="corona" className="w-5 h-5" bg="white"/>
+                    <div className="text-sm font-black flex items-center gap-2 text-gray-900 dark:text-[#F8FAFC]">
+                      <img src={coronaIcon} alt="corona" className="w-5 h-5"/>
                       Cliente {this.state.userProfile?.rank || 'Silver'}
                     </div>
-                    <div className="text-xs text-slate-600 dark:text-[#94A3B8]">Nivel {this.state.userProfile?.level || 1}</div>
+                    <div className="text-xs text-gray-500 dark:text-[#94A3B8]">Nivel {this.state.userProfile?.level || 1}</div>
                   </div>
-                  <div className="text-[10px] text-white/60 font-black">
+                  <div className="text-[10px] text-gray-500 dark:text-[#94A3B8] font-black">
                     {this.state.userProfile?.points || 0} / 1000 pts
                   </div>
                 </div>
-
                 <div className="mt-4">
-                  <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                  <div className="h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-[#2563EB] to-[#38BDF8]"
-                      style={{
-                        width: `${
-                          ((this.state.userProfile?.points || 0) / 1000) * 100
-                        }%`,
-                      }}
+                      className="h-full bg-gradient-to-r from-[#0468BF] to-[#05AFF2] rounded-full"
+                      style={{ width: `${((this.state.userProfile?.points || 0) / 1000) * 100}%` }}
                     />
                   </div>
-                  <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-[#94A3B8]">
+                  <div className="mt-3 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3 text-xs text-gray-500 dark:text-[#94A3B8]">
                     Te faltan {Math.max(0, 1000 - (this.state.userProfile?.points || 0))} pts para llegar al siguiente nivel
                   </div>
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
+              {/* Notificaciones */}
+              <section className="rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none">
                 <div className="px-5 pt-5 flex items-center justify-between">
-                  <div className="text-sm font-black text-slate-900 dark:text-white">Notificaciones</div>
-                  <button
-                    type="button"
-                    onClick={() => setView('citas')}
-                    className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
-                  >
-                    Ver todas
-                  </button>
+                  <div className="text-sm font-black text-gray-900 dark:text-[#F8FAFC]">Notificaciones</div>
+                  <button type="button" onClick={() => setView('citas')} className="text-xs text-[#0468BF] hover:text-[#035ca8] transition-colors">Ver todas</button>
                 </div>
-
                 <div className="p-5 pt-4 space-y-3">
                   {this.state.notifications.length > 0 ? (
                     this.state.notifications.slice(0, 3).map((n) => (
                       <div
                         key={n.id}
                         onClick={() => !n.leida && this.markAsRead(n.id)}
-                        className={`flex items-start gap-3 rounded-xl border border-white/10 p-3 cursor-pointer transition-colors ${
-                          !n.leida ? 'bg-white/10 border-white/20' : 'bg-white/5'
+                        className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                          !n.leida ? 'bg-blue-50 dark:bg-white/10 border-blue-100 dark:border-white/20' : 'bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/10'
                         }`}
                       >
-                        <div
-                          className={`h-10 w-10 rounded-2xl border flex items-center justify-center flex-shrink-0 ${
-                            n.tipo === 'service_started'
-                              ? 'bg-[#2563EB]/15 border-[#2563EB]/20 text-[#60A5FA]'
-                              : n.tipo === 'service_completed'
-                                ? 'bg-emerald-500/15 border-emerald-500/20 text-emerald-500'
-                                : 'bg-white/10 border-white/10 text-white/70'
-                          }`}
-                        >
+                        <div className={`h-10 w-10 border rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          n.tipo === 'service_started'
+                            ? 'bg-[#0468BF]/10 border-[#0468BF]/20 text-[#0468BF]'
+                            : n.tipo === 'service_completed'
+                              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                              : 'bg-gray-100 dark:bg-white/10 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#94A3B8]'
+                        }`}>
                           {n.tipo === 'service_started' ? (
-                            <img src={lanzaderaIcon} alt="lanzadera" className="w-5 h-5" bg="white"/>
+                            <img src={lanzaderaIcon} alt="lanzadera" className="w-5 h-5"/>
                           ) : n.tipo === 'service_completed' ? (
-                            <img src={finalizarIcon} alt="finalizar" className="w-5 h-5" bg="white"/>
+                            <img src={finalizarIcon} alt="finalizar" className="w-5 h-5"/>
                           ) : (
-                            <img src={notificacionIcon} alt="notificacion" className="w-5 h-5" bg="white"/>
+                            <img src={notificacionIcon} alt="notificacion" className="w-5 h-5"/>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className={`text-xs font-black truncate ${!n.leida ? 'text-white' : 'text-white/70'}`}>
-                            {n.titulo}
-                          </div>
-                          <div className="text-[11px] text-[#94A3B8] truncate">{n.mensaje}</div>
+                          <div className={`text-xs font-black truncate ${!n.leida ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-white/70'}`}>{n.titulo}</div>
+                          <div className="text-[11px] text-gray-500 dark:text-[#94A3B8] truncate">{n.mensaje}</div>
                         </div>
-                        <div className="text-[10px] text-white/50">{formatRelativeTime(n.createdAt)}</div>
+                        <div className="text-[10px] text-gray-400 dark:text-white/40">{formatRelativeTime(n.createdAt)}</div>
                       </div>
                     ))
                   ) : (
-                    <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-xs text-[#94A3B8] italic">
+                    <div className="rounded-lg border border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-6 text-center text-xs text-gray-500 dark:text-[#94A3B8] italic">
                       No hay notificaciones aún
                     </div>
                   )}
                 </div>
               </section>
 
-              <section className="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
-                <div className="absolute inset-0">
-                  <img src={protectionImg} alt="" className="w-full h-full object-cover opacity-20" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0b1220] via-[#0b1220]/90 to-transparent" />
-                </div>
-              </section>
-
-              <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5">
+              {/* Reseñas recientes */}
+              <section className="rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none">
                 <div className="px-5 pt-5 flex items-center justify-between">
-                  <div className="text-sm font-black text-slate-900 dark:text-white">Reseñas recientes</div>
-                  <button
-                    type="button"
-                    onClick={() => setView('resenas')}
-                    className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
-                  >
-                    Ver todas
-                  </button>
+                  <div className="text-sm font-black text-gray-900 dark:text-[#F8FAFC]">Reseñas recientes</div>
+                  <button type="button" onClick={() => setView('resenas')} className="text-xs text-[#0468BF] hover:text-[#035ca8] transition-colors">Ver todas</button>
                 </div>
-
                 <div className="p-5 pt-4 space-y-4">
                   {latestRatings.length > 0 ? (
                     latestRatings.map((r) => {
                       const ratingValue = Math.round(((r?.specialistRating || 0) + (r?.serviceRating || 0)) / 2) || 0;
                       const who = r?.usuario?.nombre || userName;
                       const createdAt = r?.createdAt ? new Date(r.createdAt) : null;
-                      const timeAgo =
-                        createdAt && Number.isFinite(createdAt.getTime())
-                          ? createdAt.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-                          : '';
+                      const timeAgo = createdAt && Number.isFinite(createdAt.getTime())
+                        ? createdAt.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+                        : '';
                       return (
-                        <div key={r?.id || `${who}-${timeAgo}`} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                        <div key={r?.id || `${who}-${timeAgo}`} className="rounded-xl border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-4">
                           <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0">
-                              <div className="text-xs font-black text-white truncate">{who}</div>
-                              <div className="mt-1">
-                                <StarRating value={ratingValue} readOnly size="sm" />
-                              </div>
+                              <div className="text-xs font-black text-gray-900 dark:text-white truncate">{who}</div>
+                              <div className="mt-1"><StarRating value={ratingValue} readOnly size="sm" /></div>
                             </div>
-                            <div className="text-[10px] text-white/50">{timeAgo}</div>
+                            <div className="text-[10px] text-gray-400 dark:text-white/40">{timeAgo}</div>
                           </div>
-                          <div className="mt-3 text-xs text-[#94A3B8]">
+                          <div className="mt-3 text-xs text-gray-500 dark:text-[#94A3B8]">
                             {r?.comment || 'Excelente servicio, 100% recomendado.'}
                           </div>
                         </div>
                       );
                     })
                   ) : (
-                    <div className="rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-6 text-xs text-slate-600 dark:text-[#94A3B8]">
+                    <div className="rounded-xl border border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-6 text-xs text-gray-500 dark:text-[#94A3B8]">
                       Aún no hay reseñas. Cuando califiques un servicio aparecerán aquí.
                     </div>
                   )}
@@ -1093,7 +927,7 @@ class UserDashboard extends Component {
           />
         )}
 
-        <TokenCodeModal 
+        <TokenCodeModal
           isOpen={this.state.tokenModalOpen}
           tokenCode={this.state.tokenModalCode}
           onClose={() => this.setState({ tokenModalOpen: false, tokenModalCode: '' })}
