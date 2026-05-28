@@ -311,6 +311,7 @@ export class CitasService {
       condition: 'optimal' | 'attention' | 'urgent';
     },
     userRole?: string,
+    userId?: number,
   ) {
     if (nuevoEstado === 'FINALIZADO' && userRole !== 'admin') {
       const payment = await this.paymentRepo.findOneBy({ appointmentId: id });
@@ -329,6 +330,43 @@ export class CitasService {
       relations: ['usuario', 'vehiculo', 'servicio'] 
     });
     if (!cita) throw new NotFoundException('Cita no encontrada');
+
+    // If user is not admin/empleado, check that they own this cita
+    if (userRole !== 'admin' && userRole !== 'empleado' && userRole !== 'trabajador') {
+      if (cita.usuario.id !== userId) {
+        throw new ForbiddenException('No tienes permisos para modificar esta cita');
+      }
+    }
+
+    // Handle cancellation penalty logic
+    if (nuevoEstado === 'CANCELADO') {
+      const nowInBogota = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }));
+      const citaDate = new Date(`${cita.fecha}T${cita.hora_inicio}`);
+      const timeDiffMs = citaDate.getTime() - nowInBogota.getTime();
+      const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
+
+      // Check if cancelling with less than 24 hours notice
+      if (timeDiffHours < 24) {
+        // Apply penalty: Let's store a cancellation count in usuario entity
+        const usuario = await this.usuarioRepo.findOne({ where: { id: cita.usuario.id } });
+        if (usuario) {
+          // If user doesn't have a cancellation count, initialize it
+          if (!usuario.numCancelaciones) {
+            usuario.numCancelaciones = 0;
+          }
+          usuario.numCancelaciones += 1;
+          
+          // If user has 3 or more cancellations with less than 24 hours notice, block them for 7 days
+          if (usuario.numCancelaciones >= 3) {
+            usuario.bloqueadoHasta = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+          }
+          await this.usuarioRepo.save(usuario);
+        }
+      }
+
+      // Store cancellation timestamp on cita
+      cita.canceladaAt = new Date();
+    }
 
     cita.estado = nuevoEstado;
 
@@ -641,6 +679,70 @@ export class CitasService {
     }
 
     return savedCita;
+  }
+
+  async cancelarPorUsuario(id: number, motivo: string, userId: number) {
+    const cita = await this.repo.findOne({ where: { id }, relations: ['usuario'] });
+    if (!cita) {
+      throw new NotFoundException('Cita no encontrada');
+    }
+
+    // Verify the user owns this appointment
+    if (cita.usuario.id !== userId) {
+      throw new ForbiddenException('No tienes permisos para cancelar esta cita');
+    }
+
+    // Calculate if penalty applies (<24 hours notice)
+    const nowInBogota = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    const citaDate = new Date(`${cita.fecha}T${cita.hora_inicio}`);
+    const diffMs = citaDate.getTime() - nowInBogota.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    const penalizacion = diffHours < 24;
+
+    // Update appointment
+    await this.repo.update(id, {
+      estado: 'CANCELADA',
+      motivo_cancelacion: motivo,
+      canceladaAt: nowInBogota
+    });
+
+    // Apply penalty if needed
+    if (penalizacion) {
+      await this.usuarioRepo.increment(
+        { id: userId },
+        'cancelaciones_sin_aviso',
+        1
+      );
+
+      // Optional: Block user if they have 3+ penalties
+      const updatedUser = await this.usuarioRepo.findOne({ where: { id: userId } });
+      if (updatedUser && updatedUser.cancelaciones_sin_aviso >= 3) {
+        updatedUser.bloqueadoHasta = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+        await this.usuarioRepo.save(updatedUser);
+      }
+    }
+
+    // Log activity
+    try {
+      await this.activityService.logActivity(
+        'CITA_CANCELADA',
+        `Cita #${id} cancelada por usuario. Motivo: ${motivo || 'No especificado'}`,
+        'cita',
+        id.toString(),
+        'usuario',
+        userId.toString(),
+      );
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+
+    return {
+      message: 'Cita cancelada exitosamente',
+      penalizacion,
+      aviso: penalizacion
+        ? 'Se registró una penalización por cancelar con menos de 24 horas de anticipación'
+        : null,
+    };
   }
 
   async remove(id: number, motivo?: string) {
