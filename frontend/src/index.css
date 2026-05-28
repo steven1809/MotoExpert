@@ -88,11 +88,10 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
   }
 
-  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button span[class*="font-mono"],
-  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav button span[class*="font-mono"] {
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button *,
+  html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/90"] nav button * {
     color: #FFFFFF !important;
     opacity: 1 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
   }
 
   html:not(.dark) #root > div[class*="min-h-screen"][class*="dark:bg-[#020617]"] header[class*="bg-[#050507]/80"] nav button:hover,

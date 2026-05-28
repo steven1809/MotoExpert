@@ -966,13 +966,6 @@ const Citas = ({
   };
 
 
-<<<<<<< Updated upstream
-=======
-  useEffect(() => {
-    // Check for overdue appointments logic removed per requirement
-  }, [currentTime, citas, processedCitas, cancelCita, getCitaTimeInfo]);
->>>>>>> Stashed changes
-
   const handleDateChange = (e) => {
     const fecha = e.target.value;
     setFormData({ ...formData, fecha, hora_inicio: '' });

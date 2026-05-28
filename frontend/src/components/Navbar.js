@@ -182,7 +182,7 @@ class Navbar extends Component {
         }`}>
           {this.renderIcon(item.icon)}
         </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.15em] font-medium">
+        <span className={isHorizontal && !isDark ? "!text-white opacity-100 font-mono text-[10px] uppercase tracking-[0.15em] font-medium" : "font-mono text-[10px] uppercase tracking-[0.15em] font-medium"}>
           {item.label}
         </span>
         
