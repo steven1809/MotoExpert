@@ -112,7 +112,15 @@ export class RatingsService {
   async findAll() {
     return this.repo.find({
       order: { createdAt: 'DESC' },
-      relations: ['usuario', 'cita', 'cita.servicio', 'empleado'],
+      relations: ['usuario', 'cita', 'cita.servicio', 'cita.vehiculo', 'empleado'],
     });
+  }
+
+  async remove(id: number) {
+    const rating = await this.repo.findOne({ where: { id } });
+    if (!rating) {
+      throw new NotFoundException('Calificación no encontrada');
+    }
+    return this.repo.remove(rating);
   }
 }
