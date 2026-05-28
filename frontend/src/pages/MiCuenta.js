@@ -177,10 +177,18 @@ const MiCuenta = ({ setView }) => {
 
   const handleFaceSuccess = useCallback(() => {
     setShowFaceAuth(false);
+    const currentToken = localStorage.getItem('token');
+    const currentEmail = profile.email;
+    if (currentToken && currentEmail) {
+      localStorage.setItem(`faceToken_${currentEmail}`, currentToken);
+      localStorage.setItem(`faceRole_${currentEmail}`, localStorage.getItem('role') || 'user');
+      localStorage.setItem(`faceUserId_${currentEmail}`, localStorage.getItem('userId') || '');
+      localStorage.setItem(`faceUserName_${currentEmail}`, localStorage.getItem('userName') || '');
+      localStorage.setItem(`facePicture_${currentEmail}`, localStorage.getItem('userPicture') || '');
+    }
     showNotification("¡Rostro vinculado correctamente!");
-  }, [showNotification]);
+  }, [showNotification, profile.email]);
 
-  // --- CARGA DE DATOS REALES ---
 
   const fetchData = useCallback(async () => {
     setLoading(true);

@@ -888,16 +888,12 @@ const Citas = ({
   };
 
 
-<<<<<<< Updated upstream
-
   useEffect(() => {
   }, [currentTime, citas, processedCitas, getCitaTimeInfo]);
 
-=======
   useEffect(() => {
     // Check for overdue appointments logic removed per requirement
   }, [currentTime, citas, processedCitas, getCitaTimeInfo]);
->>>>>>> Stashed changes
 
   const handleDateChange = (e) => {
     const fecha = e.target.value;
