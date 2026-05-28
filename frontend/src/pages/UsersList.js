@@ -249,6 +249,31 @@ const UsersList = (props) => {
     }
   };
 
+  const handleMarkAsOverdue = async () => {
+    if (!selectedCitaForDrawer) return;
+    setSubmittingAction(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/citas/${selectedCitaForDrawer.id}/estado`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ estado: 'TIEMPO_EXCEDIDO' })
+      });
+
+      if (res.ok) {
+        setShowDrawer(false);
+        fetchCitasPaginadas(token, citasPage, citasLimit, filtroEstadoCita);
+      }
+    } catch (err) {
+      console.error('Error al marcar como atrasada:', err);
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'citas') {
       const token = localStorage.getItem('token');
@@ -1099,7 +1124,7 @@ const UsersList = (props) => {
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">Código enviado al cliente</span>
                     <div className="bg-black/40 rounded-2xl p-6 text-center border border-white/5">
                       <span className="text-4xl font-mono font-black text-blue-400 tracking-[0.5em] ml-[0.5em]">
-                        {selectedCitaForDrawer.verificationCode || '---'}
+                        {selectedCitaForDrawer.codigoEntrega || selectedCitaForDrawer.verificationCode || '---'}
                       </span>
                     </div>
                   </div>
@@ -1108,23 +1133,35 @@ const UsersList = (props) => {
 
               {/* Actions */}
               {selectedCitaForDrawer.estado !== 'FINALIZADO' && (
-                <div className="p-8 bg-slate-950/30 border-t border-white/5 grid grid-cols-2 gap-4">
-                  <button 
-                    onClick={() => {
-                      setNuevaFecha(selectedCitaForDrawer.fecha?.split('T')[0]);
-                      setNuevaHora(selectedCitaForDrawer.hora_inicio);
-                      setShowAplazarModal(true);
-                    }}
-                    className="px-4 py-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all"
-                  >
-                    Aplazar Cita
-                  </button>
-                  <button 
-                    onClick={() => setShowEliminarModal(true)}
-                    className="px-4 py-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-[10px] font-black text-red-500 uppercase tracking-widest hover:bg-red-500/20 transition-all"
-                  >
-                    Forzar Eliminar
-                  </button>
+                <div className="p-8 bg-slate-950/30 border-t border-white/5 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      onClick={() => {
+                        setNuevaFecha(selectedCitaForDrawer.fecha?.split('T')[0]);
+                        setNuevaHora(selectedCitaForDrawer.hora_inicio);
+                        setShowAplazarModal(true);
+                      }}
+                      className="px-4 py-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all"
+                    >
+                      Aplazar Cita
+                    </button>
+                    <button 
+                      onClick={() => setShowEliminarModal(true)}
+                      className="px-4 py-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-[10px] font-black text-red-500 uppercase tracking-widest hover:bg-red-500/20 transition-all"
+                    >
+                      Forzar Eliminar
+                    </button>
+                  </div>
+                  
+                  {selectedCitaForDrawer.estado !== 'TIEMPO_EXCEDIDO' && (
+                    <button 
+                      onClick={handleMarkAsOverdue}
+                      disabled={submittingAction}
+                      className="w-full px-4 py-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl text-[10px] font-black text-orange-500 uppercase tracking-widest hover:bg-orange-500/20 transition-all disabled:opacity-50"
+                    >
+                      {submittingAction ? 'PROCESANDO...' : 'Marcar como atrasada'}
+                    </button>
+                  )}
                 </div>
               )}
             </>
