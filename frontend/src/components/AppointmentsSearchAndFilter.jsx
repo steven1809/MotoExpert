@@ -150,7 +150,7 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#2563eb] rounded-full" />
               )}
             </div>
-            <span>Filters</span>
+            <span>Filtros</span>
           </button>
 
           {/* Filters Panel */}
@@ -164,7 +164,7 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                     onClick={clearAllFilters}
                     className="text-[#94A3B8] text-xs font-medium hover:text-[#F8FAFC] transition-colors"
                   >
-                    Clear all
+                    Limpiar todo
                   </button>
                 )}
               </div>
@@ -174,7 +174,7 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                 {/* Date Range */}
                 <div className="space-y-1">
                   <label className="text-[#6b7080] text-[11px] font-bold uppercase tracking-widest">
-                    Date range
+                    Rango de Fechas
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <input
@@ -198,13 +198,13 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                 {/* Service Type */}
                 <div className="space-y-1">
                   <label className="text-[#6b7080] text-[11px] font-bold uppercase tracking-widest">
-                    Service type
+                    Tipo de Servicio
                   </label>
                   <CustomSelect
                     value={serviceFilter}
                     onChange={setServiceFilter}
                     options={[
-                      { value: '', label: 'All services' },
+                      { value: '', label: 'Todos' },
                       ...uniqueServices.map(service => ({ value: service, label: service }))
                     ]}
                     className="h-[42px]"
@@ -214,7 +214,7 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                 {/* Vehicle Type */}
                 <div className="space-y-1">
                   <label className="text-[#6b7080] text-[11px] font-bold uppercase tracking-widest">
-                    Vehicle type
+                    Tipo de Vehículo
                   </label>
                   <div className="flex gap-2">
                     <button
@@ -225,7 +225,7 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                           : 'bg-[#1a1d27] border border-[#2a2d3a] text-[#94A3B8] hover:border-white/20'
                       }`}
                     >
-                      All
+                      Todos
                     </button>
                     <button
                       onClick={() => setVehicleTypeFilter('Moto')}
@@ -235,7 +235,7 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                           : 'bg-[#1a1d27] border border-[#2a2d3a] text-[#94A3B8] hover:border-white/20'
                       }`}
                     >
-                      Motorcycle
+                      Moto
                     </button>
                     <button
                       onClick={() => setVehicleTypeFilter('Auto')}
@@ -245,7 +245,7 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                           : 'bg-[#1a1d27] border border-[#2a2d3a] text-[#94A3B8] hover:border-white/20'
                       }`}
                     >
-                      Car
+                      Auto
                     </button>
                   </div>
                 </div>
@@ -253,7 +253,7 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                 {/* Status */}
                 <div className="space-y-1">
                   <label className="text-[#6b7080] text-[11px] font-bold uppercase tracking-widest">
-                    Status
+                    Estado
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {['PENDIENTE', 'EN PROCESO', 'FINALIZADO', 'CANCELADO'].map(status => {

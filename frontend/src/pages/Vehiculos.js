@@ -381,7 +381,7 @@ class Vehiculos extends Component {
 
     return (
       <div className="min-h-screen bg-white dark:bg-[#020617] pb-24 animate-in fade-in duration-700">
-        <section className="relative overflow-hidden bg-gradient-to-r from-[#022873] via-[#0468BF] to-[#05AFF2] px-6 md:px-10 py-10 md:py-14 -mt-16 pt-24 md:pt-28">
+        <section className="relative overflow-hidden bg-gradient-to-r from-[#1A2526] via-[#0468BF] to-[#1A2526] px-6 md:px-10 py-10 md:py-14 -mt-16 pt-24 md:pt-28">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08),transparent_60%)]"></div>
           <div className="relative z-10 max-w-6xl mx-auto">
             <h1 className="text-3xl md:text-4xl font-black text-white">

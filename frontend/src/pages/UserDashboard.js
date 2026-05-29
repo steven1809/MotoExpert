@@ -220,44 +220,6 @@ const ServiceReportModal = ({ report, rating, onClose, onSubmitRating }) => {
             </div>
           </div>
         </div>
-
-        <div className="h-px bg-white/10" />
-
-        <div className="p-5 space-y-4">
-          <div className="text-sm font-black text-[#F8FAFC] uppercase tracking-wider">Calificación</div>
-
-          {isAlreadyRated ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Especialista</div>
-                <StarRating value={rating?.specialistRating || 0} readOnly size="md" />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Calidad del Servicio</div>
-                <StarRating value={rating?.serviceRating || 0} readOnly size="md" />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Especialista</div>
-                <StarRating value={specialistRating} onChange={setSpecialistRating} size="md" />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="text-[11px] font-black uppercase tracking-wider text-[#6b7080]">Calidad del Servicio</div>
-                <StarRating value={serviceRating} onChange={setServiceRating} size="md" />
-              </div>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!specialistRating || !serviceRating || isSubmitting}
-                className="w-full py-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-[#2563EB]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-              >
-                {isSubmitting ? 'Enviando...' : 'Enviar Calificación'}
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
@@ -590,7 +552,7 @@ class UserDashboard extends Component {
         {/* SIN max-w ni px — ocupa el 100% */}
         <div className="w-full">
           {/* HERO (no padding-top to stick to navbar) */}
-          <section className="relative overflow-hidden bg-gradient-to-r from-[#022873] via-[#0468BF] to-[#05AFF2] -mt-20">
+          <section className="relative overflow-hidden bg-gradient-to-r from-[#1A2526] via-[#0468BF] to-[#1A2526] -mt-20">
             <div className="absolute inset-0">
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(37,99,235,0.22),transparent_55%)]" />
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(14,165,233,0.16),transparent_55%)]" />
@@ -621,33 +583,6 @@ class UserDashboard extends Component {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-6 pt-8">
             <div className="lg:col-span-8 space-y-6">
-
-              {/* Accesos rápidos */}
-              <section className="space-y-3">
-                <div className="text-sm font-black text-gray-900 dark:text-[#F8FAFC]">Accesos rápidos</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { label: 'Agendar cita', sub: 'Nueva cita', icon: <img src={agendarIcon} alt="agendar" className="w-5 h-5"/>, view: 'citas' },
-                    { label: 'Mis vehículos', sub: 'Ver y gestionar', icon: <img src={vehiculoIcon} alt="vehiculo" className="w-5 h-5"/>, view: 'vehiculos' },
-                    { label: 'Mis citas', sub: 'Ver historial', icon: <img src={finalizarIcon} alt="citas" className="w-5 h-5"/>, view: 'citas' },
-                    { label: 'Mis reseñas', sub: 'Deja tu opinión', icon: <img src={reseñasIcon} alt="reseñas" className="w-5 h-5"/>, view: 'resenas' },
-                  ].map((item, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setView(item.view)}
-                      className="group relative overflow-hidden rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none p-4 text-left hover:shadow-md dark:hover:bg-white/10 transition-shadow"
-                    >
-                      <div className="h-10 w-10 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-[#94A3B8] flex items-center justify-center rounded-lg">
-                        {item.icon}
-                      </div>
-                      <div className="mt-4 text-sm font-black text-gray-900 dark:text-white">{item.label}</div>
-                      <div className="text-xs text-gray-500 dark:text-[#94A3B8]">{item.sub}</div>
-                    </button>
-                  ))}
-                </div>
-              </section>
-
               {/* Próxima cita */}
               <section className="rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none overflow-hidden">
                 <div className="px-5 pt-5 flex items-center justify-between">
