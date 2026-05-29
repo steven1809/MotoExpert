@@ -1384,13 +1384,13 @@ const Citas = ({
       const isToday = cita.fecha === new Date().toISOString().split('T')[0];
       switch (type) {
         case 'in-progress':
-          return 'Service in progress';
+          return 'Servicio en curso';
         case 'today':
-          return 'You have a service today';
+          return 'Servicio hoy mismo';
         case 'upcoming':
-          return isToday ? 'Upcoming service today' : 'Upcoming service tomorrow';
+          return isToday ? 'Próximo servicio hoy' : 'Próximo servicio mañana.';
         case 'expired':
-          return 'Expired appointment';
+          return 'Servicio caducado';
         default:
           return '';
       }
@@ -1399,18 +1399,18 @@ const Citas = ({
     const getAlertMessage = (type, cita) => {
       const serviceName = cita.servicio?.nombre || 'Service';
       const plate = cita.vehiculo?.placa || 'vehicle';
-      const date = new Date(cita.fecha).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const date = new Date(cita.fecha).toLocaleDateString('es-es', { month: 'short', day: 'numeric' });
       const time = cita.hora_inicio?.substring(0, 5) || '';
 
       switch (type) {
         case 'in-progress':
-          return `Your ${serviceName} for ${plate} is currently being performed by your specialist.`;
+          return `Tu cita de ${serviceName} para ${plate} está en curso por el especialista.`;
         case 'today':
-          return `${serviceName} for ${plate} at ${time}. Your specialist will be ready for you.`;
+          return `${serviceName} del vehiculo ${plate} a las ${time}.`;
         case 'upcoming':
-          return `${serviceName} for vehicle ${plate} is scheduled for ${date} at ${time}.`;
+          return `${serviceName} del vehiculo ${plate} esta programada para el ${date} a las ${time}.`;
         case 'expired':
-          return `Your ${serviceName} appointment for ${plate} on ${date} was not completed. Would you like to reschedule?`;
+          return `Tu cita de ${serviceName} para ${plate} en el ${date} no se ha completado.`;
         default:
           return '';
       }
@@ -1543,7 +1543,7 @@ const Citas = ({
                     if (isLessThan24Hours) {
                       return (
                         <div className="mt-4 p-3 rounded-xl border border-orange-500/20 bg-orange-500/10 text-orange-400 text-sm font-black">
-                          ⚠️ Cancelar con menos de 24 horas de anticipación puede generar una penalización.
+                           Cancelar con menos de 24 horas de anticipación puede generar una penalización.
                         </div>
                       );
                     }
@@ -1659,7 +1659,7 @@ const Citas = ({
             </div>
           )}
 
-          <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0b1220] overflow-hidden">
+          <div className="w-full rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0b1220] overflow-hidden">
             <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -1834,7 +1834,7 @@ const Citas = ({
 
               {showForm && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  <div className="lg:col-span-8">
+                  <div className="lg:col-span-12">
                     <div className="rounded-3xl border border-white/10 bg-[#0b1220] overflow-hidden">
                       <div className="px-5 py-4 flex flex-col gap-4 border-b border-white/10">
                         <div className="flex items-start justify-between gap-4">
@@ -1848,9 +1848,9 @@ const Citas = ({
                               setShowForm(false);
                               setNotes('');
                             }}
-                            className="h-10 px-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                            className="h-10 px-4 rounded-2xl bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 text-red-400 text-[11px] font-black uppercase tracking-widest transition-colors"
                           >
-                            Cerrar formulario
+                             X
                           </button>
                         </div>
 
@@ -1889,7 +1889,7 @@ const Citas = ({
                       <form onSubmit={handleSubmit} className="px-5 py-5 space-y-5">
                         <div className="space-y-3">
                           <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
-                            1. Vehículo
+                            1. Escoje tu vehículo con el que deseas agendar tu cita.
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {vehiculos.slice(0, 3).map((v) => {
@@ -1945,7 +1945,7 @@ const Citas = ({
 
                         <div className="space-y-3">
                           <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
-                            2. Servicio
+                            2. selecciona el servicio que deseas para tu cita.
                           </div>
                           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                             <div className="lg:col-span-10">
@@ -1975,7 +1975,7 @@ const Citas = ({
 
                         <div className="space-y-3">
                           <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
-                            3. Trabajador
+                            3. selecciona el especialista de tu preferencia.
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {empleados.slice(0, 4).map((e) => {
@@ -2024,17 +2024,17 @@ const Citas = ({
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-3">
                             <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
-                              4. Horario
+                              4. escoje el horario que mas se adapte a tu tiempo.
                             </div>
                             <div className="text-xs text-white/50 truncate">
                               {selectedEmpleado?.nombre ? `Horarios disponibles con ${selectedEmpleado.nombre}` : ''}
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
                             <div className="space-y-2">
                               <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
-                                Fecha
+                              
                               </div>
                               <input
                                 type="date"
@@ -2049,13 +2049,8 @@ const Citas = ({
 
                             <div className="space-y-2">
                               <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
-                                Sede
+                                
                               </div>
-                              <input
-                                value="MotoExpert"
-                                readOnly
-                                className="w-full h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-white/80 focus:outline-none"
-                              />
                             </div>
                           </div>
 
@@ -2174,164 +2169,6 @@ const Citas = ({
                       </form>
                     </div>
                   </div>
-
-                  <div className="lg:col-span-4 space-y-6">
-                    <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
-                      <div className="px-5 py-4 flex items-center justify-between border-b border-slate-200 dark:border-white/10">
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm font-black text-slate-900 dark:text-white">Próximas citas</div>
-                          <span className="px-2 py-0.5 rounded-full bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] text-[10px] font-black">
-                            {filteredPendientes.slice(0, 2).length}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => pendingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                          className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
-                        >
-                          Ver calendario
-                        </button>
-                      </div>
-                      <div className="p-5 space-y-4">
-                        {filteredPendientes.slice(0, 2).length > 0 ? (
-                          filteredPendientes.slice(0, 2).map((cita) => {
-                            const dateObj = cita?.fecha ? new Date(cita.fecha) : null;
-                            const day = dateObj && Number.isFinite(dateObj.getTime()) ? dateObj.getDate() : null;
-                            const month = dateObj && Number.isFinite(dateObj.getTime())
-                              ? dateObj.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase()
-                              : '—';
-                            const time = cita?.hora_inicio ? cita.hora_inicio.substring(0, 5) : '—';
-                            return (
-                              <div key={cita.id} className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0b1220] overflow-hidden">
-                                <div className="p-4 flex gap-3">
-                                  <div className="h-14 w-14 rounded-3xl bg-[#0b1220] border border-white/10 flex flex-col items-center justify-center">
-                                    <div className="text-[10px] text-white/50 font-black">{month}</div>
-                                    <div className="text-xl text-white font-black">{day ?? '—'}</div>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-black text-slate-900 dark:text-white truncate">
-                                      {cita.servicio?.nombre || 'Servicio'}
-                                    </div>
-                                    <div className="text-xs text-slate-600 dark:text-[#94A3B8] truncate">
-                                      {cita.vehiculo?.modelo || '—'} · {cita.vehiculo?.placa || '—'}
-                                    </div>
-                                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600 dark:text-[#94A3B8]">
-                                      <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
-                                        <span className="text-[#60A5FA]"><img src={relojIcon} alt="reloj" className="w-6 h-6" /></span>
-                                        <span className="font-bold">{time}</span>
-                                      </div>
-                                      <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
-                                        <span className="text-[#60A5FA]"><img src={ubicIcon} alt="ubicacion" className="w-6 h-6" /></span>
-                                        <span className="font-bold">MotoExpert</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="px-4 pb-4 flex flex-col gap-2">
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                                      className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
-                                    >
-                                      Ver detalles
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleReschedule(cita)}
-                                      className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
-                                    >
-                                      Reprogramar
-                                    </button>
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDelete(cita.id)}
-                                      className="flex-1 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 text-[11px] font-black uppercase tracking-widest transition-colors"
-                                    >
-                                      Cancelar
-                                    </button>
-                                    {cita.payment?.tokenCode && !cita.payment?.tokenUsed && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setTokenModalCode(cita.payment.tokenCode);
-                                          setTokenModalOpen(true);
-                                        }}
-                                        className="flex-1 h-10 rounded-2xl bg-[#2563EB]/10 hover:bg-[#2563EB]/20 border border-[#2563EB]/20 text-[#60A5FA] text-[11px] font-black uppercase tracking-widest transition-colors"
-                                      >
-                                        Código
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <div className="rounded-3xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-8 text-center">
-                            <div className="text-sm text-slate-600 dark:text-[#94A3B8]">No hay próximas citas.</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
-                      <div className="px-5 py-4 flex items-center justify-between border-b border-slate-200 dark:border-white/10">
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm font-black text-slate-900 dark:text-white">Historial de citas</div>
-                          <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-slate-600 dark:text-white/60 text-[10px] font-black">
-                            {historialServicios.slice(0, 5).length}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                          className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
-                        >
-                          Ver todo
-                        </button>
-                      </div>
-
-                      <div className="p-5 space-y-3">
-                        {historialServicios.slice(0, 5).length > 0 ? (
-                          historialServicios.slice(0, 5).map((cita) => {
-                            const priceRaw = cita?.servicio?.precio;
-                            const priceNum = typeof priceRaw === 'number' ? priceRaw : priceRaw ? Number(priceRaw) : 0;
-                            const priceText = Number.isFinite(priceNum) && priceNum > 0 ? `$${priceNum.toLocaleString()}` : '—';
-                            return (
-                              <div key={cita.id} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0b1220] px-4 py-3">
-                                <div className="min-w-0">
-                                  <div className="text-xs font-black text-slate-900 dark:text-white truncate">{cita.servicio?.nombre || 'Servicio'}</div>
-                                  <div className="text-[11px] text-slate-600 dark:text-[#94A3B8] truncate">
-                                    {cita.fecha ? new Date(cita.fecha).toLocaleDateString() : '—'} · {String(cita.hora_inicio || '').substring(0, 5) || '—'}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                                    cita.estado === 'FINALIZADO'
-                                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                      : cita.estado === 'CANCELADO'
-                                        ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                                  }`}>
-                                    {cita.estado}
-                                  </span>
-                                  <div className="text-xs font-black text-slate-900 dark:text-white">{priceText}</div>
-                                </div>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <div className="rounded-3xl border border-dashed border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 p-8 text-center">
-                            <div className="text-sm text-slate-600 dark:text-[#94A3B8]">No hay historial.</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -2342,18 +2179,8 @@ const Citas = ({
           <div ref={pendingSectionRef} className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="text-sm font-black text-slate-900 dark:text-white">
-                Citas pendientes
+                Estado de tus Citas
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(true);
-                  setTimeout(() => formSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
-                }}
-                className="text-xs text-[#60A5FA] hover:text-[#93C5FD] transition-colors"
-              >
-                Agendar nueva →
-              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2405,11 +2232,11 @@ const Citas = ({
 
                           <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600 dark:text-[#94A3B8]">
                             <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
-                              <span className="text-[#60A5FA]">⏰</span>
+                              <span className="text-[#60A5FA]"><img src={relojIcon} alt="reloj" className="w-4 h-4" /></span>
                               <span className="font-bold">{time}</span>
                             </div>
                             <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
-                              <span className="text-[#60A5FA]">📍</span>
+                              <span className="text-[#60A5FA]"><img src={ubicIcon} alt="ubicacion" className="w-4 h-4" /></span>
                               <span className="font-bold">AutoClean Center</span>
                             </div>
                           </div>
@@ -2479,7 +2306,7 @@ const Citas = ({
           <div ref={historySectionRef} className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="text-sm font-black text-slate-900 dark:text-white">
-                Historial de citas
+                Historial de tus citas
               </div>
               <div className="text-xs text-slate-600 dark:text-[#94A3B8]">
                 {hasActiveFilters ? `${historialServicios.length} / ${allHistorialServicios.length}` : ''}
@@ -2527,7 +2354,7 @@ const Citas = ({
                               {cita.servicio?.nombre || '—'}
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-600 dark:text-[#94A3B8]">
-                              AutoClean Center
+                              MotoExpert
                             </td>
                             <td className="px-6 py-4">
                               <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
