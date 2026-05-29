@@ -351,22 +351,21 @@ const ResenasPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#020617] py-8 px-4">
-      <div className="max-w-6xl mx-auto space-y-10">
-        <header className="bg-[#0d1117] border border-white/10 rounded-[18px] px-6 py-7">
-          <div className="flex flex-col items-center text-center gap-3">
-            <span className="inline-flex items-center px-4 py-1 rounded-full border border-[#8b7cf6]/50 text-[#8b7cf6] text-[10px] font-black uppercase tracking-[0.3em]">
-              Reseñas de Clientes
-            </span>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight uppercase leading-none">
-              <span className="text-white">OPINIONES DE </span>
-              <span className="text-[#3ecf8e] italic">CLIENTES</span>
+    <div className="min-h-screen bg-white dark:bg-[#020617] py-0 px-0">
+      <div className="space-y-10">
+        <section className="relative overflow-hidden bg-gradient-to-r from-[#022873] via-[#0468BF] to-[#05AFF2] px-6 md:px-10 py-10 md:py-14 -mt-16 pt-24 md:pt-28">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08),transparent_60%)]"></div>
+          <div className="relative z-10 max-w-6xl mx-auto">
+            <h1 className="text-3xl md:text-4xl font-black text-white">
+              Opiniones de clientes
             </h1>
-            <p className="text-sm md:text-base text-white/70 italic">
-              La experiencia de nuestros usuarios habla por nosotros
+            <p className="text-white/70 text-sm md:text-base mt-2">
+              La experiencia de nuestros usuarios habla por nosotros.
             </p>
           </div>
-        </header>
+        </section>
+
+        <div className="max-w-6xl mx-auto space-y-10">
 
         {error && (
           <div className="p-6 bg-red-900/10 border border-red-500/20 rounded-3xl text-red-400">
@@ -404,7 +403,7 @@ const ResenasPage = () => {
                     <div
                       className="h-full bg-[#7b9cff] rounded-full transition-all duration-500"
                       style={{ width: `${percentage}%` }}
-                    />
+                    ></div>
                   </div>
                   <div className="w-12 text-sm text-slate-600 dark:text-[#94A3B8]">
                     {count} ({percentage.toFixed(0)}%)
@@ -431,7 +430,7 @@ const ResenasPage = () => {
                   strokeLinejoin="round"
                   strokeWidth="2"
                   d={trend > 0 ? "M5 10l7-7m0 0l7 7m-7-7v18" : "M19 14l-7 7m0 0l-7-7m7 7V3"}
-                />
+                ></path>
               </svg>
               <span className={`font-bold ${trend > 0 ? 'text-[#1D9E75]' : 'text-[#E24B4A]'}`}>
                 {trend > 0 ? '+' : ''}{trend} vs mes anterior
@@ -547,7 +546,7 @@ const ResenasPage = () => {
 
                     {/* Bottom Glow for Top 1 */}
                     {isTop1 && (
-                      <div className="mt-4 h-0.5 bg-gradient-to-r from-transparent via-[#7b9cff] to-transparent" />
+                      <div className="mt-4 h-0.5 bg-gradient-to-r from-transparent via-[#7b9cff] to-transparent"></div>
                     )}
                   </div>
                 );
@@ -589,7 +588,7 @@ const ResenasPage = () => {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center">
                 <svg className="w-5 h-5 text-[#7b9cff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                 </svg>
               </div>
               <div>
@@ -722,7 +721,7 @@ const ResenasPage = () => {
                               <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
                             ) : (
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                               </svg>
                             )}
                           </button>
@@ -743,7 +742,7 @@ const ResenasPage = () => {
                     <div className="flex items-center justify-between border-t border-white/[0.05] pt-4">
                       <span className="inline-flex items-center gap-1 text-[#1D9E75] text-xs font-bold uppercase tracking-wider">
                         <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
                         </svg>
                         Servicio verificado
                       </span>
@@ -772,8 +771,8 @@ const ResenasPage = () => {
                 <AreaChart data={ratingsHistory}>
                   <defs>
                     <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#7b9cff" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#7b9cff" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#7b9cff" stopOpacity="0.15" />
+                      <stop offset="95%" stopColor="#7b9cff" stopOpacity="0" />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
@@ -805,12 +804,12 @@ const ResenasPage = () => {
                     type="monotone"
                     dataKey="score"
                     stroke="#7b9cff"
-                    strokeWidth={3}
+                    strokeWidth="3"
                     fill="url(#colorScore)"
                     activeDot={{ r: 6 }}
                   >
                     {ratingsHistory.map((entry, index) => (
-                      <Dot key={`dot-${index}`} r={4} fill="#7b9cff" />
+                      <Dot key={`dot-${index}`} r="4" fill="#7b9cff" />
                     ))}
                   </Area>
                 </AreaChart>
@@ -872,6 +871,7 @@ const ResenasPage = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

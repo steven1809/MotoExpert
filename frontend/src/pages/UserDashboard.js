@@ -619,7 +619,7 @@ class UserDashboard extends Component {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-6 pt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-6 pt-8">
             <div className="lg:col-span-8 space-y-6">
 
               {/* Accesos rápidos */}

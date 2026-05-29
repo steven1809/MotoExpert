@@ -381,14 +381,18 @@ class Vehiculos extends Component {
 
     return (
       <div className="min-h-screen bg-white dark:bg-[#020617] pb-24 animate-in fade-in duration-700">
-        <div className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
-          <div>
-            <div className="text-sm font-black text-slate-900 dark:text-white">Vehículos</div>
-            <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
-              Administra los vehículos registrados en tu cuenta.
-            </div>
+        <section className="relative overflow-hidden bg-gradient-to-r from-[#022873] via-[#0468BF] to-[#05AFF2] px-6 md:px-10 py-10 md:py-14 -mt-16 pt-24 md:pt-28">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08),transparent_60%)]"></div>
+          <div className="relative z-10 max-w-6xl mx-auto">
+            <h1 className="text-3xl md:text-4xl font-black text-white">
+              Mis vehículos
+            </h1>
+            <p className="text-white/70 text-sm md:text-base mt-2">
+              Gestiona y administra tus vehículos registrados.
+            </p>
           </div>
-
+        </section>
+        <div className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
           <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0b1220] overflow-hidden">
             <div className="px-6 py-5 border-b border-slate-200 dark:border-white/10">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

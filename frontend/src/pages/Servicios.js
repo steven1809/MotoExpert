@@ -382,14 +382,19 @@ export default function Servicios({ setView }) {
           </div>
         )}
 
-        <div className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
-          <div className="flex flex-col gap-2">
-            <div className="text-sm font-black text-slate-900 dark:text-white">Servicios</div>
-            <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
+        <section className="relative overflow-hidden bg-gradient-to-r from-[#022873] via-[#0468BF] to-[#05AFF2] px-6 md:px-10 py-10 md:py-14 -mt-16 pt-24 md:pt-28">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08),transparent_60%)]"></div>
+          <div className="relative z-10 max-w-6xl mx-auto">
+            <h1 className="text-3xl md:text-4xl font-black text-white">
+              Servicios
+            </h1>
+            <p className="text-white/70 text-sm md:text-base mt-2">
               Explora nuestros servicios y agenda el que mejor se adapte a tu vehículo.
-            </div>
+            </p>
           </div>
+        </section>
 
+        <div className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="relative w-full lg:max-w-[520px]">
               <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">

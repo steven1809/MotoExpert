@@ -12,6 +12,7 @@ class Navbar extends Component {
       open: false,
       dropdownOpen: false,
       scrolled: false,
+      sidebarOpen: false,
     };
     this.dropdownRef = React.createRef();
     this.handleScroll = this.handleScroll.bind(this);
@@ -43,6 +44,18 @@ class Navbar extends Component {
 
   toggleMenu = () => {
     this.setState((prevState) => ({ open: !prevState.open }));
+  };
+
+  toggleSidebar = () => {
+    this.setState((prevState) => ({
+      sidebarOpen: !prevState.sidebarOpen,
+      open: false,
+      dropdownOpen: false,
+    }));
+  };
+
+  closeSidebar = () => {
+    this.setState({ sidebarOpen: false });
   };
 
   getMenuConfig = () => {
@@ -169,6 +182,7 @@ class Navbar extends Component {
         onClick={() => {
           setView(item.view);
           if (this.state.open) this.toggleMenu();
+          if (this.state.sidebarOpen) this.closeSidebar();
         }}
         className={
           isHorizontal && !isDark
@@ -217,12 +231,42 @@ class Navbar extends Component {
     const userRank = (userRole || "user").toUpperCase();
     const initial = userName.charAt(0).toUpperCase();
     const items = this.getMenuConfig();
+    const { sidebarOpen } = this.state;
 
     return (
       <>
         {/* Sidebar for Admin/Employee */}
         {!isStandardUser && (
-          <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 bg-[#050507] border-r border-white/[0.05] flex-col z-[60]">
+          <>
+            <button
+              onClick={this.toggleSidebar}
+              className="fixed top-4 left-4 z-[70] p-2 bg-[#022873] text-white rounded-lg shadow-lg hover:bg-[#0468BF] transition-colors"
+              aria-label="Toggle menu"
+              type="button"
+            >
+              {sidebarOpen ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
+
+            {sidebarOpen && (
+              <div
+                className="fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm"
+                onClick={this.closeSidebar}
+              />
+            )}
+
+            <aside
+              className={`fixed top-0 left-0 h-full w-72 z-[60] transform transition-transform duration-300 ease-in-out ${
+                sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+              } bg-[#050507] border-r border-white/[0.05] flex flex-col`}
+            >
             <div className="px-8 pt-8 pb-6 flex-shrink-0">
               <button onClick={() => setView("dashboard")} className="group text-left w-full">
                 <div className="text-white font-black text-2xl tracking-tighter transition-colors group-hover:text-[#7b9cff]">
@@ -297,7 +341,8 @@ class Navbar extends Component {
                   <span>Cerrar Sesión</span>
                 </button>
             </div>
-          </aside>
+            </aside>
+          </>
         )}
 
         {/* Top Navbar for Standard User (Desktop) */}
@@ -432,21 +477,24 @@ class Navbar extends Component {
                 MOTO<span className="text-[#7b9cff]">EXPERT</span>
               </div>
             </button>
-            <button
-              onClick={this.toggleMenu}
-              className={`w-12 h-12 rounded-2xl border transition-all duration-300 flex items-center justify-center ${
-                open ? "bg-[#7b9cff] border-[#7b9cff] text-white shadow-[0_0_15px_rgba(123,156,255,0.4)]" : "bg-white/[0.02] border-white/[0.05] text-white"
-              }`}
-            >
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d={open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-              </svg>
-            </button>
+            {isStandardUser && (
+              <button
+                onClick={this.toggleMenu}
+                className={`w-12 h-12 rounded-2xl border transition-all duration-300 flex items-center justify-center ${
+                  open ? "bg-[#7b9cff] border-[#7b9cff] text-white shadow-[0_0_15px_rgba(123,156,255,0.4)]" : "bg-white/[0.02] border-white/[0.05] text-white"
+                }`}
+                type="button"
+              >
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d={open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+                </svg>
+              </button>
+            )}
           </div>
         </header>
 
         {/* Mobile Menu */}
-        {open && (
+        {isStandardUser && open && (
           <div className="fixed inset-0 z-[100] md:hidden overflow-hidden">
             <div className="absolute inset-0 bg-[#050507]/95 backdrop-blur-sm" onClick={this.toggleMenu} />
             <div className="absolute top-0 right-0 w-[85%] max-w-sm h-full bg-[#050507] border-l border-white/[0.05] flex flex-col animate-in slide-in-from-right duration-300">
