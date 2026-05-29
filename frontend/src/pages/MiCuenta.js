@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Camera, MoreVertical, Trash2, UserRound } from 'lucide-react';
 import FaceAuthModal from '../components/FaceAuthModal';
 import { useWebAuthn } from '../hooks/useWebAuthn';
 import { API_BASE_URL } from '../apiConfig';
+import { t } from '../styles/theme';
 import correoIcon from '../assets/iconos/correo.png';
 import telefonoIcon from '../assets/iconos/telefono.png';
 import ubicacionIcon from '../assets/iconos/ubicacion.png';
@@ -113,9 +115,10 @@ const MiCuenta = ({ setView }) => {
   const [isFaceRegistered, setIsFaceRegistered] = useState(false);
   const fileInputRef = useRef(null);
   const bannerInputRef = useRef(null);
+  const [bannerMenuOpen, setBannerMenuOpen] = useState(false);
 
   // --- GESTIÓN DE ESTADO ---
-  
+
   // 1. Información Personal
   const [profile, setProfile] = useState({
     nombre: localStorage.getItem('userName') || '',
@@ -126,6 +129,16 @@ const MiCuenta = ({ setView }) => {
     fotoBanner: null,
     memberSince: 'Mayo 2023'
   });
+  
+  const [bannerImage, setBannerImage] = useState(
+    "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1200"
+  );
+
+  useEffect(() => {
+    if (profile.fotoBanner) {
+      setBannerImage(profile.fotoBanner);
+    }
+  }, [profile.fotoBanner]);
 
   useEffect(() => {
     if (profile.email) {
@@ -133,6 +146,7 @@ const MiCuenta = ({ setView }) => {
       setIsFaceRegistered(registered);
     }
   }, [profile.email, showFaceAuth]);
+
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editForm, setEditForm] = useState({ ...profile });
 
@@ -170,9 +184,9 @@ const MiCuenta = ({ setView }) => {
 
   // --- AYUDANTES ---
 
-  const showNotification = useCallback((msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+  const showNotification = useCallback((msg, type = 'success', duration = 3000) => {
+    setToast({ message: msg, type });
+    setTimeout(() => setToast(null), duration);
   }, []);
 
   const handleFaceSuccess = useCallback(() => {
@@ -188,7 +202,6 @@ const MiCuenta = ({ setView }) => {
     }
     showNotification("¡Rostro vinculado correctamente!");
   }, [showNotification, profile.email]);
-
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -448,9 +461,10 @@ const MiCuenta = ({ setView }) => {
           showNotification("Foto de perfil actualizada");
         } else {
           setProfile({ ...profile, fotoBanner: updatedUser.banner });
+          setBannerImage(updatedUser.banner);
           showNotification("Banner actualizado");
         }
-        fetchData(); // Refrescar actividades y demás
+        fetchData();
       } else {
         showNotification("Error al subir la imagen", "error");
       }
@@ -472,7 +486,6 @@ const MiCuenta = ({ setView }) => {
     formData.append('anio', newVehicle.año);
     formData.append('placa', newVehicle.placa);
     formData.append('usuarioId', userId);
-    // km y color no parecen estar en el DTO original pero se podrían agregar si el backend lo soporta
     
     try {
       const res = await fetch(`${API_URL}/vehiculos`, {
@@ -498,7 +511,7 @@ const MiCuenta = ({ setView }) => {
         setNewVehicle({ marca: '', modelo: '', año: '', placa: '', color: '', km: '', imagen: '' });
         setShowAddVehicle(false);
         showNotification("Vehículo agregado con éxito");
-        fetchData(); // Refrescar actividades
+        fetchData();
       } else {
         showNotification("Error al agregar vehículo", "error");
       }
@@ -546,39 +559,6 @@ const MiCuenta = ({ setView }) => {
     return val;
   };
 
-  const handleAddPayment = (e) => {
-    e.preventDefault();
-    const last4 = newPayment.numero.replace(/\s/g, '').slice(-4);
-    const payment = {
-      id: Date.now(),
-      tipo: newPayment.tipo,
-      ultimos4: last4,
-      titular: newPayment.titular,
-      predeterminado: newPayment.predeterminado || payments.length === 0
-    };
-
-    if (payment.predeterminado) {
-      setPayments(payments.map(p => ({ ...p, predeterminado: false })).concat(payment));
-    } else {
-      setPayments([...payments, payment]);
-    }
-
-    setNewPayment({ tipo: 'VISA', numero: '', titular: '', vencimiento: '', cvv: '', predeterminado: false });
-    setShowAddPayment(false);
-    showNotification("Método de pago agregado");
-  };
-
-  const handleDeletePayment = (id) => {
-    setPayments(payments.filter(p => p.id !== id));
-    showNotification("Método de pago eliminado");
-  };
-
-  const handleSetDefaultPayment = (id) => {
-    setPayments(payments.map(p => ({ ...p, predeterminado: p.id === id })));
-    setActivePaymentMenu(null);
-    showNotification("Pago predeterminado actualizado");
-  };
-
   const filteredActivities = useMemo(() => {
     if (activityFilter === 'all') return activities;
     return activities.filter(a => a.tipo === activityFilter);
@@ -600,8 +580,6 @@ const MiCuenta = ({ setView }) => {
     const userEmail = localStorage.getItem('userEmail');
 
     try {
-      // Usamos el endpoint de reset-password con el OTP simulado '123456'
-      // ya que no hay un endpoint directo de 'change-password' en el controlador actual
       const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: 'POST',
         headers: {
@@ -643,7 +621,7 @@ const MiCuenta = ({ setView }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] transition-colors duration-500 pb-20">
+    <div className={`min-h-screen ${t('bgPage')} pb-20`}>
       {/* Inputs de archivo ocultos */}
       <input 
         type="file" 
@@ -666,603 +644,269 @@ const MiCuenta = ({ setView }) => {
           <p className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest animate-pulse">Cargando información...</p>
         </div>
       )}
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        
-        {/* --- CABECERA / BANNER --- */}
-        <div className="relative group">
-          <div 
-            className="h-48 md:h-64 bg-gradient-to-br from-blue-600 to-blue-900 rounded-[2.5rem] overflow-hidden shadow-xl shadow-blue-500/10 cursor-pointer relative"
-            onClick={() => bannerInputRef.current.click()}
-          >
-            <img 
-              src={profile.fotoBanner || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1200"} 
-              className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700" 
-              alt="Banner" 
+
+      <div className="w-full">
+        <section className={`relative w-full overflow-hidden ${t('bgCard')}`}>
+          {bannerImage && (
+            <img
+              src={bannerImage}
+              className="absolute inset-0 w-full h-full object-cover opacity-25"
+              alt="Banner"
             />
-            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center text-white">
-                <svg className="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="text-xs font-bold uppercase tracking-widest">Cambiar Banner</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="absolute -bottom-12 left-10 flex flex-col md:flex-row items-end gap-6">
-            <div className="relative group/avatar cursor-pointer" onClick={() => fileInputRef.current.click()}>
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-white dark:bg-[#161b22] border-4 border-white dark:border-[#0d1117] shadow-2xl overflow-hidden flex items-center justify-center text-5xl font-black text-blue-600 relative">
-                {profile.fotoPerfil ? (
-                  <img src={profile.fotoPerfil} className="w-full h-full object-cover" alt="Avatar" />
-                ) : (
-                  profile.nombre.charAt(0)
-                )}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
-                   <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="absolute bottom-2 right-2 w-8 h-8 bg-emerald-500 border-4 border-white dark:border-[#161b22] rounded-full shadow-lg" />
-            </div>
-            
-            <div className="pb-4 space-y-1">
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tight">{profile.nombre}</h1>
-                <span className="text-yellow-500 text-2xl">★</span>
-              </div>
-              <p className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-                Cliente desde {profile.memberSince}
-              </p>
-              <div className="flex flex-wrap items-center gap-4 md:gap-8 text-sm font-bold text-gray-500 dark:text-gray-400">
-                <span className="flex items-center gap-2"><img src={correoIcon} className="w-4 h-4 opacity-50" alt="" />{profile.email}</span>
-                <span className="flex items-center gap-2"><img src={telefonoIcon} className="w-4 h-4 opacity-50" alt="" />{profile.telefono}</span>
-                <span className="flex items-center gap-2"><img src={ubicacionIcon} className="w-4 h-4 opacity-50" alt="" />Medellín, CO</span>
-              </div>
-            </div>
-          </div>
-        </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0f1b2d]/90 via-[#1a2d4a]/70 to-[#0f1b2d]/90" />
+          <div className="absolute inset-0 backdrop-blur-[2px]" />
 
-        {/* --- GRID PRINCIPAL --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-16">
-          
-          {/* SECCIÓN 1: INFORMACIÓN PERSONAL */}
-          <div className="bg-white dark:bg-[#1c2333] rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Información Personal</h3>
-              <button 
-                onClick={() => { setEditForm({...profile}); setShowEditProfile(true); }}
-                className="text-[10px] font-black text-[#3b82f6] uppercase tracking-widest hover:underline"
+          <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-10">
+            <div className="absolute top-3 right-3 z-[60]">
+              <button
+                type="button"
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white inline-flex items-center justify-center transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setBannerMenuOpen((v) => !v);
+                }}
+                aria-label="Opciones de banner"
+                aria-haspopup="menu"
+                aria-expanded={bannerMenuOpen}
               >
-                Editar Perfil
+                <MoreVertical className="w-4 h-4" />
               </button>
-            </div>
-            
-            <div className="space-y-6 flex-1">
-              {[
-                { label: 'Nombre Completo', value: profile.nombre },
-                { label: 'Correo Electrónico', value: profile.email, color: 'text-[#3b82f6]' },
-                { label: 'Teléfono', value: profile.telefono },
-                { label: 'Dirección de Residencia', value: profile.direccion }
-              ].map((field, i) => (
-                <div key={i}>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">{field.label}</label>
-                  <p className={`text-sm font-black ${field.color || 'text-gray-900 dark:text-white'}`}>{field.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* SECCIÓN 2: VEHÍCULO PRINCIPAL */}
-          <div className="bg-white dark:bg-[#1c2333] rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Vehículo Principal</h3>
-              <button onClick={() => setShowVehiclesList(true)} className="text-[10px] font-black text-[#3b82f6] uppercase tracking-widest hover:underline">Ver Todos</button>
-            </div>
-            
-            {mainVehicle ? (
-              <div className="flex-1 flex flex-col">
-                <div className="aspect-video rounded-3xl overflow-hidden mb-6 bg-gray-100 dark:bg-[#161b22] group relative">
-                  <img src={mainVehicle.imagen} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Car" />
-                  <div className="absolute top-4 left-4">
-                    <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-blue-600/20">Principal</span>
+              {bannerMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[55]"
+                    onClick={() => setBannerMenuOpen(false)}
+                  />
+                  <div
+                    className="absolute right-0 mt-2 w-52 rounded-lg bg-[#1e2a3a] text-white border border-white/10 overflow-hidden z-[60]"
+                    role="menu"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      className="w-full px-4 py-3 text-left text-sm font-bold hover:bg-white/5 transition-colors inline-flex items-center gap-3"
+                      role="menuitem"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setBannerMenuOpen(false);
+                        fileInputRef.current?.click();
+                      }}
+                    >
+                      <UserRound className="w-4 h-4" />
+                      <span>Cambiar foto de perfil</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full px-4 py-3 text-left text-sm font-bold hover:bg-white/5 transition-colors inline-flex items-center gap-3"
+                      role="menuitem"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setBannerMenuOpen(false);
+                        bannerInputRef.current?.click();
+                      }}
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Cambiar banner</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full px-4 py-3 text-left text-sm font-bold hover:bg-white/5 transition-colors inline-flex items-center gap-3"
+                      role="menuitem"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setBannerMenuOpen(false);
+                        setBannerImage(null);
+                        setProfile((prev) => ({ ...prev, fotoBanner: null }));
+                        showNotification("BANNER ELIMINADO", "success", 2500);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Eliminar banner</span>
+                    </button>
                   </div>
-                </div>
-                <div className="text-center">
-                  <h4 className="text-2xl font-black text-gray-900 dark:text-white uppercase italic tracking-tighter">{mainVehicle.nombre}</h4>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1 mb-6">
-                    Año {mainVehicle.año} • {mainVehicle.km.toLocaleString()} KM
-                  </p>
-                  <div className="inline-block px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-xs font-black tracking-[0.2em] shadow-xl uppercase italic">
-                    {mainVehicle.placa}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-[2rem] p-8 text-center space-y-4">
-                <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Sin vehículos registrados</p>
-                <button onClick={() => setShowAddVehicle(true)} className="text-xs font-black text-[#3b82f6] uppercase tracking-widest">+ Agregar Vehículo</button>
-              </div>
-            )}
-          </div>
-
-          {/* SECCIÓN 3: MÉTODOS DE PAGO */}
-          <div className="bg-white dark:bg-[#1c2333] rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Métodos de Pago</h3>
-              <button onClick={() => setShowAddPayment(true)} className="p-2.5 bg-[#3b82f6] text-white rounded-xl shadow-lg hover:scale-110 transition-transform">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
-              </button>
-            </div>
-            
-            <div className="space-y-4 flex-1">
-              {payments.map((p) => (
-                <div key={p.id} className="group relative bg-gray-50 dark:bg-[#161b22] p-5 rounded-3xl border border-transparent hover:border-[#3b82f6]/50 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-8 bg-white dark:bg-[#1c2333] rounded-lg flex items-center justify-center border border-gray-100 dark:border-gray-800 shadow-sm font-black text-[8px] italic text-[#3b82f6]">
-                        {p.tipo}
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">**** {p.ultimos4}</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase">{p.titular}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="relative">
-                      <button 
-                        onClick={() => setActivePaymentMenu(activePaymentMenu === p.id ? null : p.id)}
-                        className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                      >
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/></svg>
-                      </button>
-                      
-                      <AnimatePresence>
-                        {activePaymentMenu === p.id && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1c2333] rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 py-2 z-20"
-                          >
-                            {!p.predeterminado && (
-                              <button onClick={() => handleSetDefaultPayment(p.id)} className="w-full px-4 py-2 text-left text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#161b22]">Predeterminada</button>
-                            )}
-                            <button onClick={() => handleDeletePayment(p.id)} className="w-full px-4 py-2 text-left text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10">Eliminar tarjeta</button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-                  {p.predeterminado && (
-                    <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-[#3b82f6]/10 text-[#3b82f6] rounded-lg text-[9px] font-black uppercase tracking-widest">
-                      <div className="w-1.5 h-1.5 bg-[#3b82f6] rounded-full animate-pulse" />
-                      Predeterminada
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* --- GRID INFERIOR --- */}
-          
-          {/* SECCIÓN 4: ACTIVIDAD RECIENTE */}
-          <div className="bg-white dark:bg-[#1c2333] rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col lg:col-span-1">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Actividad Reciente</h3>
-              <button onClick={() => setShowActivitiesModal(true)} className="text-[10px] font-black text-[#3b82f6] uppercase tracking-widest hover:underline">Ver Todo</button>
-            </div>
-            
-            <div className="space-y-6 flex-1">
-              {activities.length > 0 ? (
-                activities.slice(0, 4).map((a) => (
-                  <div key={a.id} className="flex items-start gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm ${
-                      a.tipo === 'servicio' ? 'bg-emerald-500/10 text-emerald-500' :
-                      a.tipo === 'reseña' ? 'bg-blue-500/10 text-blue-500' :
-                      a.tipo === 'vehiculo' ? 'bg-purple-500/10 text-purple-500' :
-                      'bg-amber-500/10 text-amber-500'
-                    }`}>
-                      {a.tipo === 'servicio' ? '🛠️' : a.tipo === 'reseña' ? '⭐' : a.tipo === 'vehiculo' ? '🚗' : '📅'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-black text-gray-900 dark:text-white truncate tracking-tight">{a.descripcion}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">{a.fecha}</p>
-                      {a.canRate && (
-                        <button 
-                          onClick={() => setView('resenas')}
-                          className="mt-2 text-[9px] font-black text-[#3b82f6] uppercase tracking-widest hover:underline"
-                        >
-                          Calificar Servicio
-                        </button>
-                      )}
-                    </div>
-                    {a.estado && (
-                      <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
-                        a.estado === 'FINALIZADO' || a.estado === 'Completado' ? 'bg-emerald-500/10 text-emerald-500' :
-                        a.estado === 'Publicado' ? 'bg-blue-500/10 text-blue-500' :
-                        a.estado === 'EN PROCESO' ? 'bg-indigo-500/10 text-indigo-500' :
-                        'bg-amber-500/10 text-amber-500'
-                      }`}>
-                        {a.estado}
-                      </span>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sin actividad reciente</p>
-                </div>
+                </>
               )}
             </div>
-          </div>
 
-          {/* SECCIÓN 5: SEGURIDAD DE LA CUENTA */}
-          <div className="bg-white dark:bg-[#1c2333] rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col lg:col-span-1">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Seguridad de la Cuenta</h3>
-            </div>
-            
-            <div className="space-y-6 flex-1">
-              <div className="flex items-center justify-between group cursor-pointer" onClick={() => setShowPasswordModal(true)}>
-                <div className="space-y-0.5">
-                  <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">Contraseña</p>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Última actualización: {security.lastPasswordUpdate}</p>
-                </div>
-                <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-[#161b22] flex items-center justify-center text-gray-400 group-hover:bg-[#3b82f6] group-hover:text-white transition-all">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-                </div>
-              </div>
-
-              <div className="h-px bg-gray-100 dark:bg-gray-800" />
-
-              <Toggle 
-                enabled={security.twoFactor} 
-                onChange={(val) => {
-                  if (!val && !window.confirm("¿Estás seguro de desactivar la autenticación de dos pasos?")) return;
-                  updateSecurity({ twoFactor: val });
-                  showNotification(val ? "2FA Activado" : "2FA Desactivado");
-                }} 
-                label="Autenticación de dos pasos" 
-              />
-              
-              <Toggle 
-                enabled={security.fingerprint} 
-                onChange={handleToggleBiometric} 
-                label="Acceso por Huella / Face ID" 
-              />
-
-              <div className="h-px bg-gray-100 dark:bg-gray-800" />
-
-              <div 
-                className={`flex items-center justify-between group cursor-pointer p-4 rounded-2xl transition-all border ${
-                  isFaceRegistered 
-                    ? 'bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10' 
-                    : 'bg-[#3b82f6]/5 border-[#3b82f6]/20 hover:bg-[#3b82f6]/10'
-                }`}
-                onClick={() => setShowFaceAuth(true)}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    isFaceRegistered ? 'bg-emerald-500/20 text-emerald-500' : 'bg-[#3b82f6]/20 text-[#3b82f6]'
-                  }`}>
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 11l3 3L22 4m-2-2v10a8 8 0 01-8 8 8 8 0 01-8-8V4a8 8 0 018-8h4" />
+            <div className="flex flex-col md:flex-row md:items-end gap-8">
+              <div className="relative group/avatar cursor-pointer" onClick={() => fileInputRef.current.click()}>
+                <div className="w-28 h-28 md:w-36 md:h-36 rounded-full bg-white dark:bg-[#161b22] border-4 border-white dark:border-[#0f1b2d] overflow-hidden flex items-center justify-center text-5xl font-black text-[#1e90ff] relative">
+                  {profile.fotoPerfil ? (
+                    <img src={profile.fotoPerfil} className="w-full h-full object-cover rounded-full" alt="Avatar" />
+                  ) : (
+                    profile.nombre.charAt(0)
+                  )}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </div>
-                  <div>
-                    <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight italic">
-                      {isFaceRegistered ? 'Rostro Vinculado' : 'Registrar Rostro'}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">
-                        {isFaceRegistered ? 'Estado: Activo' : 'No configurado'}
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-3">
+                  <h1 className={`text-4xl md:text-5xl font-black tracking-tight truncate ${t('textPrimary')}`}>
+                    {profile.nombre}
+                  </h1>
+                  <span className="text-yellow-400 text-2xl">★</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="max-w-7xl mx-auto px-6 py-10">
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-10">
+            <div className="lg:col-span-7 space-y-10">
+              <section className={`border-b ${t('border')} pb-10`}>
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className={`text-[11px] font-black uppercase tracking-[0.2em] ${t('textLabel')}`}>
+                    Información Personal
+                  </h3>
+                  <button
+                    onClick={() => { setEditForm({ ...profile }); setShowEditProfile(true); }}
+                    className={`text-[10px] font-black uppercase tracking-widest hover:underline ${t('accentText')}`}
+                    type="button"
+                  >
+                    Editar Perfil
+                  </button>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {[
+                    { label: 'Nombre Completo', value: profile.nombre },
+                    { label: 'Correo Electrónico', value: profile.email, color: t('accentText') },
+                    { label: 'Teléfono', value: profile.telefono },
+                    { label: 'Dirección de Residencia', value: profile.direccion }
+                  ].map((field, i) => (
+                    <div key={i} className={`border-b ${t('border')} pb-4`}>
+                      <label className={`text-[10px] font-black uppercase tracking-widest mb-2 block ${t('textLabel')}`}>
+                        {field.label}
+                      </label>
+                      <p className={`text-sm font-black ${field.color || t('textPrimary')}`}>
+                        {field.value}
                       </p>
-                      {isFaceRegistered && (
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className={`border-b ${t('border')} pb-10`}>
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className={`text-[11px] font-black uppercase tracking-[0.2em] ${t('textLabel')}`}>
+                    Vehículos
+                  </h3>
+                </div>
+
+                {vehicles.length > 0 ? (
+                  <div className="mt-6 overflow-x-auto">
+                    <div className="flex gap-6 min-w-max pb-2">
+                      {vehicles.map((v) => {
+                        const isPrincipal = Boolean(v.principal || (mainVehicle && v.id === mainVehicle.id));
+                        return (
+                          <div key={v.id} className={`w-[320px] shrink-0 ${t('bgCard')} border ${t('border')}`}>
+                            <div className={`relative h-40 overflow-hidden ${t('bgEmpty')}`}>
+                              <img src={v.imagen} alt={v.nombre} className="w-full h-full object-cover opacity-90" />
+                              {isPrincipal && (
+                                <div className={`absolute top-3 left-3 text-[9px] font-black uppercase px-3 py-1 tracking-wider text-white ${t('accentBg')}`}>
+                                  PRINCIPAL
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-5">
+                              <div className={`text-sm font-black uppercase tracking-tight ${t('textPrimary')}`}>{v.nombre}</div>
+                              <div className="mt-3 grid grid-cols-2 gap-6">
+                                <div>
+                                  <div className={`text-[9px] font-black uppercase tracking-widest ${t('textLabel')}`}>Placa</div>
+                                  <div className={`text-sm font-black ${t('textPrimary')}`}>{v.placa}</div>
+                                </div>
+                                <div>
+                                  <div className={`text-[9px] font-black uppercase tracking-widest ${t('textLabel')}`}>Año</div>
+                                  <div className={`text-sm font-black ${t('textPrimary')}`}>{v.año}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                </div>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  isFaceRegistered ? 'text-emerald-500' : 'text-[#3b82f6]'
-                }`}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-                </div>
-              </div>
-
-              <div className="h-px bg-gray-100 dark:bg-gray-800" />
-
-              <div className="flex items-center justify-between group cursor-pointer" onClick={() => setShowDevicesModal(true)}>
-                <div className="space-y-0.5">
-                  <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">Dispositivos Activos</p>
-                  <p className="text-[10px] font-bold text-[#3b82f6] uppercase">{security.activeDevices} dispositivos en línea</p>
-                </div>
-                <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-[#161b22] flex items-center justify-center text-gray-400 group-hover:bg-[#3b82f6] group-hover:text-white transition-all">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* SECCIÓN 6: LOGROS */}
-          <div className="bg-white dark:bg-[#1c2333] rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col lg:col-span-1">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Tus Logros</h3>
-              <button onClick={() => setShowAchievementsModal(true)} className="text-[10px] font-black text-[#3b82f6] uppercase tracking-widest hover:underline">Ver Todos</button>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4 flex-1">
-              {achievements.slice(0, 6).map((ach) => (
-                <div key={ach.id} className="flex flex-col items-center text-center p-3 rounded-2xl bg-gray-50 dark:bg-[#161b22] border border-transparent hover:border-[#3b82f6]/30 transition-all">
-                  <div className={`text-2xl mb-2 ${!ach.unlocked && 'grayscale opacity-30'}`}>{ach.icon}</div>
-                  <p className="text-[9px] font-black text-gray-900 dark:text-white leading-none uppercase tracking-tighter mb-1">{ach.title}</p>
-                  <div className="w-full h-1 bg-gray-200 dark:bg-gray-800 rounded-full mt-2 overflow-hidden">
-                    <div className="h-full bg-[#3b82f6] rounded-full" style={{ width: `${ach.progress}%` }} />
+                ) : (
+                  <div className={`mt-6 py-10 border ${t('border')} text-center`}>
+                    <p className={`text-sm font-bold mb-4 ${t('textSecondary')}`}>No tienes vehículos registrados</p>
+                    <button
+                      onClick={() => setShowAddVehicle(true)}
+                      className={`px-5 py-2.5 text-white text-xs font-black uppercase tracking-wider transition-colors ${t('accentBg')} ${t('accentHover')}`}
+                      type="button"
+                    >
+                      Agregar Vehículo
+                    </button>
                   </div>
-                </div>
-              ))}
+                )}
+              </section>
             </div>
-          </div>
 
+            <aside className={`lg:col-span-3 `}>
+              <section className={`border-b ${t('border')} pb-10`}>
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className={`text-[11px] font-black uppercase tracking-[0.2em] ${t('textLabel')}`}>
+                    Logros
+                  </h3>
+                </div>
+
+                <div className="mt-6 space-y-5">
+                  {achievements.map((ach) => (
+                    <div key={ach.id} className={`border ${t('border')} p-5`}>
+                      <div className="flex items-start gap-4">
+                        <div className={`text-3xl ${!ach.unlocked && 'grayscale opacity-40'}`}>{ach.icon}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className={`text-sm font-black uppercase tracking-tight truncate ${t('textPrimary')}`}>
+                              {ach.title}
+                            </div>
+                            <div className={`text-[10px] font-black uppercase tracking-widest ${t('textSecondary')}`}>
+                              {ach.progress}%
+                            </div>
+                          </div>
+                          <div className={`mt-2 text-xs font-bold ${t('textSecondary')}`}>
+                            {ach.description}
+                          </div>
+                          <div className={`mt-4 h-2 w-full overflow-hidden ${t('progressBg')}`}>
+                            <div
+                              className={`h-full transition-all duration-500 ${t('progressFill')}`}
+                              style={{ width: `${ach.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </aside>
+          </div>
         </div>
       </div>
 
       {/* --- MODALES --- */}
-
-      {/* Modal Editar Perfil */}
       <Modal isOpen={showEditProfile} onClose={() => setShowEditProfile(false)} title="Editar Perfil">
-        <form onSubmit={handleUpdateProfile} className="space-y-6">
-          <Input label="Nombre Completo" value={editForm.nombre} onChange={e => setEditForm({...editForm, nombre: e.target.value})} required />
-          <Input label="Correo Electrónico" type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} required />
-          <Input label="Teléfono" value={editForm.telefono} onChange={e => setEditForm({...editForm, telefono: e.target.value})} required />
-          <Input label="Dirección" value={editForm.direccion} onChange={e => setEditForm({...editForm, direccion: e.target.value})} required />
-          <button type="submit" className="w-full h-14 bg-[#3b82f6] text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 mt-4 hover:scale-[1.02] transition-transform">
+        <form onSubmit={handleUpdateProfile} className="space-y-4">
+          <Input label="Nombre Completo" value={editForm.nombre} onChange={e => setEditForm({ ...editForm, nombre: e.target.value })} required />
+          <Input label="Correo Electrónico" type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} required />
+          <Input label="Teléfono" value={editForm.telefono} onChange={e => setEditForm({ ...editForm, telefono: e.target.value })} />
+          <Input label="Dirección" value={editForm.direccion} onChange={e => setEditForm({ ...editForm, direccion: e.target.value })} />
+          <button type="submit" className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest rounded-xl transition-all shadow-lg">
             Guardar Cambios
           </button>
         </form>
       </Modal>
 
-      {/* Modal Vehículos */}
-      <Modal isOpen={showVehiclesList} onClose={() => setShowVehiclesList(false)} title="Mis Vehículos">
-        <div className="space-y-4">
-          {vehicles.map(v => (
-            <div key={v.id} onClick={() => handleSetPrincipalVehicle(v.id)} className={`group relative p-4 rounded-3xl border-2 transition-all cursor-pointer flex items-center gap-5 ${
-              v.principal ? 'bg-blue-600/5 border-[#3b82f6]' : 'bg-gray-50 dark:bg-[#161b22] border-transparent hover:border-gray-200 dark:hover:border-gray-700'
-            }`}>
-              <div className="w-24 h-16 rounded-2xl overflow-hidden bg-white dark:bg-[#1c2333]">
-                <img src={v.imagen} className="w-full h-full object-cover" alt="" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-black text-gray-900 dark:text-white uppercase italic tracking-tighter">{v.nombre}</h4>
-                  <div className="flex items-center gap-2">
-                    {v.principal && <span className="text-[9px] font-black bg-[#3b82f6] text-white px-2 py-1 rounded-lg uppercase tracking-widest">Principal</span>}
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleDeleteVehicle(v.id); }}
-                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase mt-1">{v.año} • {v.placa} • {v.km.toLocaleString()} KM</p>
-              </div>
-            </div>
-          ))}
-          <button onClick={() => { setShowVehiclesList(false); setShowAddVehicle(true); }} className="w-full h-14 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-xs font-black uppercase tracking-[0.2em] mt-4 shadow-xl">
-            + Agregar Nuevo Vehículo
-          </button>
-        </div>
-      </Modal>
-
-      {/* Modal Agregar Vehículo */}
-      <Modal isOpen={showAddVehicle} onClose={() => setShowAddVehicle(false)} title="Nuevo Vehículo">
-        <form onSubmit={handleAddVehicle} className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Marca" placeholder="Ej: Toyota" value={newVehicle.marca} onChange={e => setNewVehicle({...newVehicle, marca: e.target.value})} required />
-            <Input label="Modelo" placeholder="Ej: TXL" value={newVehicle.modelo} onChange={e => setNewVehicle({...newVehicle, modelo: e.target.value})} required />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Año" type="number" placeholder="2025" value={newVehicle.año} onChange={e => setNewVehicle({...newVehicle, año: e.target.value})} required />
-            <Input label="Placa" placeholder="ABC123" value={newVehicle.placa} onChange={e => setNewVehicle({...newVehicle, placa: e.target.value.toUpperCase()})} required />
-          </div>
-          <Input label="Kilometraje" type="number" placeholder="12000" value={newVehicle.km} onChange={e => setNewVehicle({...newVehicle, km: e.target.value})} required />
-          <Input label="URL de Imagen (Opcional)" placeholder="https://..." value={newVehicle.imagen} onChange={e => setNewVehicle({...newVehicle, imagen: e.target.value})} />
-          <button type="submit" className="w-full h-14 bg-[#3b82f6] text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 mt-4">
-            Registrar Vehículo
-          </button>
-        </form>
-      </Modal>
-
-      {/* Modal Agregar Pago */}
-      <Modal isOpen={showAddPayment} onClose={() => setShowAddPayment(false)} title="Nuevo Método de Pago">
-        <form onSubmit={handleAddPayment} className="space-y-6">
-          <div className="flex gap-4">
-            {['VISA', 'MASTERCARD', 'AMEX'].map(type => (
-              <button 
-                key={type}
-                type="button"
-                onClick={() => setNewPayment({...newPayment, tipo: type})}
-                className={`flex-1 py-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${
-                  newPayment.tipo === type ? 'bg-[#3b82f6]/5 border-[#3b82f6] text-[#3b82f6]' : 'bg-gray-50 dark:bg-[#161b22] border-transparent text-gray-400'
-                }`}
-              >
-                <span className="text-[8px] font-black italic tracking-tighter">{type}</span>
-                <span className="text-[10px] font-black uppercase tracking-widest">{type}</span>
-              </button>
-            ))}
-          </div>
-          <Input label="Número de Tarjeta" placeholder="0000 0000 0000 0000" value={newPayment.numero} onChange={e => setNewPayment({...newPayment, numero: formatCardNumber(e.target.value)})} maxLength={19} required />
-          <Input label="Nombre del Titular" placeholder="CARLOS RAMIREZ" value={newPayment.titular} onChange={e => setNewPayment({...newPayment, titular: e.target.value.toUpperCase()})} required />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Vencimiento (MM/AA)" placeholder="12/28" value={newPayment.vencimiento} onChange={e => {
-              let v = e.target.value.replace(/[^0-9]/g, '');
-              if (v.length >= 2) v = v.substring(0,2) + '/' + v.substring(2,4);
-              setNewPayment({...newPayment, vencimiento: v});
-            }} maxLength={5} required />
-            <div className="relative">
-              <Input label="CVV" type={showCVV ? "text" : "password"} placeholder="***" value={newPayment.cvv} onChange={e => setNewPayment({...newPayment, cvv: e.target.value.replace(/[^0-9]/g, '')})} maxLength={4} required />
-              <button type="button" onClick={() => setShowCVV(!showCVV)} className="absolute right-4 top-9 text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-              </button>
-            </div>
-          </div>
-          <label className="flex items-center gap-3 cursor-pointer p-1">
-            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${newPayment.predeterminado ? 'bg-[#3b82f6] border-[#3b82f6]' : 'border-gray-200 dark:border-gray-700'}`}>
-              <input type="checkbox" className="hidden" checked={newPayment.predeterminado} onChange={e => setNewPayment({...newPayment, predeterminado: e.target.checked})} />
-              {newPayment.predeterminado && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
-            </div>
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Establecer como predeterminada</span>
-          </label>
-          <button type="submit" className="w-full h-14 bg-[#3b82f6] text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 mt-4">Guardar Tarjeta</button>
-        </form>
-      </Modal>
-
-      {/* Modal Actividades */}
-      <Modal isOpen={showActivitiesModal} onClose={() => setShowActivitiesModal(false)} title="Historial Completo">
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2 custom-scrollbar">
-          {[
-            { id: 'all', label: 'Todo' },
-            { id: 'servicio', label: 'Servicios' },
-            { id: 'reseña', label: 'Reseñas' },
-            { id: 'vehiculo', label: 'Vehículos' },
-            { id: 'cita', label: 'Citas' }
-          ].map(filter => (
-            <button 
-              key={filter.id} 
-              onClick={() => setActivityFilter(filter.id)}
-              className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                activityFilter === filter.id ? 'bg-[#3b82f6] text-white shadow-lg shadow-blue-500/20' : 'bg-gray-100 dark:bg-[#161b22] text-gray-400'
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-        <div className="space-y-6">
-          {filteredActivities.length > 0 ? (
-            filteredActivities.map(a => (
-              <div key={a.id} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-[#161b22]">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm ${
-                  a.tipo === 'servicio' ? 'bg-emerald-500/10 text-emerald-500' :
-                  a.tipo === 'reseña' ? 'bg-blue-500/10 text-blue-500' :
-                  a.tipo === 'vehiculo' ? 'bg-purple-500/10 text-purple-500' :
-                  'bg-amber-500/10 text-amber-500'
-                }`}>
-                  {a.tipo === 'servicio' ? '🛠️' : a.tipo === 'reseña' ? '⭐' : a.tipo === 'vehiculo' ? '🚗' : '📅'}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">{a.descripcion}</p>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">{a.fecha}</p>
-                  {a.canRate && (
-                    <button 
-                      onClick={() => setView('resenas')}
-                      className="mt-2 text-[9px] font-black text-[#3b82f6] uppercase tracking-widest hover:underline"
-                    >
-                      Calificar Servicio
-                    </button>
-                  )}
-                </div>
-                {a.estado && (
-                  <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
-                    a.estado === 'FINALIZADO' || a.estado === 'Completado' ? 'bg-emerald-500/10 text-emerald-500' :
-                    a.estado === 'Publicado' ? 'bg-blue-500/10 text-blue-500' :
-                    a.estado === 'EN PROCESO' ? 'bg-indigo-500/10 text-indigo-500' :
-                    'bg-amber-500/10 text-amber-500'
-                  }`}>
-                    {a.estado}
-                  </span>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No se encontraron actividades</p>
-            </div>
-          )}
-        </div>
-      </Modal>
-
-      {/* Modal Contraseña */}
-      <Modal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Cambiar Contraseña">
-        <form onSubmit={handleChangePassword} className="space-y-6">
-          <Input label="Contraseña Actual" type="password" value={passwordForm.current} onChange={e => setPasswordForm({...passwordForm, current: e.target.value})} required />
-          <Input label="Nueva Contraseña" type="password" value={passwordForm.new} onChange={e => setPasswordForm({...passwordForm, new: e.target.value})} required />
-          <Input label="Confirmar Nueva Contraseña" type="password" value={passwordForm.confirm} onChange={e => setPasswordForm({...passwordForm, confirm: e.target.value})} required />
-          <button type="submit" className="w-full h-14 bg-[#3b82f6] text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 mt-4">Actualizar Contraseña</button>
-        </form>
-      </Modal>
-
-      {/* Modal Dispositivos */}
-      <Modal isOpen={showDevicesModal} onClose={() => setShowDevicesModal(false)} title="Dispositivos Activos">
-        <div className="space-y-4">
-          {devices.map(d => (
-            <div key={d.id} className="p-5 rounded-[2rem] bg-gray-50 dark:bg-[#161b22] flex items-center justify-between border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[#1c2333] flex items-center justify-center text-2xl shadow-sm">
-                  {d.nombre.includes('iPhone') ? '📱' : d.nombre.includes('MacBook') ? '💻' : '🌐'}
-                </div>
-                <div>
-                  <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">{d.nombre}</p>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">{d.so} • {d.ultimaConexion}</p>
-                </div>
-              </div>
-              <button onClick={() => handleLogoutDevice(d.id)} className="px-4 py-2 bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-500 hover:text-white transition-all">Cerrar Sesión</button>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      {/* Modal Logros */}
-      <Modal isOpen={showAchievementsModal} onClose={() => setShowAchievementsModal(false)} title="Logros y Progreso">
-        <div className="space-y-6">
-          {achievements.map(ach => (
-            <div key={ach.id} className="p-6 rounded-[2.5rem] bg-gray-50 dark:bg-[#161b22] border border-transparent">
-              <div className="flex items-center gap-6 mb-4">
-                <div className={`text-4xl ${!ach.unlocked && 'grayscale opacity-30'}`}>{ach.icon}</div>
-                <div className="flex-1">
-                  <p className="text-lg font-black text-gray-900 dark:text-white uppercase italic tracking-tighter">{ach.title}</p>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{ach.description}</p>
-                </div>
-                <div className="text-right">
-                  <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${ach.unlocked ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-800 text-gray-400'}`}>
-                    {ach.unlocked ? 'Desbloqueado' : 'Bloqueado'}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progreso</span>
-                  <span className="text-[10px] font-black text-[#3b82f6] uppercase tracking-widest">{ach.progress}%</span>
-                </div>
-                <div className="h-3 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${ach.progress}%` }} transition={{ duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-r from-blue-500 to-blue-700" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      {showFaceAuth && (
-        <FaceAuthModal 
-          userId={profile.email}
-          mode="enroll"
-          onSuccess={handleFaceSuccess}
-          onError={(err) => showNotification(err, "error")}
-          onClose={() => setShowFaceAuth(false)}
-        />
-      )}
-
-      {/* Notificación Toast */}
       <AnimatePresence>
-        {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </AnimatePresence>
     </div>
   );
