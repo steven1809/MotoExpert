@@ -3,6 +3,7 @@ import CardServicio from "../components/CardServicio";
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Check, ChevronDown, SlidersHorizontal } from 'lucide-react';
 
 import expressImg from "../assets/services/express.jpeg";
 import interiorImg from "../assets/services/limpiezap.jpeg";
@@ -130,6 +131,7 @@ export default function Servicios({ setView }) {
   const [error, setError] = useState("");
   const [filtroBusqueda, setFiltroBusqueda] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("Todos");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editServicio, setEditServicio] = useState(null);
@@ -382,7 +384,7 @@ export default function Servicios({ setView }) {
           </div>
         )}
 
-        <section className="relative overflow-hidden bg-gradient-to-r from-[#022873] via-[#0468BF] to-[#05AFF2] px-6 md:px-10 py-10 md:py-14 -mt-16 pt-24 md:pt-28">
+        <section className="relative overflow-hidden bg-gradient-to-r from-[#1A2526] via-[#0468BF] to-[#1A2526] px-6 md:px-10 py-10 md:py-14 -mt-16 pt-24 md:pt-28">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08),transparent_60%)]"></div>
           <div className="relative z-10 max-w-6xl mx-auto">
             <h1 className="text-3xl md:text-4xl font-black text-white">
@@ -413,23 +415,62 @@ export default function Servicios({ setView }) {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 justify-start lg:justify-end">
-              {["Todos", "Express", "Premium", "Detailing", "Interior", "Exterior"].map((c) => (
+              <div className="relative">
                 <button
-                  key={c}
                   type="button"
-                  onClick={() => {
-                    setCategoryFilter(c);
-                    setCurrentPage(1);
-                  }}
-                  className={`h-9 px-4 rounded-2xl border text-[11px] font-black uppercase tracking-widest transition-colors ${
-                    categoryFilter === c
-                      ? "bg-[#2563EB]/15 border-[#2563EB]/25 text-[#60A5FA]"
-                      : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10"
-                  }`}
+                  onClick={() => setFiltersOpen((v) => !v)}
+                  className="h-9 px-3 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors inline-flex items-center gap-2"
+                  aria-label="Filtros"
+                  aria-haspopup="menu"
+                  aria-expanded={filtersOpen}
                 >
-                  {c}
+                  <SlidersHorizontal className="w-4 h-4" />
+                  {categoryFilter !== 'Todos' && (
+                    <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-[#2563EB]/15 border border-[#2563EB]/25 text-[#60A5FA] text-[10px] font-black">
+                      1
+                    </span>
+                  )}
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${filtersOpen ? 'rotate-180' : 'rotate-0'}`} />
                 </button>
-              ))}
+
+                {filtersOpen && (
+                  <>
+                    <div className="fixed inset-0 z-[55]" onClick={() => setFiltersOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-56 z-[60] rounded-3xl bg-white dark:bg-[#0b1220] border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden">
+                      <div className="p-2 space-y-1">
+                        {["Todos", "Express", "Premium", "Detailing", "Interior", "Exterior"].map((c) => {
+                          const selected = categoryFilter === c;
+                          return (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => {
+                                setCategoryFilter(c);
+                                setCurrentPage(1);
+                                setFiltersOpen(false);
+                              }}
+                              className={`w-full px-3 py-2.5 rounded-2xl flex items-center justify-between gap-3 text-[11px] font-black uppercase tracking-widest transition-colors ${
+                                selected
+                                  ? "bg-[#2563EB]/15 border border-[#2563EB]/25 text-[#60A5FA]"
+                                  : "text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/5"
+                              }`}
+                              role="menuitem"
+                            >
+                              <span>{c}</span>
+                              <span className={`w-6 h-6 inline-flex items-center justify-center rounded-xl border ${
+                                selected ? "border-[#2563EB]/25 bg-[#2563EB]/15 text-[#60A5FA]" : "border-slate-200 dark:border-white/10 text-transparent"
+                              }`}>
+                                {selected && <Check className="w-4 h-4" />}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
               {userRole === "admin" && (
                 <div className="flex items-center gap-2 ml-2">
                   <button

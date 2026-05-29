@@ -1,6 +1,6 @@
 export const lightTheme = {
   // ─── Fondos ───────────────────────────────────────────────
-  bgPage:        'bg-[#F4F6FA]',       // gris muy suave, como el fondo del dashboard
+  bgPage:        'bg-[#EFF6FF]',       // gris muy suave, como el fondo del dashboard
   bgCard:        'bg-white',           // cards blancas puras
   bgCardHover:   'hover:bg-slate-50',
   bgEmpty:       'bg-slate-50',
@@ -12,12 +12,12 @@ export const lightTheme = {
   shadowCard:    'shadow-[0_1px_4px_rgba(0,0,0,0.08)]',
  
   // ─── Bordes ───────────────────────────────────────────────
-  border:        'border-gray-200',
-  borderDashed:  'border-gray-300',
+  border:        'border-blue-200',
+  borderDashed:  'border-blue-300',
  
   // ─── Textos ───────────────────────────────────────────────
-  textPrimary:   'text-gray-900',      // títulos y datos
-  textSecondary: 'text-gray-500',      // subtítulos, labels
+  textPrimary:   'text-black',      // títulos y datos
+  textSecondary: 'text-black-500',      // subtítulos, labels
   textMuted:     'text-gray-400',      // hints, placeholders
   textLabel:     'text-gray-500',
  

@@ -204,58 +204,6 @@ const ServiceReportModal = ({ report, rating, onClose, onSubmitRating }) => {
             </div>
           </div>
         </div>
-
-        <div className="h-px bg-white/5 mx-8" />
-
-        <div className="p-8 space-y-6">
-          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7080]">
-            Tu Calificación
-          </div>
-
-          {isAlreadyRated ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
-                <div className="text-[11px] font-black uppercase tracking-wider text-[#94A3B8]">
-                  Especialista
-                </div>
-                <StarRating value={rating?.specialistRating || 0} readOnly size="md" />
-              </div>
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
-                <div className="text-[11px] font-black uppercase tracking-wider text-[#94A3B8]">
-                  Calidad del Servicio
-                </div>
-                <StarRating value={rating?.serviceRating || 0} readOnly size="md" />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="text-[11px] font-black uppercase tracking-wider text-[#94A3B8]">
-                    Especialista
-                  </div>
-                  <StarRating value={specialistRating} onChange={setSpecialistRating} size="md" />
-                </div>
-
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="text-[11px] font-black uppercase tracking-wider text-[#94A3B8]">
-                    Calidad del Servicio
-                  </div>
-                  <StarRating value={serviceRating} onChange={setServiceRating} size="md" />
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!specialistRating || !serviceRating || isSubmitting}
-                className="w-full py-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-[#2563EB]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-              >
-                {isSubmitting ? 'Enviando...' : 'Enviar Calificación'}
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
@@ -488,7 +436,7 @@ const AppointmentChatModal = ({ isOpen, onClose, alert }) => {
                   onClick={() => setShowResolve((v) => !v)}
                   className="h-10 px-3 rounded-xl bg-[#EF9F27]/10 hover:bg-[#EF9F27]/15 border border-[#EF9F27]/25 text-[#EF9F27] text-[10px] font-black uppercase tracking-widest transition-all"
                 >
-                  Mark as Resolved
+                  Marcar como resuelto
                 </button>
                 {showResolve && (
                   <div className="absolute right-0 mt-2 w-44 bg-[#0b1220] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-10">
@@ -569,7 +517,7 @@ const AppointmentChatModal = ({ isOpen, onClose, alert }) => {
               onClick={send}
               className="h-11 px-5 rounded-xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-[#2563EB]/20 transition-all active:scale-95"
             >
-              Send
+              Enviar
             </button>
           </div>
         </div>
@@ -784,8 +732,6 @@ const Citas = ({
         setCitas(prev => prev.map(c => 
           c.id === citaId ? { ...c, rated: true } : c
         ));
-        // Si el usuario tiene la función showToast en props (aunque sea un componente funcional, 
-        // a veces se pasan desde el contenedor)
       }
     } catch (err) {
       console.error('Error submitting rating:', err);
@@ -1335,7 +1281,7 @@ const Citas = ({
           return {
             bg: 'bg-[#E24B4A]/8',
             border: 'border-[#E24B4A]/25',
-            color: '#E24B4A',
+            color: '#ff0000ff',
             iconBg: 'bg-[#E24B4A]/15'
           };
         default:
@@ -1487,7 +1433,7 @@ const Citas = ({
         />
       )}
       <div className="min-h-screen bg-white dark:bg-[#020617] pb-24 animate-in fade-in duration-700">
-        <section className="relative overflow-hidden bg-gradient-to-r from-[#022873] via-[#0468BF] to-[#05AFF2] px-6 md:px-10 py-10 md:py-14 -mt-16 pt-24 md:pt-28">
+        <section className="relative overflow-hidden bg-gradient-to-r from-[#1A2526] via-[#0468BF] to-[#1A2526] px-6 md:px-10 py-10 md:py-14 -mt-16 pt-24 md:pt-28">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08),transparent_60%)]"></div>
           <div className="relative z-10 max-w-6xl mx-auto">
             <h1 className="text-3xl md:text-4xl font-black text-white">
@@ -2237,7 +2183,7 @@ const Citas = ({
                             </div>
                             <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-2">
                               <span className="text-[#60A5FA]"><img src={ubicIcon} alt="ubicacion" className="w-4 h-4" /></span>
-                              <span className="font-bold">AutoClean Center</span>
+                              <span className="font-bold">MotoExpert</span>
                             </div>
                           </div>
                         </div>
@@ -2254,13 +2200,6 @@ const Citas = ({
                         </div>
 
                         <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setActiveReportCitaId(cita.id)}
-                            className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
-                          >
-                            Ver detalles
-                          </button>
                           <button
                             type="button"
                             onClick={() => handleReschedule(cita)}
@@ -2324,7 +2263,7 @@ const Citas = ({
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0b1220]">
-                      {["Fecha", "Vehículo", "Servicio", "Sede", "Estado", "Precio", "Acciones"].map((head) => (
+                      {["Fecha", "Vehículo", "Servicio", "Sede", "Estado", "Precio", "Detalles"].map((head) => (
                         <th key={head} className="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-[0.2em]">
                           {head}
                         </th>
