@@ -51,11 +51,14 @@ class AdminDashboard extends Component {
       showServiceModal: false,
       tempService: null,
       vehicleSearchTerm: '',
+      vehicleInputFocused: false, // Si el campo de vehículo está enfocado
       availableSlots: [],
       selectedTimeSlot: '',
 
       // Nuevo estado para selección de cliente
       selectedClientId: '',
+      clientSearchTerm: '', // Término de búsqueda de cliente
+      clientInputFocused: false, // Si el campo de cliente está enfocado
       selectedPaymentMethod: '', // 'Efectivo', 'Tarjeta', 'Transferencia'
       showQR: false,
       validationErrors: {}, // Para resaltar campos faltantes
@@ -592,6 +595,9 @@ class AdminDashboard extends Component {
       validationErrors,
       showQR,
       submittingVehicle,
+      clientSearchTerm,
+      clientInputFocused,
+      vehicleInputFocused,
     } = this.state;
 
     const filteredUsers = this.getFilteredUsers();
@@ -599,7 +605,8 @@ class AdminDashboard extends Component {
 
     // Filtrar servicios según tipo de vehículo seleccionado
     const filteredServices = servicios.filter(s => {
-      if (!selectedVehicleType) return false;
+      // Si no hay tipo de vehículo seleccionado, mostrar todos los servicios
+      if (!selectedVehicleType) return true;
       
       const vehicleTypeLower = selectedVehicleType.toLowerCase();
       
@@ -637,15 +644,31 @@ class AdminDashboard extends Component {
 
     // Filtrar vehículos según cliente seleccionado (Paso 4)
     const filteredVehiculosForProgramar = vehiculos.filter(v => {
-      if (selectedClientId) {
-        return v.usuario?.id === parseInt(selectedClientId);
-      }
       const search = vehicleSearchTerm.toLowerCase();
-      return (
-        v.placa?.toLowerCase().includes(search) ||
-        v.marca?.toLowerCase().includes(search) ||
-        v.modelo?.toLowerCase().includes(search)
-      );
+      
+      // Si hay cliente seleccionado, filtrar por ese cliente y la búsqueda
+      if (selectedClientId) {
+        return (
+          v.usuario?.id === parseInt(selectedClientId) &&
+          (
+            v.placa?.toLowerCase().includes(search) ||
+            v.marca?.toLowerCase().includes(search) ||
+            v.modelo?.toLowerCase().includes(search)
+          )
+        );
+      }
+      
+      // Si no hay cliente seleccionado, filtrar solo por la búsqueda
+      if (search) {
+        return (
+          v.placa?.toLowerCase().includes(search) ||
+          v.marca?.toLowerCase().includes(search) ||
+          v.modelo?.toLowerCase().includes(search)
+        );
+      }
+      
+      // Si no hay búsqueda ni cliente, mostrar todos los vehículos
+      return true;
     });
     
     if (loading) {
@@ -982,7 +1005,7 @@ class AdminDashboard extends Component {
               </div>
 
               {/* PASO 2: Nivel de Detailing (Servicios) */}
-              <div id="step-2" className={`transition-all duration-300 ${!selectedVehicleType ? 'opacity-40 pointer-events-none' : ''} ${validationErrors.service ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
+              <div id="step-2" className={`transition-all duration-300 ${validationErrors.service ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
                 <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
                   Paso 2: Nivel de Detailing
                 </label>
@@ -997,12 +1020,12 @@ class AdminDashboard extends Component {
                     label: `${s.nombre} - $${s.precio}`,
                     sublabel: s.categoria
                   }))}
-                  placeholder={selectedVehicleType ? "Seleccione el tratamiento..." : "Primero elija tipo de vehículo"}
+                  placeholder="Seleccione el tratamiento..."
                 />
               </div>
 
               {/* PASO 3: Selección de Cliente */}
-              <div id="step-3" className={`relative transition-all duration-300 ${!selectedServicioId ? 'opacity-40 pointer-events-none' : ''} ${validationErrors.client ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
+              <div id="step-3" className={`relative transition-all duration-300 ${validationErrors.client ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
                 <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
                   Paso 3: Cliente
                 </label>
@@ -1010,16 +1033,20 @@ class AdminDashboard extends Component {
                   <input 
                     type="text"
                     placeholder="Buscar cliente por nombre o email..."
-                    value={selectedClientId ? users.find(u => u.id === parseInt(selectedClientId))?.nombre + ' ' + (users.find(u => u.id === parseInt(selectedClientId))?.apellidos || '') : ''}
+                    value={selectedClientId ? users.find(u => u.id === parseInt(selectedClientId))?.nombre + ' ' + (users.find(u => u.id === parseInt(selectedClientId))?.apellidos || '') : clientSearchTerm}
                     onChange={(e) => {
-                      this.setState({ selectedClientId: '', selectedVehiculoId: '' });
-                      // Aquí podrías implementar una búsqueda local simple si es necesario
+                      this.setState({ clientSearchTerm: e.target.value, selectedClientId: '', selectedVehiculoId: '' });
+                    }}
+                    onFocus={() => this.setState({ clientInputFocused: true })}
+                    onBlur={() => {
+                      // Pequeño delay para que el botón del dropdown se pueda clickear antes de cerrar
+                      setTimeout(() => this.setState({ clientInputFocused: false }), 200);
                     }}
                     className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#8B5CF6]/50 transition-all"
                   />
                   {selectedClientId && (
                     <button 
-                      onClick={() => this.setState({ selectedClientId: '', selectedVehiculoId: '' })}
+                      onClick={() => this.setState({ selectedClientId: '', selectedVehiculoId: '', clientSearchTerm: '' })}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
                     >
                       ✕
@@ -1028,13 +1055,23 @@ class AdminDashboard extends Component {
                 </div>
                 
                 {/* Dropdown de búsqueda de clientes */}
-                {!selectedClientId && (
-                  <div className="absolute left-0 right-0 top-full mt-2 bg-[#161b27] border border-white/10 rounded-2xl shadow-2xl z-[60] overflow-hidden max-h-48 overflow-y-auto">
+                {!selectedClientId && clientInputFocused && (
+                  <div className="absolute left-0 right-0 top-full mt-2 bg-[#161b27] border border-white/10 rounded-2xl shadow-2xl z-[60] overflow-hidden max-h-48 overflow-y-auto client-dropdown-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {/* Lista simplificada de clientes */}
-                    {users.slice(0, 5).map(u => (
+                    {users
+                      .filter(u => {
+                        const search = clientSearchTerm.toLowerCase();
+                        return (
+                          u.nombre?.toLowerCase().includes(search) ||
+                          u.apellidos?.toLowerCase().includes(search) ||
+                          u.email?.toLowerCase().includes(search)
+                        );
+                      })
+                      .slice(0, 5)
+                      .map(u => (
                       <button 
                         key={u.id}
-                        onClick={() => this.setState({ selectedClientId: u.id, validationErrors: { ...validationErrors, client: false } })}
+                        onClick={() => this.setState({ selectedClientId: u.id, validationErrors: { ...validationErrors, client: false }, clientSearchTerm: '' })}
                         className="w-full px-5 py-3 text-left hover:bg-white/5 transition-all border-b border-white/5 last:border-0"
                       >
                         <div className="text-sm font-bold text-white">{u.nombre} {u.apellidos}</div>
@@ -1047,16 +1084,21 @@ class AdminDashboard extends Component {
               
               <div className="grid grid-cols-2 gap-4">
                 {/* PASO 4: Unidad Asignada (Searchable) */}
-                <div id="step-4" className={`relative transition-all duration-300 ${!selectedClientId ? 'opacity-40 pointer-events-none' : ''} ${validationErrors.vehicle ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
+                <div id="step-4" className={`relative transition-all duration-300 ${validationErrors.vehicle ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
                   <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
                     Paso 4: Unidad
                   </label>
                   <div className="relative">
                     <input 
                       type="text"
-                      placeholder={selectedClientId ? "Buscar placa..." : "Selecciona cliente primero"}
+                      placeholder="Buscar placa..."
                       value={selectedVehiculoId ? vehiculos.find(v => v.id === parseInt(selectedVehiculoId))?.placa : vehicleSearchTerm}
                       onChange={(e) => this.setState({ vehicleSearchTerm: e.target.value, selectedVehiculoId: '' })}
+                      onFocus={() => this.setState({ vehicleInputFocused: true })}
+                      onBlur={() => {
+                        // Pequeño delay para que el botón del dropdown se pueda clickear antes de cerrar
+                        setTimeout(() => this.setState({ vehicleInputFocused: false }), 200);
+                      }}
                       className="w-full px-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-white font-bold outline-none focus:border-[#8B5CF6]/50 transition-all"
                     />
                     {selectedVehiculoId && (
@@ -1070,7 +1112,7 @@ class AdminDashboard extends Component {
                   </div>
                   
                   {/* Dropdown de búsqueda de vehículos */}
-                  {!selectedVehiculoId && (vehicleSearchTerm || selectedClientId) && (
+                  {!selectedVehiculoId && vehicleInputFocused && (
                     <div className="absolute left-0 right-0 top-full mt-2 bg-[#161b27] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-48 overflow-y-auto">
                       {filteredVehiculosForProgramar.length > 0 ? (
                         filteredVehiculosForProgramar.map(v => (
@@ -1093,7 +1135,7 @@ class AdminDashboard extends Component {
                 </div>
 
                 {/* PASO 5: Fecha de Ingreso */}
-                <div id="step-5" className={`transition-all duration-300 ${!selectedVehiculoId ? 'opacity-40 pointer-events-none' : ''} ${validationErrors.datetime ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
+                <div id="step-5" className={`transition-all duration-300 ${validationErrors.datetime ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
                   <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-2">
                     Paso 5: Fecha
                   </label>
@@ -1108,7 +1150,7 @@ class AdminDashboard extends Component {
               </div>
 
               {/* PASO 5 CONTINUACIÓN: Slots de Hora */}
-              {fechaIngreso && selectedServicioId && (
+              {fechaIngreso && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
                   <div className="flex flex-col gap-4">
                     {/* Bloque Mañana */}
@@ -1161,7 +1203,7 @@ class AdminDashboard extends Component {
               )}
 
               {/* PASO 6: Método de Pago */}
-              <div id="step-6" className={`transition-all duration-300 ${!selectedTimeSlot ? 'opacity-40 pointer-events-none' : ''} ${validationErrors.payment ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
+              <div id="step-6" className={`transition-all duration-300 ${validationErrors.payment ? 'p-1 ring-2 ring-red-500 ring-offset-4 ring-offset-[#0B1220] rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]' : ''}`}>
                 <label className="text-[10px] font-mono text-[#64748B] uppercase tracking-[0.3em] ml-1 block mb-3">
                   Paso 6: Método de Pago
                 </label>
@@ -1390,6 +1432,12 @@ class AdminDashboard extends Component {
             </div>
           </div>
         )}
+      <style>{`
+        /* Ocultar scrollbar en el dropdown de clientes */
+        .client-dropdown-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
       </div>
     );
   }

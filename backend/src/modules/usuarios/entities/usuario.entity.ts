@@ -64,6 +64,7 @@ export class Usuario {
 
   @Column({ type: 'timestamp', nullable: true })
   bloqueadoHasta: Date;
+
   // Campo temporal para guardar el challenge de WebAuthn
   @Column({ nullable: true })
   currentWebAuthnChallenge?: string;
