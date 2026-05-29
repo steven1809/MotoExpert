@@ -17,6 +17,7 @@ import { RatingsModule } from './modules/ratings/ratings.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ActivityModule } from './modules/activity/activity.module';
 import { WebAuthnModule } from './modules/auth/webauthn.module';
+import { StatsModule } from './modules/stats/stats.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { WebAuthnModule } from './modules/auth/webauthn.module';
     RatingsModule,
     ActivityModule,
     WebAuthnModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
