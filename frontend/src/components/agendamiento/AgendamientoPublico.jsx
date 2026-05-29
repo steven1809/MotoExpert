@@ -206,11 +206,7 @@ const AgendamientoPublico = () => {
                 <select name="tipoVehiculo" value={formData.tipoVehiculo} onChange={handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all">
                   <option value="">Selecciona...</option>
                   <option value="Automóvil">Automóvil</option>
-                  <option value="Camioneta SUV">Camioneta SUV</option>
-                  <option value="Camioneta pickup">Camioneta pickup</option>
                   <option value="Moto">Moto</option>
-                  <option value="Van/Furgón">Van/Furgón</option>
-                  <option value="Campero">Campero</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-2">

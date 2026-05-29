@@ -99,7 +99,7 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
 
       if (response.ok) {
         onSuccess();
-        showToast('Servicio finalizado. El cliente ha sido notificado.', 'success');
+        showToast('Servicio finalizado. El cliente ha sido notificado.', 'exito');
       } else {
         const errorData = await response.json().catch(() => null);
         showToast(errorData?.message || 'Error al finalizar el servicio', 'error');
@@ -161,12 +161,12 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
           {/* Work Performed */}
           <div className="space-y-1">
             <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-              Work performed
+              Trabajo realizado en el servicio
             </label>
             <textarea
               value={workPerformed}
               onChange={(e) => setWorkPerformed(e.target.value)}
-              placeholder="Describe all tasks completed during this service..."
+              placeholder="Describe todos los tareas completadas durante este servicio..."
               rows={3}
               className={`w-full px-4 py-3 bg-[#1a1d27] border rounded-2xl text-[#F8FAFC] placeholder-[#94A3B8] focus:outline-none transition-all resize-none ${
                 errors.workPerformed ? 'border-red-500' : 'border-[#2a2d3a] focus:border-[#1D9E75]/50'
@@ -180,12 +180,12 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
           {/* Parts Used */}
           <div className="space-y-1">
             <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-              Parts / products used
+              Piezas / productos utilizados
             </label>
             <textarea
               value={partsUsed}
               onChange={(e) => setPartsUsed(e.target.value)}
-              placeholder="e.g. degreaser, protective wax, air filter..."
+              placeholder="Ej. desgreaser, protector de vidrio, filtro de aire,..."
               rows={2}
               className="w-full px-4 py-3 bg-[#1a1d27] border border-[#2a2d3a] rounded-2xl text-[#F8FAFC] placeholder-[#94A3B8] focus:outline-none focus:border-[#1D9E75]/50 transition-all resize-none"
             />
@@ -194,12 +194,12 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
           {/* Observations */}
           <div className="space-y-1">
             <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-              Observations & recommendations
+              Observaciones y recomendaciones
             </label>
             <textarea
               value={observations}
               onChange={(e) => setObservations(e.target.value)}
-              placeholder="Note any issues found, wear detected, or recommended follow-up services..."
+              placeholder="Notas cualquier problema encontrado, ojo detectado, o servicios de seguimiento recomendados..."
               rows={3}
               className="w-full px-4 py-3 bg-[#1a1d27] border border-[#2a2d3a] rounded-2xl text-[#F8FAFC] placeholder-[#94A3B8] focus:outline-none focus:border-[#1D9E75]/50 transition-all resize-none"
             />
@@ -208,13 +208,13 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
           {/* Condition */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest ml-1">
-              Final vehicle condition
+              Condición final del vehículo
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { value: 'optimal', label: '✅ Optimal', color: 'bg-[#1D9E75]/10 border-[#1D9E75] text-[#1D9E75]' },
-                { value: 'attention', label: '⚠️ Requires attention', color: 'bg-[#BA7517]/10 border-[#BA7517] text-[#BA7517]' },
-                { value: 'urgent', label: '🔴 Urgent', color: 'bg-[#E24B4A]/10 border-[#E24B4A] text-[#E24B4A]' }
+                { value: 'optimal', label: 'condición optima', color: 'bg-[#1D9E75]/10 border-[#1D9E75] text-[#1D9E75]' },
+                { value: 'attention', label: 'requiere atención', color: 'bg-[#BA7517]/10 border-[#BA7517] text-[#BA7517]' },
+                { value: 'urgent', label: 'Atencion Urgente', color: 'bg-[#E24B4A]/10 border-[#E24B4A] text-[#E24B4A]' }
               ].map((option) => (
                 <button
                   key={option.value}

@@ -430,33 +430,32 @@ export default function Servicios({ setView }) {
                   {c}
                 </button>
               ))}
-
-              <div className="flex items-center gap-2 ml-2">
-                <button
-                  type="button"
-                  onClick={() => exportData('excel')}
-                  className="h-9 px-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-colors"
-                >
-                  Excel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => exportData('pdf')}
-                  className="h-9 px-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-colors"
-                >
-                  PDF
-                </button>
-                
-                {userRole === "admin" && (
+              {userRole === "admin" && (
+                <div className="flex items-center gap-2 ml-2">
                   <button
                     type="button"
-                    onClick={() => handleOpenModal()}
-                    className="h-9 px-4 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[11px] font-black uppercase tracking-widest transition-colors ml-2"
+                    onClick={() => exportData('excel')}
+                    className="h-9 px-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-colors"
                   >
-                    + Añadir servicio
+                    Excel
                   </button>
-                )}
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => exportData('pdf')}
+                    className="h-9 px-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/70 hover:bg-slate-50 dark:hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-colors"
+                  >
+                    PDF
+                  </button>
+                  
+                    <button
+                      type="button"
+                      onClick={() => handleOpenModal()}
+                      className="h-9 px-4 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[11px] font-black uppercase tracking-widest transition-colors ml-2"
+                    >
+                      + Añadir servicio
+                    </button>
+                </div>
+              )}
             </div>
           </div>
           <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-6 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
