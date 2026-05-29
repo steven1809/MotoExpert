@@ -388,7 +388,7 @@ function App() {
             />
           ))}
 
-          <main className={`pt-20 ${isStandardUser ? "md:pt-24" : "md:pt-8 md:pl-72"} p-6 md:p-8`}>
+          <main className="w-full min-h-screen pt-16">
             {routePath === '/appointments/payment' && (
               isStandardUser ? (
                 <PaymentStep onNavigate={navigate} />
