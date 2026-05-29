@@ -279,7 +279,7 @@ class Navbar extends Component {
               </button>
             </div>
 
-            <nav className="px-4 py-6 space-y-1 flex-1 overflow-y-auto">
+            <nav className="px-4 py-6 space-y-1 flex-1">
               {items.map(item => this.renderNavItem(item))}
             </nav>
 
