@@ -23,6 +23,7 @@ import ResenasPage from './pages/ResenasPage';
 import ActivityLogPage from './pages/ActivityLogPage';
 import PaymentStep from './components/PaymentStep';
 import PaymentConfirmation from './components/PaymentConfirmation';
+import AdminEstadisticas from './pages/AdminEstadisticas';
 
 import { API_BASE_URL } from './apiConfig';
 
@@ -434,6 +435,7 @@ function App() {
                 {view === "admin_empleados" && <UsersList setView={setView} activeTab="empleados" />}
                 {view === "admin_citas" && <UsersList setView={setView} activeTab="citas" />}
                 {view === "admin_actividad" && <ActivityLogPage />}
+                {view === "admin_estadisticas" && <AdminEstadisticas setView={setView} showToast={showToast} />}
                 {view === "vehiculos" && <Vehiculos setView={setView} showToast={showToast} />}
                 {view === "citas" && (
                   <Citas
