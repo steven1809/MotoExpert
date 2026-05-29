@@ -15,6 +15,9 @@ import AgendamientoPublico from '../components/agendamiento/AgendamientoPublico'
 import telefonoIcon from '../assets/iconos/telefono.png';
 import ubicIcon from '../assets/iconos/ubicacion.png';
 import relojIcon from '../assets/iconos/reloj.png';
+import correoIcon from '../assets/iconos/correo.png';
+
+
 
 import { API_BASE_URL } from '../apiConfig';
 
@@ -668,7 +671,7 @@ class LandingPage extends Component {
                         } catch {}
                         if (typeof this.props.onEnterLogin === 'function') this.props.onEnterLogin();
                       }}
-                      className="px-8 py-4 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md hover:bg-white/15 transition-all duration-300 shadow-xl shadow-blue-600/20"
+                      className="px-8 py-4 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md hover:bg-white/15 transition-all duration-300"
                     >
                       Agendar cita
                     </button>
@@ -761,8 +764,6 @@ class LandingPage extends Component {
                               <option value="">Todos</option>
                               <option value="Auto">Auto</option>
                               <option value="Moto">Moto</option>
-                              <option value="Camioneta">Camioneta</option>
-                              <option value="SUV">SUV</option>
                             </select>
                           </div>
 
@@ -1182,9 +1183,9 @@ class LandingPage extends Component {
 
                     <div className="space-y-5">
                       {[
-                        ['🎯','Misión','Ofrecer servicios de detailing de clase mundial con atención personalizada, precios justos y resultados que superan las expectativas.','border-blue-500'],
-                        ['🔭', 'Visión', 'Ser el centro de car care más reconocido de Colombia para 2027, expandiendo nuestra presencia a las principales ciudades del país.', 'border-purple-500'],
-                        ['💎', 'Valores', 'Calidad · Honestidad · Puntualidad · Pasión · Responsabilidad ambiental', 'border-green-500'],
+                        ['','Misión','Ofrecer servicios de detailing de clase mundial con atención personalizada, precios justos y resultados que superan las expectativas.','border-blue-500'],
+                        ['', 'Visión', 'Ser el centro de car care más reconocido de Colombia para 2027, expandiendo nuestra presencia a las principales ciudades del país.', 'border-purple-500'],
+                        ['', 'Valores', 'Calidad · Honestidad · Puntualidad · Pasión · Responsabilidad ambiental', 'border-green-500'],
                       ].map((c, i) => (
                         <div
                           key={i}
@@ -1274,10 +1275,10 @@ class LandingPage extends Component {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
-                      ['🏆', 'Certificación internacional en detailing'],
-                      ['🌿', 'Productos biodegradables y eco-friendly'],
-                      ['🛡️', 'Garantía en todos nuestros servicios'],
-                      ['👨‍🔧', 'Técnicos con formación continua'],
+                      ['', 'Certificación internacional en detailing'],
+                      ['', 'Productos biodegradables y eco-friendly'],
+                      ['', 'Garantía en todos nuestros servicios'],
+                      ['', 'Técnicos con formación continua'],
                     ].map((c, i) => (
                       <div
                         key={i}
@@ -1393,7 +1394,7 @@ class LandingPage extends Component {
 
                         {contactSuccess && (
                           <div className="text-emerald-300 text-sm mt-2">
-                            ✅ Mensaje enviado correctamente. Te contactaremos pronto.
+                             Mensaje enviado correctamente. Te contactaremos pronto.
                           </div>
                         )}
                       </form>
@@ -1402,7 +1403,7 @@ class LandingPage extends Component {
                     <div className="space-y-6 lg:translate-y-2">
                       <div className="rounded-2xl bg-white/[0.03] p-6 border border-white/10 backdrop-blur-md shadow-lg shadow-blue-900/10 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.14)] transition-all duration-300">
                         <div className="flex items-start gap-4">
-                          <div className="text-2xl">📞</div>
+                          <div className="text-2xl"><img src={telefonoIcon} alt="phone" className="w-5 h-5" /></div>
                           <div>
                             <div className="text-white font-semibold">Teléfono</div>
                             <div className="text-slate-400 mt-1">+57 316 810 6470</div>
@@ -1412,7 +1413,7 @@ class LandingPage extends Component {
 
                       <div className="rounded-2xl bg-white/[0.03] p-6 border border-white/10 backdrop-blur-md shadow-lg shadow-blue-900/10 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.14)] transition-all duration-300">
                         <div className="flex items-start gap-4">
-                          <div className="text-2xl">✉️</div>
+                          <div className="text-2xl"><img src={correoIcon} alt="email" className="w-5 h-5" /></div>
                           <div>
                             <div className="text-white font-semibold">Email</div>
                             <div className="text-slate-400 mt-1">pinillvalenciak@gmail.com</div>
@@ -1422,7 +1423,7 @@ class LandingPage extends Component {
 
                       <div className="rounded-2xl bg-white/[0.03] p-6 border border-white/10 backdrop-blur-md shadow-lg shadow-blue-900/10 hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.14)] transition-all duration-300">
                         <div className="flex items-start gap-4">
-                          <div className="text-2xl">🕐</div>
+                          <div className="text-2xl"><img src={relojIcon} alt="time" className="w-5 h-5" /></div>
                           <div className="flex-1">
                             <div className="text-white font-semibold">Horario</div>
                             <div className="mt-3 space-y-2">
@@ -1559,27 +1560,6 @@ class LandingPage extends Component {
                         </MapContainer>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </section>
-
-              <section data-reveal className="reveal py-20 bg-gray-900/50">
-                <div className="container mx-auto px-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {[
-                      ['🚗', 'Parqueadero disponible', 'Amplio espacio para tu vehículo'],
-                      ['♿', 'Accesible', 'Instalaciones adaptadas para todos'],
-                      ['🔒', 'Seguridad', 'Zona vigilada las 24 horas'],
-                    ].map((c, i) => (
-                      <div
-                        key={i}
-                        className="rounded-2xl bg-gray-800/50 p-6 border border-white/5 hover:border-blue-500 hover:bg-gray-800 transition-all duration-300"
-                      >
-                        <div className="text-2xl mb-3">{c[0]}</div>
-                        <div className="text-lg font-semibold mb-2">{c[1]}</div>
-                        <div className="text-slate-400">{c[2]}</div>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </section>
