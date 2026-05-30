@@ -13,6 +13,7 @@ import { Servicio } from '../../servicios/entities/servicio.entity';
 import { Empleado } from '../../empleados/entities/empleado.entity';
 import { Pago } from '../../pagos/entities/pago.entity';
 import { Payment } from '../../pagos/entities/payment.entity';
+import { ServiceStage } from '../../service-stages/entities/service-stage.entity';
 
 @Entity('citas')
 export class Cita {
@@ -80,6 +81,9 @@ export class Cita {
 
   @OneToOne(() => Payment, (payment) => payment.appointment)
   payment: Payment;
+
+  @OneToMany(() => ServiceStage, (stage) => stage.cita)
+  stages: ServiceStage[];
 
   @CreateDateColumn()
   createdAt: Date;

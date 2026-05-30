@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { JwtAuthGuard } from './jwt-auth.guard'; // ← agrega este import
 import { Usuario } from '../modules/usuarios/entities/usuario.entity';
 import { UsuariosModule } from '../modules/usuarios/usuarios.module';
 import { OtpModule } from '../modules/otp/otp.module';
@@ -27,8 +28,8 @@ import { MailModule } from '../modules/mail/mail.module';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard], // ← agrega JwtAuthGuard
   controllers: [AuthController],
-  exports: [AuthService, JwtModule],
+  exports: [AuthService, JwtModule, JwtAuthGuard],     // ← ya lo tienes aquí
 })
 export class AuthModule {}

@@ -59,7 +59,7 @@ const EmpleadoDashboard = ({ activeTab: propActiveTab }) => {
         });
         
         const completed = todayApts.filter(c => c.estado === 'FINALIZADO').length;
-        const pending = todayApts.filter(c => c.estado === 'PENDIENTE' || c.estado === 'PENDIENTE_PAGO').length;
+        const pending = todayApts.filter(c => c.estado === 'PENDIENTE').length;
         const total = todayApts.length;
 
         setStats({

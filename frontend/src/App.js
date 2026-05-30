@@ -24,6 +24,7 @@ import ActivityLogPage from './pages/ActivityLogPage';
 import PaymentStep from './components/PaymentStep';
 import PaymentConfirmation from './components/PaymentConfirmation';
 import AdminEstadisticas from './pages/AdminEstadisticas';
+import ServiceTracking from './pages/ServiceTracking';
 
 import { API_BASE_URL } from './apiConfig';
 
@@ -390,6 +391,16 @@ function App() {
           ))}
 
           <main className="w-full min-h-screen pt-16">
+            {routePath.startsWith('/service-tracking/') && (
+              <ServiceTracking 
+                citaId={routePath.split('/service-tracking/')[1]}
+                onBack={() => {
+                  window.history.back();
+                  setRoutePath('/');
+                  setView('citas');
+                }}
+              />
+            )}
             {routePath === '/appointments/payment' && (
               isStandardUser ? (
                 <PaymentStep onNavigate={navigate} />
@@ -425,7 +436,7 @@ function App() {
               )
             )}
 
-            {routePath.startsWith('/appointments/') ? null : (
+            {routePath.startsWith('/appointments/') || routePath === '/service-tracking' ? null : (
               <>
                 {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} unreadNotifications={unreadNotifications} />}
                 {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard showToast={showToast} />}
