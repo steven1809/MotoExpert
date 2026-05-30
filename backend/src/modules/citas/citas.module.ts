@@ -48,5 +48,6 @@ import { ActivityModule } from '../activity/activity.module';
     AppointmentChatsGateway,
     AppointmentResolutionsService,
   ],
+  exports: [CitasService],	
 })
 export class CitasModule {}

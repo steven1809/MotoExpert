@@ -17,7 +17,11 @@ import { RatingsModule } from './modules/ratings/ratings.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ActivityModule } from './modules/activity/activity.module';
 import { WebAuthnModule } from './modules/auth/webauthn.module';
+<<<<<<< Updated upstream
 import { StatsModule } from './modules/stats/stats.module';
+=======
+import { ServiceStagesModule } from './modules/service-stages/service-stages.module';
+>>>>>>> Stashed changes
 
 @Module({
   imports: [
@@ -55,7 +59,11 @@ import { StatsModule } from './modules/stats/stats.module';
     RatingsModule,
     ActivityModule,
     WebAuthnModule,
+<<<<<<< Updated upstream
     StatsModule,
+=======
+    ServiceStagesModule,
+>>>>>>> Stashed changes
   ],
   controllers: [AppController],
   providers: [AppService],
