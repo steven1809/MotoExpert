@@ -301,7 +301,7 @@ const MobileSummary = ({ stages, open, onToggle }) => (
 
 const EmployeeView = ({ stages, updateStage, addUpdate }) => {
   const [entered, setEntered]     = useState(false);
-  const [viewVisible, setViewVisible] = useState(false);
+  const [viewVisible, setViewVisible] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [saving, setSaving]       = useState(false);
 
@@ -579,7 +579,7 @@ const EmployeeView = ({ stages, updateStage, addUpdate }) => {
 
 const ClientView = ({ stages }) => {
   const [entered, setEntered]     = useState(false);
-  const [viewVisible, setViewVisible] = useState(false);
+  const [viewVisible, setViewVisible] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(false);
 
   useEffect(() => { const t = setTimeout(() => setEntered(true), 50); return () => clearTimeout(t); }, []);
