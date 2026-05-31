@@ -47,12 +47,15 @@ class EmployeeDashboard extends Component {
       const response = await fetch(`${API_BASE_URL}/citas`, { headers });
       if (response.ok) {
         const data = await response.json();
+        const servicesArray = Array.isArray(data)
+          ? data
+          : (data?.data || data?.services || data?.appointments || []);
         // Filter for services assigned to the employee or pending in general
-        const pending = data.filter(c => c.estado === 'PENDIENTE' || c.estado === 'EN PROCESO');
+        const pending = servicesArray.filter(c => c.estado === 'PENDIENTE' || c.estado === 'EN PROCESO');
         this.setState({ pendingServices: pending, loading: false });
         // Fetch ratings stats if we have any services with empleado
-        if (data.length > 0) {
-          this.fetchRatingsStats(data[0].empleado?.id, token);
+        if (servicesArray.length > 0) {
+          this.fetchRatingsStats(servicesArray[0].empleado?.id, token);
         }
       } else {
         this.setState({ loading: false });

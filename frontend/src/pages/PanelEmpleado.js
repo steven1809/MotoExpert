@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import ServiceCompletionModal from '../components/ServiceCompletionModal';
 
 import { API_BASE_URL } from '../apiConfig';
 
@@ -9,8 +8,6 @@ class PanelEmpleado extends Component {
     this.state = {
       citas: [],
       loading: true,
-      showCompletionModal: false,
-      selectedCita: null,
     };
   }
 
@@ -34,7 +31,7 @@ class PanelEmpleado extends Component {
         // Filtramos solo las citas pendientes o en proceso de este empleado
         // Y ordenamos cronológicamente (fecha y luego hora)
         const filteredAndSorted = data
-          .filter(c => c.estado !== 'FINALIZADO' && c.estado !== 'CANCELADO')
+          .filter(c => !['FINALIZADO', 'CANCELADO', 'CANCELADA'].includes(c.estado))
           .sort((a, b) => {
             if (a.fecha !== b.fecha) {
               return new Date(a.fecha) - new Date(b.fecha);
@@ -81,6 +78,13 @@ class PanelEmpleado extends Component {
     return minsRestantes > 0 ? `${horas}h ${minsRestantes}m` : `${horas} horas`;
   };
 
+  handleVerSeguimiento = (citaId) => {
+    try {
+      window.history.pushState({}, '', `/employee/service-tracking/${citaId}`);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } catch {}
+  };
+
   render() {
     const { citas, loading } = this.state;
 
@@ -93,17 +97,6 @@ class PanelEmpleado extends Component {
 
     return (
       <>
-        {this.state.showCompletionModal && this.state.selectedCita && (
-          <ServiceCompletionModal
-            cita={this.state.selectedCita}
-            onClose={() => this.setState({ showCompletionModal: false, selectedCita: null })}
-            onSuccess={() => {
-              this.setState({ showCompletionModal: false, selectedCita: null });
-              this.fetchCitasEmpleado();
-            }}
-            showToast={this.props.showToast}
-          />
-        )}
         <div className="max-w-6xl mx-auto p-6 animate-in fade-in duration-500">
         <h1 className="text-4xl font-bold text-white mb-10 italic bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
           Panel de Servicios - Empleado
@@ -198,22 +191,21 @@ class PanelEmpleado extends Component {
                 </div>
               </div>
 
-              <div className="flex space-x-2">
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={() => this.handleVerSeguimiento(cita.id)}
+                  className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95"
+                >
+                  VER SEGUIMIENTO
+                </button>
                 {cita.estado === 'PENDIENTE' ? (
                   <button 
                     onClick={() => this.updateEstadoCita(cita.id, 'EN PROCESO')}
-                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg shadow-blue-600/20"
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg shadow-blue-600/20"
                   >
                     Iniciar Servicio
                   </button>
-                ) : (
-                  <button 
-                    onClick={() => this.setState({ showCompletionModal: true, selectedCita: cita })}
-                    className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg shadow-green-600/20"
-                  >
-                    Finalizar Servicio
-                  </button>
-                )}
+                ) : null}
               </div>
             </div>
           ))}

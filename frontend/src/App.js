@@ -25,6 +25,7 @@ import PaymentStep from './components/PaymentStep';
 import PaymentConfirmation from './components/PaymentConfirmation';
 import AdminEstadisticas from './pages/AdminEstadisticas';
 import ServiceTracking from './pages/ServiceTracking';
+import EmpleadoHistorial from './pages/EmpleadoHistorial';
 
 import { API_BASE_URL } from './apiConfig';
 
@@ -54,7 +55,7 @@ function App() {
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    if (userRole === "empleado") {
+    if (userRole === "empleado" || userRole === "trabajador") {
       if (view === "vehiculos" || view === "citas") setView("panel_empleado");
     } else if (userRole === "admin") {
       if (view === "vehiculos" || view === "citas") setView("dashboard");
@@ -192,7 +193,7 @@ function App() {
 
     const socket = io(API_BASE_URL, {
       auth: { token },
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
     });
 
     const onOverdue = (payload) => {
@@ -233,8 +234,19 @@ function App() {
     };
     socket.on('appointment_resolved', onResolved);
 
+    const onServiceTrackingNotification = (payload) => {
+      const message = payload?.message;
+      if (!message) return;
+      showToast(message, 'info');
+      try {
+        window.dispatchEvent(new CustomEvent('motoexpert:refresh_notifications'));
+      } catch {}
+    };
+    socket.on('service_tracking_notification', onServiceTrackingNotification);
+
     return () => {
       socket.off('appointment_resolved', onResolved);
+      socket.off('service_tracking_notification', onServiceTrackingNotification);
       socket.disconnect();
     };
   }, [isLoggedIn]);
@@ -391,16 +403,69 @@ function App() {
           ))}
 
           <main className="w-full min-h-screen pt-16">
+            {routePath.startsWith('/employee/service-tracking/') && (
+              (userRole === 'empleado' || userRole === 'trabajador') ? (
+                <ServiceTracking
+                  citaId={routePath.split('/employee/service-tracking/')[1]}
+                  userRole="empleado"
+                  showToast={showToast}
+                  onBack={() => {
+                    navigate('/', {});
+                    setView('panel_empleado');
+                  }}
+                />
+              ) : (
+                <div className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 text-center space-y-3">
+                  <div className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wide">
+                    No autorizado
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
+                    Esta ruta es solo para empleados.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate('/', {});
+                      setView('citas');
+                    }}
+                    className="h-11 px-5 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black uppercase tracking-widest transition-colors"
+                  >
+                    Ir a mis citas
+                  </button>
+                </div>
+              )
+            )}
             {routePath.startsWith('/service-tracking/') && (
-              <ServiceTracking 
-                citaId={routePath.split('/service-tracking/')[1]}
-                userRole={userRole}
-                onBack={() => {
-                  window.history.back();
-                  setRoutePath('/');
-                  setView('citas');
-                }}
-              />
+              isStandardUser ? (
+                <ServiceTracking 
+                  citaId={routePath.split('/service-tracking/')[1]}
+                  userRole={userRole}
+                  showToast={showToast}
+                  onBack={() => {
+                    navigate('/', {});
+                    setView('citas');
+                  }}
+                />
+              ) : (
+                <div className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 text-center space-y-3">
+                  <div className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wide">
+                    No autorizado
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
+                    Esta ruta es solo para usuarios.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate('/', {});
+                      setView('panel_empleado');
+                    }}
+                    className="h-11 px-5 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-black uppercase tracking-widest transition-colors"
+                  >
+                    Ir a mi panel
+                  </button>
+                </div>
+              )
             )}
             {routePath === '/appointments/payment' && (
               isStandardUser ? (
@@ -437,10 +502,14 @@ function App() {
               )
             )}
 
-            {routePath.startsWith('/appointments/') || routePath.startsWith('/service-tracking/') ? null : (
+            {routePath.startsWith('/appointments/') ||
+            routePath.startsWith('/service-tracking/') ||
+            routePath.startsWith('/employee/service-tracking/')
+              ? null
+              : (
               <>
                 {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} unreadNotifications={unreadNotifications} />}
-                {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard showToast={showToast} />}
+                {view === "dashboard" && (userRole === "empleado" || userRole === "trabajador") && <EmployeeDashboard showToast={showToast} />}
                 {view === "dashboard" && (userRole === "user" || userRole === "cliente" || userRole === "usuario") && <UserDashboard setView={setView} showToast={showToast} />}
                 {view === "servicios" && <Servicios setView={setView} />}
                 {view === "users" && <UsersList setView={setView} activeTab="usuarios" />}
@@ -462,6 +531,7 @@ function App() {
                 {view === "resenas" && <ResenasPage />}
                 {view === "cuenta" && <MiCuenta setView={setView} />}
                 {view === "panel_empleado" && <PanelEmpleado showToast={showToast} />}
+                {view === "empleado_historial" && <EmpleadoHistorial />}
               </>
             )}
 
