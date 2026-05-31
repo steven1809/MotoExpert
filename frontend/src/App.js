@@ -394,6 +394,7 @@ function App() {
             {routePath.startsWith('/service-tracking/') && (
               <ServiceTracking 
                 citaId={routePath.split('/service-tracking/')[1]}
+                userRole={userRole}
                 onBack={() => {
                   window.history.back();
                   setRoutePath('/');
@@ -436,7 +437,7 @@ function App() {
               )
             )}
 
-            {routePath.startsWith('/appointments/') || routePath === '/service-tracking' ? null : (
+            {routePath.startsWith('/appointments/') || routePath.startsWith('/service-tracking/') ? null : (
               <>
                 {view === "dashboard" && userRole === "admin" && <DashboardAdmin setView={setView} showToast={showToast} unreadNotifications={unreadNotifications} />}
                 {view === "dashboard" && userRole === "empleado" && <EmployeeDashboard showToast={showToast} />}

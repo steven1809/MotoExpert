@@ -6,10 +6,10 @@ const API = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 // ─── Constantes ────────────────────────────────────────────────────────────────
 
 const STAGES = [
-  { id: 'recepcion',   title: 'Recepción'   },
+  { id: 'recepcion',   title: 'Recepción' },
   { id: 'diagnostico', title: 'Diagnóstico' },
-  { id: 'proceso',     title: 'En Proceso'  },
-  { id: 'finalizado',  title: 'Finalizado'  },
+  { id: 'proceso',     title: 'En Proceso' },
+  { id: 'finalizado',  title: 'Finalizado' },
 ];
 
 const STAGE_MAP_REVERSE = {
@@ -156,7 +156,7 @@ function useServiceStages(citaId) {
   return { stages, loading, error, updateStage, addUpdate };
 }
 
-// ─── Componentes UI ────────────────────────────────────────────────────────────
+// ─── Componentes UI ─────────────────────────────────────────────────────────────
 
 const StageIcon = ({ id }) => {
   const base = 'w-5 h-5';
@@ -186,19 +186,6 @@ const StageIcon = ({ id }) => {
     </svg>
   );
 };
-
-const Toggle = ({ value, onChange }) => (
-  <div className="inline-flex p-1 rounded-2xl bg-white/5 border border-white/10">
-    {['cliente', 'empleado'].map((v) => (
-      <button key={v} type="button" onClick={() => onChange(v)}
-        className={`h-11 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-colors ${
-          value === v ? 'bg-gradient-to-r from-[#6366f1] to-[#3b82f6] text-white' : 'text-white/70 hover:text-white'
-        }`}>
-        Vista {v.charAt(0).toUpperCase() + v.slice(1)}
-      </button>
-    ))}
-  </div>
-);
 
 const StatusPill = ({ state }) => {
   const base = 'text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border';
@@ -238,7 +225,7 @@ const ProgressBar = ({ stages }) => {
       <div className="mt-6 relative">
         <div className="absolute left-4 right-4 top-[18px] h-px bg-white/10" />
         <div className="absolute left-4 top-[18px] h-px bg-emerald-500/35 transition-all duration-500"
-          style={{ width: `calc(${progressPct}% * (100% - 2rem) / 100)` }} />
+          style={{ width: `calc(${progressPct}% * (100% - 2rem) / 100%)` }} />
         <div className="grid grid-cols-4 gap-3 md:gap-6">
           {stages.map((s) => (
             <div key={s.id} className="flex flex-col items-center gap-2">
@@ -299,8 +286,8 @@ const SidebarContent = ({ stages }) => (
 const MobileSummary = ({ stages, open, onToggle }) => (
   <div className="md:hidden mt-6 border border-white/10 bg-[#1e293b]/60 rounded-3xl overflow-hidden">
     <button type="button" onClick={onToggle}
-      className="w-full h-12 px-5 flex items-center justify-between text-left">
-      <div className="text-xs font-black uppercase tracking-widest text-white/70">Resumen</div>
+      className="w-full h-11 px-5 flex items-center justify-between text-left">
+      <div className="text-[10px] font-black uppercase tracking-widest text-white/70">Resumen</div>
       <svg className={`w-5 h-5 text-white/70 transition-transform ${open ? 'rotate-180' : ''}`}
         viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
@@ -310,18 +297,14 @@ const MobileSummary = ({ stages, open, onToggle }) => (
   </div>
 );
 
-// ─── Componente principal ───────────────────────────────────────────────────────
+// ─── Vista Empleado ────────────────────────────────────────────────────────────
 
-export default function ServiceTracking({ citaId = 123, onBack }) {
-  const { stages, loading, error, updateStage, addUpdate } = useServiceStages(citaId);
-
-  const [mode, setMode]           = useState('cliente');
+const EmployeeView = ({ stages, updateStage, addUpdate }) => {
   const [entered, setEntered]     = useState(false);
   const [viewVisible, setViewVisible] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [saving, setSaving]       = useState(false);
 
-  // Estado local formularios empleado
   const [recepcionNote, setRecepcionNote]     = useState('');
   const [recepcionPhotos, setRecepcionPhotos] = useState([]);
   const [diagText, setDiagText]               = useState('');
@@ -336,13 +319,7 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
   const finalRef     = useRef(null);
 
   useEffect(() => { const t = setTimeout(() => setEntered(true), 50); return () => clearTimeout(t); }, []);
-  useEffect(() => {
-    setViewVisible(false);
-    const t = setTimeout(() => setViewVisible(true), 10);
-    return () => clearTimeout(t);
-  }, [mode]);
 
-  // Sincronizar formulario con datos ya guardados en backend
   useEffect(() => {
     const r = stages.find((s) => s.id === 'recepcion');
     if (r?.status === 'done') { setRecepcionNote(r.data.note || ''); setRecepcionPhotos(r.data.photos || []); }
@@ -360,12 +337,6 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
     if (f?.status === 'done') { setFinalNote(f.data.note || ''); setFinalPhotos(f.data.photos || []); }
   }, [stages]);
 
-  const handleBack = () => {
-    if (typeof onBack === 'function') { onBack(); return; }
-    window.history.back();
-  };
-
-  // ── Handlers archivos ──
   const handleRecepcionFiles = async (e) => {
     const urls = await readFilesAsDataUrls(e.target.files, 3);
     setRecepcionPhotos((prev) => [...prev, ...urls].slice(0, 3));
@@ -382,7 +353,6 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
     e.target.value = '';
   };
 
-  // ── Guardar etapas en API ──
   const saveRecepcion = async () => {
     try { setSaving(true); await updateStage('recepcion', { observation: recepcionNote, images: recepcionPhotos, completed: true }); }
     catch (e) { alert('Error: ' + e.message); } finally { setSaving(false); }
@@ -413,20 +383,7 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
   const btnClass = `w-full h-11 rounded-2xl bg-gradient-to-r from-[#6366f1] to-[#3b82f6]
     disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest transition-all`;
 
-  // ── Loading / Error ──
-  if (loading) return (
-    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-      <div className="text-white text-lg animate-pulse">Cargando seguimiento...</div>
-    </div>
-  );
-  if (error) return (
-    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-      <div className="text-red-400 text-center px-6">{error}</div>
-    </div>
-  );
-
-  // ── Vista Empleado ──
-  const EmployeeView = () => (
+  return (
     <div className={`mt-8 md:mt-10 transition-all duration-300 ${viewVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
         <div className="md:col-span-8 space-y-5 md:space-y-6">
@@ -456,7 +413,6 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
                 <div className="mt-5 text-sm font-bold text-white/50">Completa la etapa anterior para habilitar esta sección.</div>
               );
 
-              // RECEPCIÓN
               if (s.id === 'recepcion') {
                 if (isDone) return (
                   <div className="mt-5 space-y-4">
@@ -489,7 +445,6 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
                 );
               }
 
-              // DIAGNÓSTICO
               if (s.id === 'diagnostico') {
                 if (isDone) return (
                   <div className="mt-5 space-y-4">
@@ -522,7 +477,6 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
                 );
               }
 
-              // EN PROCESO
               if (s.id === 'proceso') {
                 if (isDone) return (
                   <div className="mt-5 space-y-3">
@@ -571,7 +525,6 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
                 );
               }
 
-              // FINALIZADO
               if (isDone) return (
                 <div className="mt-5 space-y-4">
                   <Gallery images={s.data.photos} />
@@ -620,9 +573,18 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
       </div>
     </div>
   );
+};
 
-  // ── Vista Cliente ──
-  const ClientView = () => (
+// ─── Vista Cliente ─────────────────────────────────────────────────────────────
+
+const ClientView = ({ stages }) => {
+  const [entered, setEntered]     = useState(false);
+  const [viewVisible, setViewVisible] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+
+  useEffect(() => { const t = setTimeout(() => setEntered(true), 50); return () => clearTimeout(t); }, []);
+
+  return (
     <div className={`mt-8 md:mt-10 transition-all duration-300 ${viewVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
       <ProgressBar stages={stages} />
       <div className="mt-6 md:mt-8 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
@@ -675,7 +637,6 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
               </CardShell>
             );
 
-            // Completada
             const content = (() => {
               if (s.id === 'recepcion' || s.id === 'finalizado') return (
                 <div className="mt-5 space-y-4">
@@ -733,6 +694,33 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
       </div>
     </div>
   );
+};
+
+// ─── Componente principal ───────────────────────────────────────────────────────
+
+export default function ServiceTracking({ citaId = 123, userRole = 'cliente', onBack }) {
+  const { stages, loading, error, updateStage, addUpdate } = useServiceStages(citaId);
+  const [entered, setEntered] = useState(false);
+
+  useEffect(() => { const t = setTimeout(() => setEntered(true), 50); return () => clearTimeout(t); }, []);
+
+  const handleBack = () => {
+    if (typeof onBack === 'function') { onBack(); return; }
+    window.history.back();
+  };
+
+  const isEmployee = userRole === 'empleado' || userRole === 'trabajador';
+
+  if (loading) return (
+    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+      <div className="text-white text-lg animate-pulse">Cargando seguimiento...</div>
+    </div>
+  );
+  if (error) return (
+    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+      <div className="text-red-400 text-center px-6">{error}</div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
@@ -750,9 +738,6 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
               className="h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors">
               ← Volver
             </button>
-            <div className="hidden md:block">
-              <Toggle value={mode} onChange={setMode} />
-            </div>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -762,18 +747,16 @@ export default function ServiceTracking({ citaId = 123, onBack }) {
             <div className="text-3xl md:text-4xl font-black tracking-tight text-white">
               Cita #{citaId}
             </div>
-            <div className="md:hidden flex justify-center pt-1">
-              <Toggle value={mode} onChange={setMode} />
-            </div>
           </div>
         </div>
 
-        {/* Progress bar (siempre visible) */}
         <div className="mt-8 md:mt-10">
-          <ProgressBar stages={stages} />
+          {isEmployee ? (
+            <EmployeeView stages={stages} updateStage={updateStage} addUpdate={addUpdate} />
+          ) : (
+            <ClientView stages={stages} />
+          )}
         </div>
-
-        {mode === 'empleado' ? <EmployeeView /> : <ClientView />}
       </div>
     </div>
   );
