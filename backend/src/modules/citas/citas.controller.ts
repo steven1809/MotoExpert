@@ -20,6 +20,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AppointmentChatsService } from './appointment-chats.service';
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { ServiceStagesService } from '../service-stages/service-stages.service';
 
 // Decorador para rutas públicas
 export const Public = () => SetMetadata('isPublic', true);
@@ -43,12 +44,13 @@ export class JwtAuthGuardPublic extends AuthGuard('jwt') {
   }
 }
 
-@Controller('citas')
+@Controller(['citas', 'api/appointments'])
 @UseGuards(JwtAuthGuardPublic)
 export class CitasController {
   constructor(
     private readonly service: CitasService,
     private readonly chatsService: AppointmentChatsService,
+    private readonly serviceStagesService: ServiceStagesService,
   ) {}
 
   @Public()
@@ -112,14 +114,39 @@ export class CitasController {
   @Get(':id')
   async findOne(@Param('id') id: string, @Request() req) {
     const cita = await this.service.findOne(+id);
-    if (
-      cita &&
-      req.user.rol !== 'admin' &&
-      cita.usuario.id !== req.user.userId
-    ) {
-      return null;
+    const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+    const userId = req.user.userId;
+    if (cita && userRole !== 'admin') {
+      const isOwner = cita.usuario?.id === userId;
+      const isAssignedEmployee =
+        (userRole === 'empleado' || userRole === 'trabajador') &&
+        cita.empleado?.usuarioId === userId;
+      if (!isOwner && !isAssignedEmployee) {
+        return null;
+      }
     }
     return cita;
+  }
+
+  @Get(':id/current-status')
+  async getCurrentStatus(@Param('id') id: string, @Request() req) {
+    const cita = await this.service.findOne(+id);
+    if (!cita) throw new NotFoundException('Cita no encontrada');
+
+    const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+    const userId = req.user.userId;
+
+    if (userRole !== 'admin') {
+      const isOwner = cita.usuario?.id === userId;
+      const isAssignedEmployee =
+        (userRole === 'empleado' || userRole === 'trabajador') &&
+        cita.empleado?.usuarioId === userId;
+      if (!isOwner && !isAssignedEmployee) {
+        throw new ForbiddenException('No autorizado');
+      }
+    }
+
+    return this.serviceStagesService.getCurrentStatus(+id);
   }
 
   @Patch(':id/estado')

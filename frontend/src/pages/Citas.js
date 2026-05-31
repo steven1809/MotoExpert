@@ -329,7 +329,7 @@ const AppointmentChatModal = ({ isOpen, onClose, alert }) => {
 
     const socket = io(API_BASE_URL, {
       auth: { token },
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
     });
     socketRef.current = socket;
 

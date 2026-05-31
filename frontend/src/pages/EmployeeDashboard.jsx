@@ -45,7 +45,9 @@ const EmpleadoDashboard = ({ activeTab: propActiveTab }) => {
         
         // El backend ya debería filtrar por empleado si el rol es correcto, 
         // pero aseguramos que tenemos los datos del usuario logueado.
-        const myAppointments = data;
+        const myAppointments = Array.isArray(data)
+          ? data
+          : (data?.data || data?.services || data?.appointments || []);
         
         // Usamos la fecha local para filtrar "hoy"
         const now = new Date();
@@ -53,7 +55,7 @@ const EmpleadoDashboard = ({ activeTab: propActiveTab }) => {
                         String(now.getMonth() + 1).padStart(2, '0') + '-' + 
                         String(now.getDate()).padStart(2, '0');
         
-        const todayApts = myAppointments.filter(c => {
+        const todayApts = (Array.isArray(myAppointments) ? myAppointments : []).filter(c => {
           const citaFecha = c.fecha.includes('T') ? c.fecha.split('T')[0] : c.fecha;
           return citaFecha === todayStr;
         });
@@ -73,7 +75,7 @@ const EmpleadoDashboard = ({ activeTab: propActiveTab }) => {
         });
 
         // Set current service (first one in progress)
-        const inProgress = myAppointments.find(c => c.estado === 'EN PROCESO');
+        const inProgress = (Array.isArray(myAppointments) ? myAppointments : []).find(c => c.estado === 'EN PROCESO');
         if (inProgress) {
           setCurrentService({
             id: inProgress.id,
@@ -104,7 +106,7 @@ const EmpleadoDashboard = ({ activeTab: propActiveTab }) => {
         })));
 
         // Upcoming services
-        setUpcomingServices(myAppointments.filter(c => c.estado === 'PENDIENTE').slice(0, 3).map(c => ({
+        setUpcomingServices((Array.isArray(myAppointments) ? myAppointments : []).filter(c => c.estado === 'PENDIENTE').slice(0, 3).map(c => ({
           time: c.hora_inicio.substring(0, 5),
           name: c.servicio?.nombre || 'Servicio',
           vehicle: c.vehiculo?.modelo || 'Unidad',
@@ -113,7 +115,7 @@ const EmpleadoDashboard = ({ activeTab: propActiveTab }) => {
         })));
 
         // Recent history
-        setRecentHistory(myAppointments.filter(c => c.estado === 'FINALIZADO').slice(0, 3).map(c => ({
+        setRecentHistory((Array.isArray(myAppointments) ? myAppointments : []).filter(c => c.estado === 'FINALIZADO').slice(0, 3).map(c => ({
           name: c.servicio?.nombre || 'Servicio',
           vehicle: c.vehiculo?.modelo || 'Unidad',
           date: 'Ayer, 03:30 PM', // Simplified for demo

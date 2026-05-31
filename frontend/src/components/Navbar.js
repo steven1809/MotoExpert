@@ -79,6 +79,7 @@ class Navbar extends Component {
       return [
         { key: "dashboard", label: "Inicio", view: "dashboard" },
         { key: "panel_empleado", label: "Panel", view: "panel_empleado"},
+        { key: "historial", label: "Historial", view: "empleado_historial", icon: "history" },
         { key: "servicios", label: "Servicios", view: "servicios" },
         { key: "cuenta", label: "Cuenta", view: "cuenta" },
       ];
