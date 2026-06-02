@@ -6,6 +6,7 @@ import UsersList from "./pages/UsersList";
 import Vehiculos from "./pages/Vehiculos";
 import Citas from "./pages/Citas";
 import MiCuenta from "./pages/MiCuenta";
+import SeguridadView from "./pages/SeguridadView.jsx";
 import PanelEmpleado from "./pages/PanelEmpleado";
 import Navbar from "./components/Navbar";
 import LandingPage from './pages/LandingPage';
@@ -18,7 +19,7 @@ import OnboardingModal from './components/OnboardingModal';
 import GoogleSignInModal from './components/GoogleSignInModal';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
-
+import NotificationBell from './components/NotificationBell';
 import ResenasPage from './pages/ResenasPage';
 import AdminResenasModeracion from './pages/AdminResenasModeracion';
 import ActivityLogPage from './pages/ActivityLogPage';
@@ -379,7 +380,9 @@ function App() {
         <div className="min-h-screen bg-white dark:bg-[#020617] text-slate-900 dark:text-[#F8FAFC]">
           <InactivityHandler onLogout={handleLogout} />
 
-
+          <div className="fixed top-4 right-4 md:right-80 z-40">
+            <NotificationBell />
+          </div>
 
           <Navbar 
             setView={setView} 
@@ -530,6 +533,7 @@ function App() {
                 )}
                 {view === "resenas" && <ResenasPage />}
                 {view === "cuenta" && <MiCuenta setView={setView} />}
+                {view === "seguridad" && <SeguridadView setView={setView} />}
                 {view === "panel_empleado" && <PanelEmpleado showToast={showToast} />}
                 {view === "empleado_historial" && <EmpleadoHistorial />}
               </>
