@@ -1129,37 +1129,13 @@ class LandingPage extends Component {
                 />
 
                 <div className="container mx-auto px-6 relative z-10 text-center max-w-4xl">
-                  <span className="text-blue-400 text-sm">Nuestra historia</span>
+                  <span className="text-blue-400 text-sm">Proyecto académico</span>
                   <h2 className="text-4xl md:text-6xl font-bold mt-4 mb-6 tracking-tight">
-                    Más de 10 años cuidando lo que más valoras
+                    Aprendiendo construyendo
                   </h2>
                   <p className="text-slate-300 text-lg md:text-xl leading-relaxed">
-                    Nacimos con una sola misión: devolverte el orgullo de manejar un vehículo impecable. Hoy somos el centro de detailing de mayor confianza en la región.
+                    Somos estudiantes del SENA y MotoExpert es nuestro proyecto formativo.
                   </p>
-                </div>
-              </section>
-
-              <section data-reveal className="reveal relative py-20 bg-gray-900/80 overflow-hidden">
-                <div className="pointer-events-none absolute inset-0 opacity-35 diag-lines" />
-                <div className="container mx-auto px-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                    {[
-                      [10, '+', 'Años de experiencia'],
-                      [15000, '+', 'Vehículos atendidos'],
-                      [98, '%', 'Clientes satisfechos'],
-                      [6, '', 'Servicios especializados'],
-                    ].map((s, i) => (
-                      <div
-                        key={i}
-                        className={`text-center rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md p-6 shadow-lg shadow-blue-900/10 transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-500/35 hover:shadow-[0_0_18px_rgba(59,130,246,0.14)] ${i % 2 === 0 ? 'md:-translate-y-1' : 'md:translate-y-1'}`}
-                      >
-                        <div className="text-3xl md:text-[34px] font-extrabold text-blue-500 tracking-tight">
-                          <CountUp value={s[0]} suffix={s[1]} />
-                        </div>
-                        <div className="text-slate-300 mt-2 text-sm">{s[2]}</div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </section>
 
@@ -1170,22 +1146,14 @@ class LandingPage extends Component {
                       <h3 className="text-3xl font-bold mb-6 tracking-tight">¿Quiénes somos?</h3>
                       <div className="space-y-5 text-slate-300 leading-relaxed">
                         <p>
-                          MotoExpert nació en 2014 en Bogotá como un pequeño taller familiar con grandes sueños. Lo que comenzó con dos empleados y un local de 40m² hoy se ha convertido en un centro especializado con tecnología de punta y un equipo de más de 10 profesionales certificados.
-                        </p>
-                        <p>
-                          Nos especializamos en lavado, detailing, protección cerámica y pulido profesional para todo tipo de vehículos. Cada servicio es realizado con productos premium importados y técnicas certificadas internacionalmente.
-                        </p>
-                        <p>
-                          Nuestra filosofía es simple: tratamos cada vehículo como si fuera el nuestro.
+                          Somos un equipo de 5 estudiantes del programa ADSO (Análisis y Desarrollo de Software) del SENA, sede Ibagué, Tolima. Durante aproximadamente dos años construimos MotoExpert como proyecto formativo, aplicando conocimientos reales en análisis de requerimientos, diseño de software, desarrollo web, bases de datos y gestión de proyectos.
                         </p>
                       </div>
                     </div>
 
                     <div className="space-y-5">
                       {[
-                        ['','Misión','Ofrecer servicios de detailing de clase mundial con atención personalizada, precios justos y resultados que superan las expectativas.','border-blue-500'],
-                        ['', 'Visión', 'Ser el centro de car care más reconocido de Colombia para 2027, expandiendo nuestra presencia a las principales ciudades del país.', 'border-purple-500'],
-                        ['', 'Valores', 'Calidad · Honestidad · Puntualidad · Pasión · Responsabilidad ambiental', 'border-green-500'],
+                        ['','El proyecto','MotoExpert nació de identificar un problema real: muchos talleres de motos aún gestionan sus operaciones por WhatsApp, llamadas y hojas de cálculo. Construimos una plataforma web que centraliza citas, clientes, vehículos y servicios en un solo sistema, convirtiendo talleres tradicionales en negocios digitalmente organizados.','border-blue-500'],
                       ].map((c, i) => (
                         <div
                           key={i}
@@ -1222,70 +1190,68 @@ class LandingPage extends Component {
               <section data-reveal className="reveal py-20 bg-gray-900/50">
                 <div className="container mx-auto px-6">
                   <div className="text-center mb-14">
-                    <h2 className="text-4xl md:text-5xl font-bold tracking-tight">El equipo detrás de la magia</h2>
+                    <span className="text-blue-400 text-sm">Equipo SENA</span>
+                    <h2 className="text-4xl md:text-5xl font-bold tracking-tight mt-4">Nuestro equipo</h2>
                     <p className="text-slate-400 max-w-2xl mx-auto text-lg mt-4">
-                      Profesionales certificados apasionados por los vehículos
+                      Estudiantes del SENA que construyeron MotoExpert
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8 mb-16">
                     {[
-                      ['Carlos Rodríguez', 'Especialista Senior en Detailing', 'Especialista en corrección y acabado profesional.', ['Pulido', 'Corrección de pintura', 'Detailing'], 'C'],
-                      ['María González', 'Técnica en Protección Cerámica', 'Enfoque en recubrimientos premium y protección.', ['Cerámica', 'PPF', 'Nano recubrimientos'], 'M'],
-                      ['Juan Martínez', 'Experto en Lavado y Mantenimiento', 'Procesos rápidos con resultados impecables.', ['Lavado Premium', 'Motor', 'Tapicería'], 'J'],
+                      ['Sebastián Pinilla', 'S', ''],
+                      ['Andrés Montenegro', 'A', ''],
+                      ['Brandon Sánchez', 'B', ''],
+                      ['Stiven Díaz', 'S', ''],
+                      ['Alenxandro Lemus', 'A', ''],
                     ].map((m, i) => (
                       <div
                         key={i}
                         className="rounded-2xl bg-gray-800/50 p-6 border border-white/5 hover:border-blue-500 hover:bg-gray-800 transition-all duration-300 hover:scale-[1.02]"
                       >
-                        <div className="flex items-center gap-4 mb-5">
+                        <div className="flex items-center flex-col gap-4 mb-5">
                           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600/40 to-cyan-500/20 border border-blue-500/40 flex items-center justify-center text-blue-200 font-bold text-2xl">
-                            {m[4]}
+                            {m[1]}
                           </div>
-                          <div>
+                          <div className="text-center">
                             <div className="text-white font-semibold">{m[0]}</div>
-                            <div className="text-blue-400 text-sm font-semibold">{m[1]}</div>
                           </div>
-                        </div>
-                        <div className="text-slate-400 text-sm mb-5">{m[2]}</div>
-                        <div className="flex flex-wrap gap-2">
-                          {m[3].map((tag) => (
-                            <span
-                              key={tag}
-                              className="bg-blue-600/20 border border-blue-500 text-blue-300 rounded-full px-3 py-1 text-xs"
-                            >
-                              {tag}
-                            </span>
-                          ))}
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              </section>
 
-              <section data-reveal className="reveal py-20 bg-gray-900/50">
-                <div className="container mx-auto px-6">
                   <div className="text-center mb-14">
-                    <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Trabajamos con los mejores</h2>
+                    <span className="text-blue-400 text-sm">Equipo del taller</span>
+                    <h2 className="text-4xl md:text-5xl font-bold tracking-tight mt-4">Nuestros profesionales</h2>
                     <p className="text-slate-400 max-w-2xl mx-auto text-lg mt-4">
-                      Productos y técnicas certificadas internacionalmente
+                      El equipo humano que hace posible cada servicio
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {[
-                      ['', 'Certificación internacional en detailing'],
-                      ['', 'Productos biodegradables y eco-friendly'],
-                      ['', 'Garantía en todos nuestros servicios'],
-                      ['', 'Técnicos con formación continua'],
-                    ].map((c, i) => (
+                      ['Carlos Alberto Rodríguez', 'Mecánico Principal', 'Especialista en motores de alta cilindrada con 12 años de experiencia.', 'CR'],
+                      ['Ana María Gutiérrez', 'Técnica de Mantenimiento', 'Experta en mantenimiento preventivo y diagnóstico de fallas.', 'AG'],
+                      ['Luis Fernando Vélez', 'Especialista en Detailing', 'Maestro en limpieza y restauración de motos premium.', 'LV'],
+                      ['Sofía Isabel Mejía', 'Coordinadora de Citas', 'Asegura una experiencia fluida desde la reserva hasta la entrega.', 'SM'],
+                      ['Javier Andrés Ramírez', 'Administrador', 'Gestiona operaciones y garantiza la calidad del servicio.', 'JR'],
+                      ['Paula Andrea González', 'Asesora de Servicios', 'Ayuda a elegir el mejor servicio para tu moto.', 'PG'],
+                    ].map((m, i) => (
                       <div
                         key={i}
-                        className="rounded-2xl bg-gray-800/50 p-6 border border-white/5 hover:border-blue-500 hover:bg-gray-800 transition-all duration-300"
+                        className="rounded-2xl bg-gradient-to-br from-gray-800/70 to-gray-900/80 p-8 border border-white/10 hover:border-blue-500/50 hover:bg-gray-800/90 transition-all duration-300 hover:translate-y-[-4px] hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
                       >
-                        <div className="text-2xl mb-3">{c[0]}</div>
-                        <div className="text-slate-300">{c[1]}</div>
+                        <div className="flex flex-col items-center gap-6">
+                          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500/30 via-cyan-500/20 to-blue-600/30 border-2 border-blue-500/30 flex items-center justify-center text-white font-extrabold text-3xl shadow-lg shadow-blue-900/20">
+                            {m[3]}
+                          </div>
+                          <div className="text-center space-y-2">
+                            <h4 className="text-xl font-bold text-white tracking-tight">{m[0]}</h4>
+                            <p className="text-blue-400 font-semibold text-sm">{m[1]}</p>
+                            <p className="text-slate-400 text-sm leading-relaxed">{m[2]}</p>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1512,7 +1478,7 @@ class LandingPage extends Component {
                           </div>
                           <div>
                             <div className="font-semibold text-white">Dirección</div>
-                            <div className="text-slate-400">Ibagué, Tolima, Colombia</div>
+                            <div className="text-slate-400">SENA - Centro de Industria y Construcción<br/>Carrera 2 # 10-19, Ibagué, Tolima</div>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
@@ -1536,7 +1502,7 @@ class LandingPage extends Component {
                       </div>
 
                       <a
-                        href="https://www.google.com/maps/search/?api=1&query=Ibague+Tolima+Colombia"
+                        href="https://www.google.com/maps/search/?api=1&query=SENA+Centro+de+Industria+y+Construccion+Carrera+2+10-19+Ibague+Tolima+Colombia"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-8 inline-flex items-center justify-center px-6 py-3 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md text-white font-semibold transition-all duration-200 ease-out hover:bg-white/15 hover:border-blue-500/45 hover:shadow-[0_0_18px_rgba(59,130,246,0.18)]"
@@ -1555,7 +1521,7 @@ class LandingPage extends Component {
                         >
                           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                           <Marker position={[4.4389, -75.2322]}>
-                            <Popup>MotoExpert - Detailing & Car Care (Ibagué)</Popup>
+                            <Popup>SENA - Centro de Industria y Construcción (Ibagué)</Popup>
                           </Marker>
                         </MapContainer>
                       </div>
