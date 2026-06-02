@@ -18,7 +18,7 @@ import OnboardingModal from './components/OnboardingModal';
 import GoogleSignInModal from './components/GoogleSignInModal';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
-import NotificationBell from './components/NotificationBell';
+
 import ResenasPage from './pages/ResenasPage';
 import ActivityLogPage from './pages/ActivityLogPage';
 import PaymentStep from './components/PaymentStep';
@@ -378,9 +378,7 @@ function App() {
         <div className="min-h-screen bg-white dark:bg-[#020617] text-slate-900 dark:text-[#F8FAFC]">
           <InactivityHandler onLogout={handleLogout} />
 
-          <div className="fixed top-4 right-4 md:right-80 z-40">
-            <NotificationBell />
-          </div>
+
 
           <Navbar 
             setView={setView} 

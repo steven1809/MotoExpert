@@ -28,9 +28,8 @@ export type ServiceTrackingNotificationPayload = {
 };
 
 @WebSocketGateway({
-  cors: {
-    origin: '*',
-  },
+  namespace: '/service-tracking',
+  cors: { origin: '*' },
 })
 export class ServiceStagesGateway
   implements OnGatewayConnection, OnGatewayDisconnect
@@ -122,10 +121,17 @@ export class ServiceStagesGateway
     client.emit('joined-appointment', { appointmentId });
   }
 
+
   emitStageUpdated(citaId: number, clienteUserId: number, stage: ServiceStage) {
     const payload = { citaId, stage };
-    this.server.to(`user:${clienteUserId}`).emit('service_stage_updated', payload);
-    this.server.to('role:empleado').emit('service_stage_updated', payload);
+
+    this.server
+      .to(`appointment-${citaId}`)
+      .emit('service_stage_updated', payload);
+
+    this.server
+      .to(`user:${clienteUserId}`)
+      .emit('service_stage_updated', payload);
   }
 
   emitServiceUpdated(appointmentId: number, payload: any) {

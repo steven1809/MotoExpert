@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsNotEmpty, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateCitaDto {
@@ -37,6 +37,10 @@ export class CreateCitaDto {
   @IsOptional()
   @IsString()
   metodoPago?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  esGuest?: boolean; 
 
   @IsOptional()
   guestData?: {
