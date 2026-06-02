@@ -535,16 +535,7 @@ function App() {
               </>
             )}
 
-            {userRole === 'admin' && view !== 'users' && (
-              <div className="fixed bottom-8 right-8">
-                <button 
-                  onClick={() => setView("users")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 font-bold"
-                >
-                  👥 Administrar Usuarios
-                </button>
-              </div>
-            )}
+
           </main>
         </div>
       )}
