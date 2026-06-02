@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Car, Star, Shield, Bell, ChevronRight } from 'lucide-react';
 import api from '../services/api';
+import AdminHome from './AdminHome';
+import EmpleadoHome from './EmpleadoHome';
 
 const Home = () => {
   const [userProfile, setUserProfile] = useState(null);
@@ -28,6 +30,12 @@ const Home = () => {
     fetchData();
   }, []);
 
+  // Despachar vista según rol
+  const role = (userProfile?.role || '').toLowerCase();
+  if (role === 'admin') return <AdminHome />;
+  if (role === 'empleado' || role === 'trabajador') return <EmpleadoHome />;
+  
+  // Vista de Usuario (Default)
   const firstName = userProfile?.nombre?.split(' ')[0] || 'Usuario';
 
   if (loading) {
