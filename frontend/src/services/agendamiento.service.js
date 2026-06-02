@@ -31,6 +31,7 @@ import { API_BASE_URL as API_BASE } from '../apiConfig';
     hora_inicio: data.hora,
     servicioId:  Number(data.servicioId),
     empleadoId:  data.empleadoId ? Number(data.empleadoId) : undefined,
+    metodoPago:  data.metodoPago,
 
     guestData: {
       nombre:   `${data.nombre} ${data.apellido}`.trim(),

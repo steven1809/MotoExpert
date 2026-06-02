@@ -332,17 +332,7 @@ export class CitasService {
     userRole?: string,
     userId?: number,
   ) {
-    if (nuevoEstado === 'FINALIZADO' && userRole !== 'admin') {
-      const payment = await this.paymentRepo.findOneBy({ appointmentId: id });
-      if (!payment) {
-        throw new ForbiddenException('La cita no tiene pago registrado');
-      }
-      if (!payment.tokenUsed) {
-        throw new ForbiddenException(
-          'Debes validar el token del cliente antes de finalizar',
-        );
-      }
-    }
+    // Removed payment validation since we now use delivery code validation via verificar-entrega endpoint
 
     const cita = await this.repo.findOne({ 
       where: { id },
