@@ -12,7 +12,7 @@ const FaceAuthModal = ({ userId, mode, onSuccess, onError, onClose }) => {
   const [stream, setStream]           = useState(null);
   const [hint, setHint]               = useState(null);
   const [steps, setSteps]             = useState([
-    { id: 1, label: 'Modelos IA',    status: 'wait' },
+    { id: 1, label: 'Modelos IA',     status: 'wait' },
     { id: 2, label: 'Detección Rostro', status: 'wait' },
     { id: 3, label: mode === 'enroll' ? 'Registro' : 'Verificación', status: 'wait' }
   ]);
@@ -109,7 +109,7 @@ const FaceAuthModal = ({ userId, mode, onSuccess, onError, onClose }) => {
       }
       if (stream) stream.getTracks().forEach(t => t.stop());
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Limpiar stream cuando cambia
@@ -136,7 +136,7 @@ const FaceAuthModal = ({ userId, mode, onSuccess, onError, onClose }) => {
       }
     };
     load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Helpers ─────────────────────────────────────────────
@@ -202,7 +202,6 @@ const FaceAuthModal = ({ userId, mode, onSuccess, onError, onClose }) => {
     let processing    = false; // evitar doble procesamiento
 
     intervalRef.current = setInterval(async () => {
-      // Guard principal: si ya no estamos montados, limpiar todo
       if (!activeRef.current || !videoRef.current || !canvasRef.current) {
         stopInterval();
         return;
@@ -214,7 +213,6 @@ const FaceAuthModal = ({ userId, mode, onSuccess, onError, onClose }) => {
         .withFaceLandmarks(true)
         .withFaceDescriptor();
 
-      // Guard post-await: puede haber pasado tiempo
       if (!activeRef.current || !videoRef.current || !canvasRef.current) {
         stopInterval();
         return;
@@ -223,7 +221,6 @@ const FaceAuthModal = ({ userId, mode, onSuccess, onError, onClose }) => {
       const ctx = canvasRef.current.getContext('2d');
       ctx.clearRect(0, 0, displaySize.width, displaySize.height);
 
-      // Sin rostro
       if (!detection) {
         noFaceFrames++;
         if (noFaceFrames > 5) showHint('Centra tu rostro dentro del círculo', 'warn');
@@ -238,13 +235,11 @@ const FaceAuthModal = ({ userId, mode, onSuccess, onError, onClose }) => {
       ctx.lineWidth   = 2;
       ctx.strokeRect(box.x, box.y, box.width, box.height);
 
-      // Checks de calidad
       const ratio = (box.width * box.height) / (displaySize.width * displaySize.height);
       if (ratio < 0.06) { showHint('Acércate más a la cámara', 'warn');          return; }
       if (ratio > 0.55) { showHint('Aléjate un poco de la cámara', 'warn');      return; }
       if (isFaceTooSideways(resized.landmarks)) { showHint('Mira de frente a la cámara', 'warn'); return; }
 
-      // Brillo (dibuja video → lee píxeles → redibuja box)
       ctx.drawImage(videoRef.current, 0, 0, displaySize.width, displaySize.height);
       const brightness = measureBrightness(box);
       ctx.clearRect(0, 0, displaySize.width, displaySize.height);
@@ -257,7 +252,6 @@ const FaceAuthModal = ({ userId, mode, onSuccess, onError, onClose }) => {
 
       clearHint();
 
-      // Capturar solo una vez
       setStatus(curr => {
         if (curr === 'camara' && !processing) {
           processing = true;
@@ -268,10 +262,10 @@ const FaceAuthModal = ({ userId, mode, onSuccess, onError, onClose }) => {
         return curr;
       });
     }, 200);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Procesar descriptor ─────────────────────────────────
+  // ── Procesar descriptor Corregido ────────────────────────
   const processFace = (descriptor) => {
     updateStep(2, 'done');
     updateStep(3, 'active');
@@ -286,22 +280,60 @@ const FaceAuthModal = ({ userId, mode, onSuccess, onError, onClose }) => {
         onSuccess('enroll');
       } else {
         const savedJSON = localStorage.getItem(`faceDescriptor_${userId}`);
-        if (!savedJSON) { onError('No tienes un rostro registrado'); onClose(); return; }
+        if (!savedJSON) { 
+          onError('No tienes un rostro registrado en este dispositivo.'); 
+          onClose(); 
+          return; 
+        }
 
-        const savedDescriptor = new Float32Array(JSON.parse(savedJSON));
-        const distance = faceapi.euclideanDistance(descriptor, savedDescriptor);
+        try {
+          const parsedData = JSON.parse(savedJSON);
+          
+          // Barrera 1: Validar que los datos del Local Storage sean un arreglo real
+          if (!Array.isArray(parsedData)) {
+            showHint('Formato biométrico corrupto o inválido.', 'err');
+            setTimeout(() => {
+              onError('Formato biométrico incompatible. Por favor ingresa con contraseña.');
+              onClose();
+            }, 2000);
+            return;
+          }
 
-        if (distance < 0.5) {
-          clearHint();
-          setStatus('resultado');
-          updateStep(3, 'done');
-          onSuccess('verify');
-        } else {
-          showHint('Rostro no reconocido, intenta de nuevo', 'err');
-          setStatus('camara');
-          updateStep(3, 'wait');
-          updateStep(2, 'active');
-          setTimeout(() => { if (activeRef.current) detectFace(); }, 1000);
+          const savedDescriptor = new Float32Array(parsedData);
+
+          // Barrera 2: Comprobar que el tamaño de los vectores coincida exactamente (Antichoque)
+          if (descriptor.length !== savedDescriptor.length) {
+            showHint('Conflicto de tamaño en el descriptor facial.', 'err');
+            setTimeout(() => {
+              onError('Los sensores no coinciden con el registro local. Inicia sesión con contraseña.');
+              onClose();
+            }, 2000);
+            return;
+          }
+
+          // Ejecución protegida del cálculo de distancia euclidiana
+          const distance = faceapi.euclideanDistance(descriptor, savedDescriptor);
+
+          if (distance < 0.5) {
+            clearHint();
+            setStatus('resultado');
+            updateStep(3, 'done');
+            onSuccess('verify');
+          } else {
+            showHint('Rostro no reconocido, intenta de nuevo', 'err');
+            setStatus('camara');
+            updateStep(3, 'wait');
+            updateStep(2, 'active');
+            setTimeout(() => { if (activeRef.current) detectFace(); }, 1000);
+          }
+
+        } catch (error) {
+          console.error("Error al procesar la distancia euclidiana:", error);
+          showHint('Error crítico de lectura biométrica', 'err');
+          setTimeout(() => {
+            onError('No se pudo validar el rostro. Usa tu contraseña de acceso.');
+            onClose();
+          }, 2000);
         }
       }
     }, 1500);
