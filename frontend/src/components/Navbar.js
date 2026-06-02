@@ -68,10 +68,9 @@ class Navbar extends Component {
         { key: "users", label: "Gestion de Usuarios", view: "users", icon: "users" },
         { key: "empleados", label: "Gestion de Empleados", view: "admin_empleados", icon: "tool" },
         { key: "citas_admin", label: "Gestion de Citas", view: "admin_citas", icon: "clock" },
-        { key: "resenas_admin", label: "Gestión de Reseñas", view: "resenas", icon: "star" },
+        { key: "resenas_admin", label: "Gestión de Reseñas", view: "resenas_admin", icon: "star" },
         { key: "actividad", label: "Logs de Actividad", view: "admin_actividad", icon: "history" },
         { key: "estadisticas", label: "Estadísticas", view: "admin_estadisticas", icon: "chart" },
-        { key: "cuenta", label: "Mi Cuenta", view: "cuenta", icon: "shield" },
       ];
     }
 
@@ -243,12 +242,12 @@ class Navbar extends Component {
 
     return (
       <>
-        {/* Sidebar for Admin/Employee */}
+        {/* Top Header for Admin/Employee */}
         {!isStandardUser && (
-          <>
+          <header className="fixed top-0 left-0 right-0 h-16 z-[70] bg-[#050507]/95 backdrop-blur-lg border-b border-white/[0.05] flex items-center justify-between px-4">
             <button
               onClick={this.toggleSidebar}
-              className="fixed top-4 left-4 z-[70] p-2 bg-[#022873] text-white rounded-lg shadow-lg hover:bg-[#0468BF] transition-colors"
+              className="p-2 bg-[#022873] text-white rounded-lg hover:bg-[#0468BF] transition-colors"
               aria-label="Toggle menu"
               type="button"
             >
@@ -263,6 +262,126 @@ class Navbar extends Component {
               )}
             </button>
 
+            <button onClick={() => setView("dashboard")} className="group text-center">
+              <div className="text-white font-black text-xl tracking-tighter transition-colors group-hover:text-[#7b9cff]">
+                MOTO<span className="text-[#7b9cff]">EXPERT</span>
+              </div>
+            </button>
+
+            {/* Profile Button */}
+            <div className="relative" ref={this.dropdownRef}>
+              <button
+                onClick={this.toggleDropdown}
+                className="flex items-center gap-3 px-3 py-2 rounded-xl border border-white/[0.05] hover:bg-white/[0.02] transition-all"
+              >
+                <div className="w-9 h-9 rounded-full bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center text-[#7b9cff] font-mono text-sm overflow-hidden">
+                  {userPicture ? (
+                    <img src={userPicture} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    initial
+                  )}
+                </div>
+                <span className="text-white font-medium text-sm hidden sm:block">{userName}</span>
+                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Dropdown Menu */}
+              {this.state.dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-72 bg-[#050507] border border-white/[0.05] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden z-[80] animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* Dropdown Header */}
+                  <div className="p-4 border-b border-white/[0.05]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center text-[#7b9cff] font-mono text-lg overflow-hidden">
+                        {userPicture ? (
+                          <img src={userPicture} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          initial
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-white font-bold text-base truncate">{userName}</div>
+                        <div className="text-slate-500 text-[10px] font-mono uppercase tracking-[0.15em]">{userRank}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-2 space-y-1">
+                    {/* Mi Cuenta */}
+                    <button
+                      onClick={() => {
+                        setView("cuenta");
+                        this.setState({ dropdownOpen: false });
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/[0.03] transition-all"
+                    >
+                      <span className="text-slate-400 group-hover:text-[#7b9cff]">
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                      </span>
+                      <span className="text-slate-300 font-medium text-sm">Mi Cuenta</span>
+                    </button>
+
+                    <div className="h-[1px] bg-white/[0.05] mx-2 my-1" />
+
+                    {/* Toggle Tema */}
+                    <ThemeContext.Consumer>
+                      {({ isDark, toggleTheme }) => (
+                        <button
+                          onClick={() => {
+                            toggleTheme();
+                          }}
+                          className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl hover:bg-white/[0.03] transition-all"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-slate-400">
+                              {isDark ? (
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                                </svg>
+                              ) : (
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                                </svg>
+                              )}
+                            </span>
+                            <span className="text-slate-300 font-medium text-sm">
+                              {isDark ? 'Modo Claro' : 'Modo Oscuro'}
+                            </span>
+                          </div>
+                          <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${isDark ? 'bg-[#7b9cff]/20' : 'bg-slate-700'}`}>
+                            <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all duration-300 ${isDark ? 'right-0.5 bg-[#7b9cff]' : 'left-0.5 bg-slate-400'}`} />
+                          </div>
+                        </button>
+                      )}
+                    </ThemeContext.Consumer>
+
+                    <div className="h-[1px] bg-white/[0.05] mx-2 my-1" />
+
+                    {/* Cerrar Sesión */}
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#ff4d4d]/10 transition-all text-[#ff4d4d]"
+                    >
+                      <span>
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                        </svg>
+                      </span>
+                      <span className="font-medium text-sm">Cerrar Sesión</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </header>
+        )}
+
+        {/* Sidebar for Admin/Employee */}
+        {!isStandardUser && (
+          <>
             {sidebarOpen && (
               <div
                 className="fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm"
@@ -271,84 +390,25 @@ class Navbar extends Component {
             )}
 
             <aside
-              className={`fixed top-0 left-0 h-full w-72 z-[60] transform transition-transform duration-300 ease-in-out ${
+              className={`fixed top-16 left-0 h-[calc(100%-4rem)] w-72 z-[60] transform transition-transform duration-300 ease-in-out ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-              } bg-[#050507] border-r border-white/[0.05] flex flex-col`}
+              } bg-[#050507] border-r border-white/[0.05] flex flex-col md:top-0 md:h-full`}
             >
-            <div className="px-8 pt-8 pb-6 flex-shrink-0">
-              <button onClick={() => setView("dashboard")} className="group text-left w-full">
-                <div className="text-white font-black text-2xl tracking-tighter transition-colors group-hover:text-[#7b9cff]">
-                  MOTO<span className="text-[#7b9cff]">EXPERT</span>
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="h-[1px] w-4 bg-[#7b9cff]/50" />
-                  <div className="text-slate-500 text-[9px] font-mono tracking-[0.2em] uppercase">Panel de Control</div>
-                </div>
-              </button>
-            </div>
-
-            <nav className="px-4 py-6 space-y-1 flex-1">
-              {items.map(item => this.renderNavItem(item))}
-            </nav>
-
-            <div className="px-6 py-8 space-y-6 flex-shrink-0 border-t border-white/[0.05] bg-black/20">
-              {/* Theme Toggle Button */}
-              <ThemeContext.Consumer>
-                {({ isDark, toggleTheme }) => (
-                  <button
-                    onClick={toggleTheme}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-white/[0.05] hover:bg-white/[0.02] transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-slate-400">
-                        {isDark ? (
-                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                          </svg>
-                        )}
-                      </span>
-                      <span className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-400">
-                        {isDark ? 'Modo Claro' : 'Modo Oscuro'}
-                      </span>
-                    </div>
-                    <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${isDark ? 'bg-[#7b9cff]/20' : 'bg-slate-700'}`}>
-                      <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all duration-300 ${isDark ? 'right-0.5 bg-[#7b9cff]' : 'left-0.5 bg-slate-400'}`} />
-                    </div>
-                  </button>
-                )}
-              </ThemeContext.Consumer>
-
-              <button
-                  onClick={() => setView("cuenta")}
-                  className="flex items-center gap-3 group w-full px-4 py-3 rounded-xl border border-white/[0.05] hover:bg-white/[0.02] transition-all"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center text-[#7b9cff] font-mono text-sm transition-all group-hover:bg-[#7b9cff]/20 overflow-hidden">
-                    {userPicture ? (
-                      <img src={userPicture} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      initial
-                    )}
+              <div className="px-8 pt-8 pb-6 flex-shrink-0 hidden md:block">
+                <button onClick={() => setView("dashboard")} className="group text-left w-full">
+                  <div className="text-white font-black text-2xl tracking-tighter transition-colors group-hover:text-[#7b9cff]">
+                    MOTO<span className="text-[#7b9cff]">EXPERT</span>
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-400">Mi Cuenta</div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="h-[1px] w-4 bg-[#7b9cff]/50" />
+                    <div className="text-slate-500 text-[9px] font-mono tracking-[0.2em] uppercase">Panel de Control</div>
                   </div>
                 </button>
+              </div>
 
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-[#ff4d4d]/10 border border-[#ff4d4d]/20 text-[#ff4d4d] font-mono text-xs uppercase tracking-[0.2em] hover:bg-[#ff4d4d]/20 transition-all"
-                  title="Salir"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-                  </svg>
-                  <span>Cerrar Sesión</span>
-                </button>
-            </div>
+              <nav className="px-4 py-6 space-y-1 flex-1">
+                {items.map(item => this.renderNavItem(item))}
+              </nav>
             </aside>
           </>
         )}
@@ -358,7 +418,7 @@ class Navbar extends Component {
           <header className={`hidden md:flex fixed top-0 left-0 right-0 h-20 z-[60] items-center justify-between px-10 transition-all duration-300 ${
             this.state.scrolled
               ? 'bg-[#022873] shadow-lg shadow-black/20 backdrop-blur-sm border-b border-white/10'
-              : 'bg-[#022873]/80 backdrop-blur-sm border-b border-white/10'  /* ← MODIFICADO */
+              : 'bg-transparent border-b border-transparent'
           }`}>
             <button onClick={() => setView("dashboard")} className="group text-left">
                 <img 
@@ -402,6 +462,7 @@ class Navbar extends Component {
                           <button
                             onClick={() => {
                               toggleTheme();
+                              // No cerramos el dropdown al cambiar tema para mejor UX
                             }}
                             className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl hover:bg-white/[0.03] transition-colors group"
                           >
@@ -465,29 +526,27 @@ class Navbar extends Component {
           </header>
         )}
 
-        {/* Mobile Header */}
-        <header className={`md:hidden fixed top-0 left-0 right-0 z-[60] transition-all duration-300 ${
-          isStandardUser
-            ? (this.state.scrolled
-                ? 'bg-[#022873] shadow-lg shadow-black/20 backdrop-blur-sm border-b border-white/10'
-                : 'bg-[#022873]/80 backdrop-blur-sm border-b border-white/10')  /* ← MODIFICADO */
-            : 'bg-[#050507]/90 backdrop-blur-lg border-b border-white/[0.05]'
-        }`}>
-          <div className="h-18 px-5 flex items-center justify-between py-4">
-            <button onClick={() => setView("dashboard")} className="text-left flex items-center gap-3">
-              <img 
-                src="/logoMotoExpert.png" 
-                alt="Logo" 
-                className="h-10 w-auto transition-opacity group-hover:opacity-70"
-              />
-              <div className="text-white font-black text-xl tracking-tighter">
-                MOTO<span className="text-[#7b9cff]">EXPERT</span>
-              </div>
-            </button>
-            {isStandardUser && (
+        {/* Mobile Header for Standard User */}
+        {isStandardUser && (
+          <header className={`md:hidden fixed top-0 left-0 right-0 z-[60] transition-all duration-300 ${
+            this.state.scrolled
+              ? 'bg-[#022873] shadow-lg shadow-black/20 backdrop-blur-sm border-b border-white/10'
+              : 'bg-transparent border-b border-transparent'
+          }`}>
+            <div className="h-16 px-4 flex items-center justify-between">
+              <button onClick={() => setView("dashboard")} className="text-left flex items-center gap-2">
+                <img 
+                  src="/logoMotoExpert.png" 
+                  alt="Logo" 
+                  className="h-8 w-auto"
+                />
+                <span className="text-white font-bold text-lg">
+                  MOTO<span className="text-[#7b9cff]">EXPERT</span>
+                </span>
+              </button>
               <button
                 onClick={this.toggleMenu}
-                className={`w-12 h-12 rounded-2xl border transition-all duration-300 flex items-center justify-center ${
+                className={`w-11 h-11 rounded-2xl border transition-all duration-300 flex items-center justify-center ${
                   open ? "bg-[#7b9cff] border-[#7b9cff] text-white shadow-[0_0_15px_rgba(123,156,255,0.4)]" : "bg-white/[0.02] border-white/[0.05] text-white"
                 }`}
                 type="button"
@@ -496,35 +555,35 @@ class Navbar extends Component {
                   <path d={open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
                 </svg>
               </button>
-            )}
-          </div>
-        </header>
+            </div>
+          </header>
+        )}
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu for Standard User */}
         {isStandardUser && open && (
           <div className="fixed inset-0 z-[100] md:hidden overflow-hidden">
             <div className="absolute inset-0 bg-[#050507]/95 backdrop-blur-sm" onClick={this.toggleMenu} />
             <div className="absolute top-0 right-0 w-[85%] max-w-sm h-full bg-[#050507] border-l border-white/[0.05] flex flex-col animate-in slide-in-from-right duration-300">
-              <div className="px-8 pt-10 pb-8 border-b border-white/[0.05]">
-                <div className="text-white font-black text-2xl tracking-tighter">
+              <div className="px-6 pt-8 pb-6 border-b border-white/[0.05]">
+                <div className="text-white font-black text-xl tracking-tighter">
                   MOTO<span className="text-[#7b9cff]">EXPERT</span>
                 </div>
                 <div className="text-slate-500 text-[10px] font-mono tracking-[0.2em] uppercase mt-1">Acceso Móvil</div>
               </div>
               
-              <nav className="px-4 py-8 flex-1 space-y-2 overflow-y-auto">
+              <nav className="px-4 py-6 flex-1 space-y-2 overflow-y-auto">
                 {items.map(item => this.renderNavItem(item))}
               </nav>
 
-              <div className="p-8 space-y-6 border-t border-white/[0.05] bg-white/[0.01]">
+              <div className="p-6 space-y-4 border-t border-white/[0.05] bg-white/[0.01]">
                   <button
                     onClick={() => {
                       setView("cuenta");
                       this.toggleMenu();
                     }}
-                    className="flex items-center gap-4 group w-full"
+                    className="flex items-center gap-3 group w-full"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center text-[#7b9cff] font-mono text-lg overflow-hidden">
+                    <div className="w-11 h-11 rounded-2xl bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center text-[#7b9cff] font-mono text-base overflow-hidden">
                       {userPicture ? (
                         <img src={userPicture} alt="Profile" className="w-full h-full object-cover" />
                       ) : (
@@ -532,7 +591,7 @@ class Navbar extends Component {
                       )}
                     </div>
                     <div className="text-left">
-                      <div className="text-white font-bold text-base group-hover:text-[#7b9cff] transition-colors">{userName}</div>
+                      <div className="text-white font-bold text-sm group-hover:text-[#7b9cff] transition-colors">{userName}</div>
                       <div className="text-slate-500 text-[10px] font-mono uppercase tracking-[0.15em]">{userRank}</div>
                     </div>
                   </button>
@@ -542,7 +601,7 @@ class Navbar extends Component {
                     handleLogout();
                     this.toggleMenu();
                   }}
-                  className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-[#ff4d4d]/10 border border-[#ff4d4d]/20 text-[#ff4d4d] font-mono text-xs uppercase tracking-[0.2em] hover:bg-[#ff4d4d]/20 transition-all"
+                  className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-[#ff4d4d]/10 border border-[#ff4d4d]/20 text-[#ff4d4d] font-mono text-xs uppercase tracking-[0.2em] hover:bg-[#ff4d4d]/20 transition-all"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />

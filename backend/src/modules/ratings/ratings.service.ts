@@ -59,6 +59,7 @@ export class RatingsService {
       specialistRating,
       serviceRating,
       comment: comment || null,
+      status: 'VISIBLE'
     });
 
     const savedRating = await this.repo.save(rating);
@@ -78,6 +79,21 @@ export class RatingsService {
     return savedRating;
   }
 
+  async findAll() {
+    return this.repo.find({
+      where: { status: 'VISIBLE' },
+      order: { createdAt: 'DESC' },
+      relations: ['usuario', 'cita', 'cita.servicio', 'cita.vehiculo', 'empleado'],
+    });
+  }
+
+  async findAllForAdmin() {
+    return this.repo.find({
+      order: { createdAt: 'DESC' },
+      relations: ['usuario', 'cita', 'cita.servicio', 'cita.vehiculo', 'empleado'],
+    });
+  }
+
   async findByCita(citaId: number) {
     return this.repo.findOne({ where: { cita: { id: citaId } } });
   }
@@ -90,7 +106,7 @@ export class RatingsService {
     if (!empleado) return [];
 
     return this.repo.find({
-      where: { empleado: { id: empleadoId } },
+      where: { empleado: { id: empleadoId }, status: 'VISIBLE' },
       order: { createdAt: 'DESC' },
     });
   }
@@ -109,11 +125,22 @@ export class RatingsService {
     };
   }
 
-  async findAll() {
-    return this.repo.find({
-      order: { createdAt: 'DESC' },
-      relations: ['usuario', 'cita', 'cita.servicio', 'cita.vehiculo', 'empleado'],
-    });
+  async hideRating(id: number) {
+    const rating = await this.repo.findOne({ where: { id } });
+    if (!rating) {
+      throw new NotFoundException('Calificación no encontrada');
+    }
+    rating.status = 'HIDDEN';
+    return this.repo.save(rating);
+  }
+
+  async showRating(id: number) {
+    const rating = await this.repo.findOne({ where: { id } });
+    if (!rating) {
+      throw new NotFoundException('Calificación no encontrada');
+    }
+    rating.status = 'VISIBLE';
+    return this.repo.save(rating);
   }
 
   async remove(id: number) {

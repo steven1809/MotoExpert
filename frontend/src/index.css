@@ -7,7 +7,24 @@
 @layer base {
   html {
     scroll-behavior: smooth !important;
-    scroll-padding-top: 80px; 
+    scroll-padding-top: 80px;
+    /* Hide scrollbars */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  html::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Hide scrollbars for all scrollable elements */
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  *::-webkit-scrollbar {
+    display: none;
   }
 
   body {

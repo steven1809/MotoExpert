@@ -20,6 +20,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 
 import ResenasPage from './pages/ResenasPage';
+import AdminResenasModeracion from './pages/AdminResenasModeracion';
 import ActivityLogPage from './pages/ActivityLogPage';
 import PaymentStep from './components/PaymentStep';
 import PaymentConfirmation from './components/PaymentConfirmation';
@@ -400,7 +401,7 @@ function App() {
             />
           ))}
 
-          <main className="w-full min-h-screen pt-16">
+          <main className="w-full min-h-screen pt-16 md:pt-16">
             {routePath.startsWith('/employee/service-tracking/') && (
               (userRole === 'empleado' || userRole === 'trabajador') ? (
                 <ServiceTracking
@@ -514,7 +515,8 @@ function App() {
                 {view === "admin_empleados" && <UsersList setView={setView} activeTab="empleados" />}
                 {view === "admin_citas" && <UsersList setView={setView} activeTab="citas" />}
                 {view === "admin_actividad" && <ActivityLogPage />}
-                {view === "admin_estadisticas" && <AdminEstadisticas setView={setView} showToast={showToast} />}
+          {view === "admin_estadisticas" && <AdminEstadisticas setView={setView} showToast={showToast} />}
+          {view === "resenas_admin" && <AdminResenasModeracion showToast={showToast} />}
                 {view === "vehiculos" && <Vehiculos setView={setView} showToast={showToast} />}
                 {view === "citas" && (
                   <Citas

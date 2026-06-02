@@ -524,7 +524,7 @@ const UsersList = (props) => {
   const getTitle = () => {
     switch(activeTab) {
       case 'usuarios': return 'Gestión de Usuarios';
-      case 'empleados': return 'Nómina de Empleados';
+      case 'empleados': return 'Gestión de Empleados';
       case 'citas': return 'Control de Citas Globales';
       default: return 'Administración MotoExpert';
     }

@@ -66,7 +66,7 @@ const ResenasPage = () => {
     const fetchReviews = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/ratings`);
+        const response = await fetch(`${API_BASE_URL}/ratings/public`);
         if (response.ok) {
           const data = await response.json();
           setReviews(data);
@@ -91,7 +91,7 @@ const ResenasPage = () => {
     const fetchPending = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/citas`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (response.ok) {
           const resData = await response.json();
@@ -247,7 +247,7 @@ const ResenasPage = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/ratings/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.ok) {
@@ -367,510 +367,509 @@ const ResenasPage = () => {
 
         <div className="max-w-6xl mx-auto space-y-10">
 
-        {error && (
-          <div className="p-6 bg-red-900/10 border border-red-500/20 rounded-3xl text-red-400">
-            {error}
-          </div>
-        )}
+          {error && (
+            <div className="p-6 bg-red-900/10 border border-red-500/20 rounded-3xl text-red-400">
+              {error}
+            </div>
+          )}
 
-        {/* Summary Header */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8">
-          {/* Large Score */}
-          <div className="flex flex-col items-center justify-center space-y-3">
-            <div className="text-6xl font-black text-[#7b9cff]">
-              {averageScore.toFixed(1)}
-            </div>
-            <div className="text-sm text-slate-500 dark:text-[#94A3B8]">/ 5</div>
-            <StarRating rating={Math.round(averageScore)} size="md" />
-            <div className="text-slate-500 dark:text-[#94A3B8] text-sm mt-2">
-              {totalReviews} {totalReviews === 1 ? 'reseña' : 'reseñas'}
-            </div>
-          </div>
-
-          {/* Distribution */}
-          <div className="space-y-4">
-            <div className="text-sm font-medium text-slate-900 dark:text-[#F8FAFC]">
-              Distribución de Estrellas
-            </div>
-            {starDistribution.map(({ star, count }) => {
-              const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
-              return (
-                <div key={star} className="flex items-center gap-3">
-                  <div className="w-8 text-right text-sm text-slate-600 dark:text-[#94A3B8]">
-                    {star}★
-                  </div>
-                  <div className="flex-1 h-2 bg-[#111827] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#7b9cff] rounded-full transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    ></div>
-                  </div>
-                  <div className="w-12 text-sm text-slate-600 dark:text-[#94A3B8]">
-                    {count} ({percentage.toFixed(0)}%)
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Trend & Recommendation */}
-          <div className="space-y-4">
-            <div className="text-sm font-medium text-slate-900 dark:text-[#F8FAFC]">
-              Resumen
-            </div>
-            <div className="flex items-center gap-3">
-              <svg
-                className={`w-5 h-5 ${trend > 0 ? 'text-[#1D9E75]' : 'text-[#E24B4A]'}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d={trend > 0 ? "M5 10l7-7m0 0l7 7m-7-7v18" : "M19 14l-7 7m0 0l-7-7m7 7V3"}
-                ></path>
-              </svg>
-              <span className={`font-bold ${trend > 0 ? 'text-[#1D9E75]' : 'text-[#E24B4A]'}`}>
-                {trend > 0 ? '+' : ''}{trend} vs mes anterior
-              </span>
-            </div>
-            <div className="pt-4 border-t border-white/[0.05]">
-              <div className="text-3xl font-black text-[#1D9E75]">
-                {recommendationPercent}%
+          {/* Summary Header */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8">
+            {/* Large Score */}
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div className="text-6xl font-black text-[#7b9cff]">
+                {averageScore.toFixed(1)}
               </div>
-              <div className="text-sm text-slate-500 dark:text-[#94A3B8]">
-                de clientes recomiendan
+              <div className="text-sm text-slate-500 dark:text-[#94A3B8]">/ 5</div>
+              <StarRating rating={Math.round(averageScore)} size="md" />
+              <div className="text-slate-500 dark:text-[#94A3B8] text-sm mt-2">
+                {totalReviews} {totalReviews === 1 ? 'reseña' : 'reseñas'}
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Top Especialistas */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter">
-            Top Especialistas
-          </h2>
-
-          {loadingEmployees ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-slate-900/50 border border-white/[0.05] rounded-3xl p-6 animate-pulse">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="w-8 h-8 rounded-full bg-slate-800"></div>
-                  </div>
-                  <div className="flex flex-col items-center pt-6 space-y-3">
-                    <div className="w-16 h-16 rounded-full bg-slate-800"></div>
-                    <div className="w-32 h-5 bg-slate-800 rounded"></div>
-                    <div className="w-24 h-3 bg-slate-800 rounded"></div>
-                    <div className="w-20 h-3 bg-slate-800 rounded"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : employeesError ? (
-            <div className="p-6 bg-red-900/10 border border-red-500/20 rounded-3xl text-red-400 text-center">
-              {employeesError}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {specialistStats.map((sp, index) => {
-                const rank = index + 1;
-                const rankColor = rank === 1 ? '#F59E0B' : rank === 2 ? '#94A3B8' : '#B45309';
-                const isTop1 = rank === 1;
-
+            {/* Distribution */}
+            <div className="space-y-4">
+              <div className="text-sm font-medium text-slate-900 dark:text-[#F8FAFC]">
+                Distribución de Estrellas
+              </div>
+              {starDistribution.map(({ star, count }) => {
+                const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
                 return (
-                  <div
-                    key={sp.id}
-                    className={`relative bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-6 transition-all ${
-                      isTop1
-                        ? 'scale-105 border-[#7b9cff]/30 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
-                        : 'hover:border-[#7b9cff]/30 hover:shadow-[0_0_12px_rgba(59,130,246,0.25)]'
+                  <div key={star} className="flex items-center gap-3">
+                    <div className="w-8 text-right text-sm text-slate-600 dark:text-[#94A3B8]">
+                      {star}★
+                    </div>
+                    <div className="flex-1 h-2 bg-[#111827] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#7b9cff] rounded-full transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="w-12 text-sm text-slate-600 dark:text-[#94A3B8]">
+                      {count} ({percentage.toFixed(0)}%)
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Trend & Recommendation */}
+            <div className="space-y-4">
+              <div className="text-sm font-medium text-slate-900 dark:text-[#F8FAFC]">
+                Resumen
+              </div>
+              <div className="flex items-center gap-3">
+                <svg
+                  className={`w-5 h-5 ${trend > 0 ? 'text-[#1D9E75]' : 'text-[#E24B4A]'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d={trend > 0 ? "M5 10l7-7m0 0l7 7m-7-7v18" : "M19 14l-7 7m0 0l-7-7m7 7V3"}
+                  ></path>
+                </svg>
+                <span className={`font-bold ${trend > 0 ? 'text-[#1D9E75]' : 'text-[#E24B4A]'}`}>
+                  {trend > 0 ? '+' : ''}{trend} vs mes anterior
+                </span>
+              </div>
+              <div className="pt-4 border-t border-white/[0.05]">
+                <div className="text-3xl font-black text-[#1D9E75]">
+                  {recommendationPercent}%
+                </div>
+                <div className="text-sm text-slate-500 dark:text-[#94A3B8]">
+                  de clientes recomiendan
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Top Especialistas */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter">
+              Top Especialistas
+            </h2>
+
+            {loadingEmployees ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-slate-900/50 border border-white/[0.05] rounded-3xl p-6 animate-pulse">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="w-8 h-8 rounded-full bg-slate-800"></div>
+                    </div>
+                    <div className="flex flex-col items-center pt-6 space-y-3">
+                      <div className="w-16 h-16 rounded-full bg-slate-800"></div>
+                      <div className="w-32 h-5 bg-slate-800 rounded"></div>
+                      <div className="w-24 h-3 bg-slate-800 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : employeesError ? (
+              <div className="p-6 bg-red-900/10 border border-red-500/20 rounded-3xl text-red-400 text-center">
+                {employeesError}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {specialistStats.map((sp, index) => {
+                  const rank = index + 1;
+                  const rankColor = rank === 1 ? '#F59E0B' : rank === 2 ? '#94A3B8' : '#B45309';
+                  const isTop1 = rank === 1;
+
+                  return (
+                    <div
+                      key={sp.id}
+                      className={`relative bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-6 transition-all ${
+                        isTop1
+                          ? 'scale-105 border-[#7b9cff]/30 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
+                          : 'hover:border-[#7b9cff]/30 hover:shadow-[0_0_12px_rgba(59,130,246,0.25)]'
+                      }`}
+                    >
+                      {/* Rank Badge */}
+                      <div
+                        className="absolute top-4 left-4 w-8 h-8 rounded-full flex items-center justify-center font-black text-white text-lg"
+                        style={{ backgroundColor: rankColor }}
+                      >
+                        #{rank}
+                      </div>
+
+                      <div className="flex flex-col items-center pt-6 space-y-3">
+                        {/* Avatar */}
+                        <div
+                          className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold ${
+                            isTop1 ? 'bg-[#7b9cff]' : 'bg-[#111827]'
+                          }`}
+                        >
+                          {sp.avatar}
+                        </div>
+
+                        {/* Name */}
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
+                            {sp.name}
+                          </div>
+                          <div className="text-sm text-slate-500 dark:text-[#94A3B8]">
+                            {sp.role}
+                          </div>
+                        </div>
+
+                        {/* Rating */}
+                        <div className="flex items-center gap-2">
+                          {sp.totalReviews > 0 ? (
+                            <>
+                              <StarRating rating={Math.round(sp.avgRating)} size="md" />
+                              <span className="text-lg font-bold text-[#EF9F27]">
+                                {sp.avgRating.toFixed(1)}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-sm text-slate-500 dark:text-[#94A3B8]">
+                              Sin reseñas
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Stats */}
+                        <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-[#94A3B8]">
+                          <div>
+                            {sp.totalReviews} {sp.totalReviews === 1 ? 'reseña' : 'reseñas'}
+                          </div>
+                          <div>
+                            {sp.completedServices} servicios completados
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bottom Glow for Top 1 */}
+                      {isTop1 && (
+                        <div className="mt-4 h-0.5 bg-gradient-to-r from-transparent via-[#7b9cff] to-transparent"></div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="flex flex-wrap gap-2">
+            {['all', '5', '4', '3-less', 'verified'].map(filter => (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full border transition-all ${
+                  activeFilter === filter
+                    ? 'bg-[#7b9cff] border-[#7b9cff] text-white'
+                    : 'bg-transparent border-white/[0.05] text-[#94A3B8] hover:border-white/10 hover:text-[#F8FAFC]'
+                }`}
+              >
+                {filter === 'all' && 'Todas'}
+                {filter === '5' && '5 estrellas'}
+                {filter === '4' && '4 estrellas'}
+                {filter === '3-less' && '3 o menos'}
+                {filter === 'verified' && 'Verificadas'}
+              </button>
+            ))}
+          </div>
+
+          {/* Leave a Review Form */}
+          {!userId ? (
+            <div className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8 text-center">
+              <p className="text-slate-500 dark:text-[#94A3B8] font-medium">
+                Inicia sesión para calificar tus servicios completados.
+              </p>
+            </div>
+          ) : pendingAppointments.length > 0 ? (
+            <div className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-[#7b9cff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
+                    Deja tu opinión
+                  </h3>
+                  <p className="text-sm text-slate-500 dark:text-[#94A3B8]">
+                    ¿Cómo fue tu experiencia con nosotros?
+                  </p>
+                </div>
+              </div>
+              <form onSubmit={handleSubmitReview} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
+                    Selecciona tu servicio completado
+                  </label>
+                  <CustomSelect
+                    value={formCitaId}
+                    onChange={setFormCitaId}
+                    options={pendingAppointments.map(cita => ({
+                      value: String(cita.id),
+                      label: `${cita.servicio?.nombre || 'Servicio'}`,
+                      sublabel: `${formatDate(cita.fecha)} ${cita.hora || ''}`
+                    }))}
+                    placeholder="Selecciona un servicio..."
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
+                      Calificación del Especialista
+                    </label>
+                    <StarRating rating={formRating} onChange={setFormRating} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
+                      Calificación del Servicio
+                    </label>
+                    <StarRating rating={formServiceRating} onChange={setFormServiceRating} />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
+                    Comentario
+                  </label>
+                  <textarea
+                    value={formText}
+                    onChange={(e) => setFormText(e.target.value)}
+                    placeholder="Cuéntanos más sobre tu experiencia..."
+                    className="w-full p-4 bg-white dark:bg-[#020617] border border-white/[0.05] rounded-2xl text-slate-900 dark:text-[#F8FAFC] placeholder-slate-500 dark:placeholder-[#94A3B8] focus:border-[#7b9cff]/50 focus:outline-none transition-all"
+                    rows={4}
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    type="submit"
+                    disabled={!formRating || !formServiceRating || !formText.trim() || !formCitaId || submitting}
+                    className={`px-6 py-3 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all ${
+                      formRating && formServiceRating && formText.trim() && formCitaId && !submitting
+                        ? 'bg-[#7b9cff] text-slate-900 hover:bg-[#6a8be0] shadow-lg shadow-[#7b9cff]/20'
+                        : 'bg-[#111827] text-slate-600 cursor-not-allowed'
                     }`}
                   >
-                    {/* Rank Badge */}
-                    <div
-                      className="absolute top-4 left-4 w-8 h-8 rounded-full flex items-center justify-center font-black text-white text-lg"
-                      style={{ backgroundColor: rankColor }}
-                    >
-                      #{rank}
-                    </div>
-
-                    <div className="flex flex-col items-center pt-6 space-y-3">
-                      {/* Avatar */}
-                      <div
-                        className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold ${
-                          isTop1 ? 'bg-[#7b9cff]' : 'bg-[#111827]'
-                        }`}
-                      >
-                        {sp.avatar}
-                      </div>
-
-                      {/* Name */}
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
-                          {sp.name}
-                        </div>
-                        <div className="text-sm text-slate-500 dark:text-[#94A3B8]">
-                          {sp.role}
-                        </div>
-                      </div>
-
-                      {/* Rating */}
-                      <div className="flex items-center gap-2">
-                        {sp.totalReviews > 0 ? (
-                          <>
-                            <StarRating rating={Math.round(sp.avgRating)} size="md" />
-                            <span className="text-lg font-bold text-[#EF9F27]">
-                              {sp.avgRating.toFixed(1)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-sm text-slate-500 dark:text-[#94A3B8]">
-                            Sin reseñas
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Stats */}
-                      <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-[#94A3B8]">
-                        <div>
-                          {sp.totalReviews} {sp.totalReviews === 1 ? 'reseña' : 'reseñas'}
-                        </div>
-                        <div>
-                          {sp.completedServices} servicios completados
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bottom Glow for Top 1 */}
-                    {isTop1 && (
-                      <div className="mt-4 h-0.5 bg-gradient-to-r from-transparent via-[#7b9cff] to-transparent"></div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="flex flex-wrap gap-2">
-          {['all', '5', '4', '3-less', 'verified'].map(filter => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full border transition-all ${
-                activeFilter === filter
-                  ? 'bg-[#7b9cff] border-[#7b9cff] text-white'
-                  : 'bg-transparent border-white/[0.05] text-[#94A3B8] hover:border-white/10 hover:text-[#F8FAFC]'
-              }`}
-            >
-              {filter === 'all' && 'Todas'}
-              {filter === '5' && '5 estrellas'}
-              {filter === '4' && '4 estrellas'}
-              {filter === '3-less' && '3 o menos'}
-              {filter === 'verified' && 'Verificadas'}
-            </button>
-          ))}
-        </div>
-
-        {/* Leave a Review Form */}
-        {!userId ? (
-          <div className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8 text-center">
-            <p className="text-slate-500 dark:text-[#94A3B8] font-medium">
-              Inicia sesión para calificar tus servicios completados.
-            </p>
-          </div>
-        ) : pendingAppointments.length > 0 ? (
-          <div className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8 space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#7b9cff]/10 border border-[#7b9cff]/20 flex items-center justify-center">
-                <svg className="w-5 h-5 text-[#7b9cff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
-                  Deja tu opinión
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-[#94A3B8]">
-                  ¿Cómo fue tu experiencia con nosotros?
-                </p>
-              </div>
-            </div>
-            <form onSubmit={handleSubmitReview} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
-                  Selecciona tu servicio completado
-                </label>
-                <CustomSelect
-                  value={formCitaId}
-                  onChange={setFormCitaId}
-                  options={pendingAppointments.map(cita => ({
-                    value: String(cita.id),
-                    label: `${cita.servicio?.nombre || 'Servicio'}`,
-                    sublabel: `${formatDate(cita.fecha)} ${cita.hora || ''}`
-                  }))}
-                  placeholder="Selecciona un servicio..."
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
-                    Calificación del Especialista
-                  </label>
-                  <StarRating rating={formRating} onChange={setFormRating} />
+                    {submitting ? 'Publicando...' : 'Publicar opinión'}
+                  </button>
+                  {showFormSuccess && (
+                    <span className="text-[#1D9E75] font-bold text-sm">
+                      ✓ Opinión publicada exitosamente!
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
-                    Calificación del Servicio
-                  </label>
-                  <StarRating rating={formServiceRating} onChange={setFormServiceRating} />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-[#94A3B8] mb-2">
-                  Comentario
-                </label>
-                <textarea
-                  value={formText}
-                  onChange={(e) => setFormText(e.target.value)}
-                  placeholder="Cuéntanos más sobre tu experiencia..."
-                  className="w-full p-4 bg-white dark:bg-[#020617] border border-white/[0.05] rounded-2xl text-slate-900 dark:text-[#F8FAFC] placeholder-slate-500 dark:placeholder-[#94A3B8] focus:border-[#7b9cff]/50 focus:outline-none transition-all"
-                  rows={4}
-                  required
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <button
-                  type="submit"
-                  disabled={!formRating || !formServiceRating || !formText.trim() || !formCitaId || submitting}
-                  className={`px-6 py-3 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all ${
-                    formRating && formServiceRating && formText.trim() && formCitaId && !submitting
-                      ? 'bg-[#7b9cff] text-slate-900 hover:bg-[#6a8be0] shadow-lg shadow-[#7b9cff]/20'
-                      : 'bg-[#111827] text-slate-600 cursor-not-allowed'
-                  }`}
-                >
-                  {submitting ? 'Publicando...' : 'Publicar opinión'}
-                </button>
-                {showFormSuccess && (
-                  <span className="text-[#1D9E75] font-bold text-sm">
-                    ✓ Opinión publicada exitosamente!
-                  </span>
-                )}
-              </div>
-            </form>
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8 text-center">
-            <p className="text-slate-500 dark:text-[#94A3B8] font-medium">
-              No tienes servicios pendientes por calificar.
-            </p>
-          </div>
-        )}
-
-        {/* Review Cards */}
-        <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter mb-4">
-            Todas las Reseñas
-          </h2>
-          {filteredReviews.length === 0 ? (
-            <div className="text-center p-8 bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl">
-              <p className="text-slate-500 dark:text-[#94A3B8]">No hay reseñas para mostrar</p>
+              </form>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredReviews.map(review => {
-                const userName = review.usuario ? `${review.usuario.nombre} ${review.usuario.apellidos || ''}` : 'Usuario';
-                const serviceName = review.cita?.servicio?.nombre || 'Servicio';
-                const userRole = localStorage.getItem('role')?.toLowerCase();
-                const isAdmin = userRole === 'admin';
-                
-                return (
-                  <div
-                    key={review.id}
-                    className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-6 space-y-4 hover:border-[#7b9cff]/30 transition-all"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                          style={{ backgroundColor: getColorForUser(userName) }}
-                        >
-                          {getInitials(userName)}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-slate-900 dark:text-[#F8FAFC]">
-                            {userName}
-                          </div>
-                          <div className="text-xs text-slate-500 dark:text-[#94A3B8]">
-                            {formatDate(review.createdAt)} • {serviceName}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        {isAdmin && (
-                          <button
-                            onClick={() => handleDeleteReview(review.id)}
-                            disabled={deletingId === review.id}
-                            className="p-2 rounded-full hover:bg-red-500/10 text-slate-500 hover:text-red-500 transition-colors disabled:opacity-50"
-                          >
-                            {deletingId === review.id ? (
-                              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                              </svg>
-                            )}
-                          </button>
-                        )}
-                        <div className="flex flex-col items-end gap-1">
-                          <StarRating rating={review.specialistRating} size="sm" />
-                          <span className="text-[10px] text-slate-500 dark:text-[#94A3B8] uppercase">
-                            Especialista
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-sm text-slate-700 dark:text-[#F8FAFC] leading-relaxed">
-                      {review.comment}
-                    </div>
-
-                    <div className="flex items-center justify-between border-t border-white/[0.05] pt-4">
-                      <span className="inline-flex items-center gap-1 text-[#1D9E75] text-xs font-bold uppercase tracking-wider">
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-                        </svg>
-                        Servicio verificado
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-500 dark:text-[#94A3B8] uppercase">Servicio:</span>
-                        <StarRating rating={review.serviceRating} size="sm" />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8 text-center">
+              <p className="text-slate-500 dark:text-[#94A3B8] font-medium">
+                No tienes servicios pendientes por calificar.
+              </p>
             </div>
           )}
-        </div>
 
-        {/* Ratings History */}
-        {ratingsHistory.length > 0 && (
-          <div className="space-y-6 bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8">
-            <div className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
-              Historial de Calificaciones
-            </div>
-
-            {/* Chart */}
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={ratingsHistory}>
-                  <defs>
-                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#7b9cff" stopOpacity="0.15" />
-                      <stop offset="95%" stopColor="#7b9cff" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    stroke="#94A3B8"
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="#94A3B8"
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={false}
-                    domain={[3, 5]}
-                    tickCount={3}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#050507',
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      borderRadius: '8px'
-                    }}
-                    labelStyle={{ color: '#94A3B8' }}
-                    itemStyle={{ color: '#7b9cff' }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="score"
-                    stroke="#7b9cff"
-                    strokeWidth="3"
-                    fill="url(#colorScore)"
-                    activeDot={{ r: 6 }}
-                  >
-                    {ratingsHistory.map((entry, index) => (
-                      <Dot key={`dot-${index}`} r="4" fill="#7b9cff" />
-                    ))}
-                  </Area>
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* History Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-white/[0.05]">
-                    <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest">
-                      Mes
-                    </th>
-                    <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
-                      Calificación Promedio
-                    </th>
-                    <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
-                      # de Reseñas
-                    </th>
-                    <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
-                      Cambio
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.05]">
-                  {ratingsHistory.map((item, index) => {
-                    const prev = index > 0 ? ratingsHistory[index - 1] : null;
-                    const delta = prev ? item.score - prev.score : 0;
-                    const deltaColor = delta > 0 ? 'text-[#1D9E75]' : delta < 0 ? 'text-[#E24B4A]' : 'text-[#94A3B8]';
-                    const deltaIcon = delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
-
-                    return (
-                      <tr key={item.month} className="hover:bg-[#111827]/50 transition-colors">
-                        <td className="py-3 text-sm text-slate-700 dark:text-[#F8FAFC]">
-                          {item.month} 2026
-                        </td>
-                        <td className="py-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="text-sm font-bold text-[#EF9F27]">
-                              {item.score.toFixed(1)}
-                            </span>
-                            <StarRating rating={Math.round(item.score)} size="sm" />
+          {/* Review Cards */}
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-[#F8FAFC] italic tracking-tighter mb-4">
+              Todas las Reseñas
+            </h2>
+            {filteredReviews.length === 0 ? (
+              <div className="text-center p-8 bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl">
+                <p className="text-slate-500 dark:text-[#94A3B8]">No hay reseñas para mostrar</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredReviews.map(review => {
+                  const userName = review.usuario ? `${review.usuario.nombre} ${review.usuario.apellidos || ''}` : 'Usuario';
+                  const serviceName = review.cita?.servicio?.nombre || 'Servicio';
+                  const userRole = localStorage.getItem('role')?.toLowerCase();
+                  const isAdmin = userRole === 'admin';
+                  
+                  return (
+                    <div
+                      key={review.id}
+                      className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-6 hover:border-[#7b9cff]/30 transition-all"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                            style={{ backgroundColor: getColorForUser(userName) }}
+                          >
+                            {getInitials(userName)}
                           </div>
-                        </td>
-                        <td className="py-3 text-center text-sm text-slate-700 dark:text-[#F8FAFC]">
-                          {item.reviews}
-                        </td>
-                        <td className="py-3 text-center">
-                          <span className={`text-sm font-bold ${deltaColor}`}>
-                            {deltaIcon} {Math.abs(delta).toFixed(1)}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          <div>
+                            <div className="text-sm font-medium text-slate-900 dark:text-[#F8FAFC]">
+                              {userName}
+                            </div>
+                            <div className="text-xs text-slate-500 dark:text-[#94A3B8]">
+                              {formatDate(review.createdAt)} • {serviceName}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDeleteReview(review.id)}
+                              disabled={deletingId === review.id}
+                              className="p-2 rounded-full hover:bg-red-500/10 text-slate-500 hover:text-red-500 transition-colors disabled:opacity-50"
+                            >
+                              {deletingId === review.id ? (
+                                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              )}
+                            </button>
+                          )}
+                          <div className="flex flex-col items-end gap-1">
+                            <StarRating rating={review.specialistRating} size="sm" />
+                            <span className="text-[10px] text-slate-500 dark:text-[#94A3B8] uppercase">
+                              Especialista
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-sm text-slate-700 dark:text-[#F8FAFC] leading-relaxed mt-4">
+                        {review.comment}
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-white/[0.05] pt-4 mt-4">
+                        <span className="inline-flex items-center gap-1 text-[#1D9E75] text-xs font-bold uppercase tracking-wider">
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                          </svg>
+                          Servicio verificado
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-slate-500 dark:text-[#94A3B8] uppercase">Servicio:</span>
+                          <StarRating rating={review.serviceRating} size="sm" />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Ratings History */}
+          {ratingsHistory.length > 0 && (
+            <div className="space-y-6 bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl p-8">
+              <div className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
+                Historial de Calificaciones
+              </div>
+
+              {/* Chart */}
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={ratingsHistory}>
+                    <defs>
+                      <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#7b9cff" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#7b9cff" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      stroke="#94A3B8"
+                      tick={{ fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#94A3B8"
+                      tick={{ fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                      domain={[3, 5]}
+                      tickCount={3}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#050507',
+                        border: '1px solid rgba(255,255,255,0.05)',
+                        borderRadius: '8px'
+                      }}
+                      labelStyle={{ color: '#94A3B8' }}
+                      itemStyle={{ color: '#7b9cff' }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="score"
+                      stroke="#7b9cff"
+                      strokeWidth="3"
+                      fill="url(#colorScore)"
+                      activeDot={{ r: 6 }}
+                    >
+                      {ratingsHistory.map((entry, index) => (
+                        <Dot key={`dot-${index}`} r="4" fill="#7b9cff" />
+                      ))}
+                    </Area>
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* History Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-white/[0.05]">
+                      <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest">
+                        Mes
+                      </th>
+                      <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
+                        Calificación Promedio
+                      </th>
+                      <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
+                        # de Reseñas
+                      </th>
+                      <th className="pb-3 text-xs font-bold text-slate-500 dark:text-[#94A3B8] uppercase tracking-widest text-center">
+                        Cambio
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.05]">
+                    {ratingsHistory.map((item, index) => {
+                      const prev = index > 0 ? ratingsHistory[index - 1] : null;
+                      const delta = prev ? item.score - prev.score : 0;
+                      const deltaColor = delta > 0 ? 'text-[#1D9E75]' : delta < 0 ? 'text-[#E24B4A]' : 'text-[#94A3B8]';
+                      const deltaIcon = delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
+
+                      return (
+                        <tr key={item.month} className="hover:bg-[#111827]/50 transition-colors">
+                          <td className="py-3 text-sm text-slate-700 dark:text-[#F8FAFC]">
+                            {item.month} 2026
+                          </td>
+                          <td className="py-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <span className="text-sm font-bold text-[#EF9F27]">
+                                {item.score.toFixed(1)}
+                              </span>
+                              <StarRating rating={Math.round(item.score)} size="sm" />
+                            </div>
+                          </td>
+                          <td className="py-3 text-center text-sm text-slate-700 dark:text-[#F8FAFC]">
+                            {item.reviews}
+                          </td>
+                          <td className="py-3 text-center">
+                            <span className={`text-sm font-bold ${deltaColor}`}>
+                              {deltaIcon} {Math.abs(delta).toFixed(1)}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

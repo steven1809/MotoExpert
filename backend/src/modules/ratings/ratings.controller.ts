@@ -7,6 +7,7 @@ import {
   UseGuards,
   Request,
   Delete,
+  Patch,
 } from '@nestjs/common';
 import { RatingsService } from './ratings.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -37,7 +38,13 @@ export class RatingsController {
   }
 
   @Get()
+  @UseGuards(AuthGuard('jwt'))
   findAll() {
+    return this.service.findAllForAdmin();
+  }
+
+  @Get('public')
+  findAllPublic() {
     return this.service.findAll();
   }
 
@@ -54,6 +61,18 @@ export class RatingsController {
   @Get('empleado/:empleadoId/stats')
   getEmpleadoStats(@Param('empleadoId') empleadoId: string) {
     return this.service.getEmpleadoStats(+empleadoId);
+  }
+
+  @Patch(':id/hide')
+  @UseGuards(AuthGuard('jwt'))
+  hideRating(@Param('id') id: string) {
+    return this.service.hideRating(+id);
+  }
+
+  @Patch(':id/show')
+  @UseGuards(AuthGuard('jwt'))
+  showRating(@Param('id') id: string) {
+    return this.service.showRating(+id);
   }
 
   @Delete(':id')
