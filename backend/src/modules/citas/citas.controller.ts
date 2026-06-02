@@ -159,6 +159,32 @@ export class CitasController {
     const userId = req.user.userId;
     return this.service.updateEstado(+id, body.estado, body.report, userRole, userId);
   }
+  
+  @Post(':id/verificar-entrega')
+  async verificarEntrega(
+    @Param('id') id: string, 
+    @Body() body: { codigo: string }, 
+    @Request() req
+  ) {
+    const cita = await this.service.findOne(+id);
+    if (!cita) throw new NotFoundException('Cita no encontrada');
+    
+    // Verify the user is authorized
+    const userRole = (req.user.rol || req.user.role)?.toLowerCase();
+    const userId = req.user.userId;
+    if (userRole !== 'admin') {
+      const isAssignedEmployee =
+        (userRole === 'empleado' || userRole === 'trabajador') &&
+        cita.empleado?.usuarioId === userId;
+      if (!isAssignedEmployee) {
+        throw new ForbiddenException('No autorizado');
+      }
+    }
+    
+    const valido = cita.codigoEntrega === body.codigo;
+    
+    return { valido };
+  }
 
   @Get(':id/chat')
   async getChatHistory(@Param('id') id: string, @Request() req) {
