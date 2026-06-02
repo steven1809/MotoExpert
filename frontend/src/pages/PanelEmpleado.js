@@ -186,26 +186,45 @@ class PanelEmpleado extends Component {
                   <span className="text-xl">👤</span>
                   <div className="flex flex-col">
                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Cliente</span>
-                    <span className="text-sm font-bold text-slate-200">{cita.usuario?.nombre}</span>
+                    <span className="text-sm font-bold text-slate-200">
+                      {cita.usuario?.nombre}
+                      {cita.esGuest && (
+                        <span className="ml-2 text-[9px] bg-amber-500/15 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full uppercase tracking-widest font-black">
+                          Guest
+                        </span>
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                <button 
-                  onClick={() => this.handleVerSeguimiento(cita.id)}
-                  className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95"
-                >
-                  VER SEGUIMIENTO
-                </button>
-                {cita.estado === 'PENDIENTE' ? (
-                  <button 
+                {!cita.esGuest && (
+                  <button
+                    onClick={() => this.handleVerSeguimiento(cita.id)}
+                    className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95"
+                  >
+                    VER SEGUIMIENTO
+                  </button>
+                )}
+
+                {cita.estado === 'PENDIENTE' && (
+                  <button
                     onClick={() => this.updateEstadoCita(cita.id, 'EN PROCESO')}
                     className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg shadow-blue-600/20"
                   >
-                    Iniciar Servicio
+                    {cita.esGuest ? 'Iniciar Servicio (Rápido)' : 'Iniciar Servicio'}
                   </button>
-                ) : null}
+                )}
+
+                {cita.esGuest && cita.estado === 'EN PROCESO' && (
+                  <button
+                    onClick={() => this.updateEstadoCita(cita.id, 'FINALIZADO')}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg shadow-emerald-600/20"
+                  >
+                    Finalizar Servicio
+                  </button>
+                )}
               </div>
             </div>
           ))}
