@@ -358,7 +358,7 @@ class Navbar extends Component {
           <header className={`hidden md:flex fixed top-0 left-0 right-0 h-20 z-[60] items-center justify-between px-10 transition-all duration-300 ${
             this.state.scrolled
               ? 'bg-[#022873] shadow-lg shadow-black/20 backdrop-blur-sm border-b border-white/10'
-              : 'bg-transparent border-b border-transparent'
+              : 'bg-[#022873]/80 backdrop-blur-sm border-b border-white/10'  /* ← MODIFICADO */
           }`}>
             <button onClick={() => setView("dashboard")} className="group text-left">
                 <img 
@@ -402,7 +402,6 @@ class Navbar extends Component {
                           <button
                             onClick={() => {
                               toggleTheme();
-                              // No cerramos el dropdown al cambiar tema para mejor UX
                             }}
                             className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl hover:bg-white/[0.03] transition-colors group"
                           >
@@ -471,7 +470,7 @@ class Navbar extends Component {
           isStandardUser
             ? (this.state.scrolled
                 ? 'bg-[#022873] shadow-lg shadow-black/20 backdrop-blur-sm border-b border-white/10'
-                : 'bg-transparent border-b border-transparent')
+                : 'bg-[#022873]/80 backdrop-blur-sm border-b border-white/10')  /* ← MODIFICADO */
             : 'bg-[#050507]/90 backdrop-blur-lg border-b border-white/[0.05]'
         }`}>
           <div className="h-18 px-5 flex items-center justify-between py-4">
