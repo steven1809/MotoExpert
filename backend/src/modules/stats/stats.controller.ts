@@ -53,14 +53,16 @@ export class StatsController {
   @Get('detail')
   getDetailStats(
     @Request() req,
-    @Query('date') date: string,
+    @Query('date') date?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     this.checkAdminRole(req);
     const pageNum = page ? parseInt(page) : 1;
     const limitNum = limit ? parseInt(limit) : 10;
-    return this.statsService.getDetailStats(date, pageNum, limitNum);
+    return this.statsService.getDetailStats(date, from, to, pageNum, limitNum);
   }
 
   @Get('summary')

@@ -144,22 +144,36 @@ export class StatsService {
     return this.calculateStats(from, to);
   }
 
-  async getDetailStats(date: string, page: number = 1, limit: number = 10) {
+  async getDetailStats(date?: string, from?: string, to?: string, page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
 
-    const [data, total] = await this.citaRepo
+    const queryBuilder = this.citaRepo
       .createQueryBuilder('cita')
       .innerJoinAndSelect('cita.servicio', 'servicio')
       .innerJoinAndSelect('cita.empleado', 'empleado')
       .innerJoinAndSelect('empleado.usuario', 'empleadoUsuario')
       .innerJoinAndSelect('cita.usuario', 'usuario')
       .innerJoinAndSelect('cita.vehiculo', 'vehiculo')
-      .where('cita.fecha = :date', { date })
-      .andWhere('cita.estado = :estado', { estado: 'FINALIZADO' })
-      .orderBy('cita.hora_inicio', 'DESC')
+      .andWhere('cita.estado = :estado', { estado: 'FINALIZADO' });
+
+    // Aplicar filtro de fecha
+    if (date) {
+      queryBuilder.where('cita.fecha = :date', { date });
+    } else if (from && to) {
+      queryBuilder.where('cita.fecha BETWEEN :from AND :to', { from, to });
+    } else {
+      // Por defecto, hoy
+      const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' })).toISOString().split('T')[0];
+      queryBuilder.where('cita.fecha = :date', { date: today });
+    }
+
+    queryBuilder
+      .orderBy('cita.fecha', 'DESC')
+      .addOrderBy('cita.hora_inicio', 'DESC')
       .skip(skip)
-      .take(limit)
-      .getManyAndCount();
+      .take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
 
     const formattedData = data.map((cita) => ({
       id: cita.id,
