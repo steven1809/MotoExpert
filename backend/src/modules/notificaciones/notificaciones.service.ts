@@ -73,11 +73,11 @@ export class NotificacionesService {
     }
 
     try {
-      // Make sure the phone number has a + prefix
-      let formattedTo = to;
-      if (!formattedTo.startsWith('+')) {
-        formattedTo = `+${formattedTo}`;
-      }
+      // Sanitize phone number: remove all non-digit characters, then add + prefix
+      let sanitized = to.replace(/\D/g, '');
+      // If it starts with 57 (Colombia code), keep it, otherwise add 57 if needed?
+      // For now, just keep it as is but sanitized
+      let formattedTo = sanitized.startsWith('+') ? sanitized : `+${sanitized}`;
 
       const result = await this.twilioClient.messages.create({
         body: message,
