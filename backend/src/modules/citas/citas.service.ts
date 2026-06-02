@@ -223,6 +223,7 @@ export class CitasService {
       empleado: empleadoAsignado,
       estado: 'PENDIENTE',
       metodoPago: dto.metodoPago,
+      esGuest: dto.esGuest,
     });
 
     const savedCita = await this.repo.save(cita);
