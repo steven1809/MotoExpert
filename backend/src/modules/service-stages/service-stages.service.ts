@@ -93,20 +93,31 @@ export class ServiceStagesService {
     if (body.images !== undefined)      found.images = body.images;
     if (body.completed !== undefined)   found.completed = body.completed;
 
+    // service-stages.service.ts — dentro de updateStage()
+
     const saved = await this.stageRepo.save(found);
+
+    // Cargar cita con relaciones SIEMPRE (mover arriba del emitServiceUpdated)
+    const cita = await this.citaRepo.findOne({
+      where: { id: citaId },
+      relations: ['usuario', 'vehiculo', 'servicio', 'empleado'],
+    });
+
+    // Emitir estado actualizado a la sala de la cita
     const stagesAfter = await this.getStagesByCita(citaId);
     this.gateway.emitServiceUpdated(
       citaId,
       this.buildServiceUpdatedPayload(citaId, stagesAfter),
     );
 
-    const cita = await this.citaRepo.findOne({
-      where: { id: citaId },
-      relations: ['usuario', 'vehiculo', 'servicio'],
-    });
+    // ✅ Emitir el stage específico actualizado (empleado + cliente lo reciben)
     if (cita?.usuario?.id) {
       const clienteUserId = cita.usuario.id;
 
+      // Siempre emitir el stage actualizado, independiente de qué cambió
+      this.gateway.emitStageUpdated(citaId, clienteUserId, saved);
+
+      // Notificación: nuevo contenido (imágenes)
       if (body.images !== undefined) {
         const newLen = Array.isArray(body.images) ? body.images.length : 0;
         if (newLen > prevImagesLen) {
@@ -126,6 +137,7 @@ export class ServiceStagesService {
         }
       }
 
+      // Notificación: etapa completada / avance
       if (body.completed === true && !prevCompleted) {
         const nextStage = STAGE_ORDER[stageIndex + 1];
         const nextLabel = this.stageLabel(nextStage ?? stage);
@@ -147,19 +159,16 @@ export class ServiceStagesService {
             cita.usuario,
             'service_tracking_finished',
             'Servicio finalizado',
-            'Tu servicio ha sido finalizado. ¡Gracias por confiar en MotoExpert!',
+            '¡Tu servicio ha sido finalizado. Gracias por confiar en MotoExpert!',
           );
           this.gateway.emitServiceTrackingNotification(clienteUserId, {
             appointmentId: citaId,
             title: 'Servicio finalizado',
             type: 'service_tracking_finished',
-            message:
-              'Tu servicio ha sido finalizado. ¡Gracias por confiar en MotoExpert!',
+            message: '¡Tu servicio ha sido finalizado. Gracias por confiar en MotoExpert!',
           });
         }
       }
-
-      this.gateway.emitStageUpdated(citaId, clienteUserId, saved);
     }
 
     return saved;

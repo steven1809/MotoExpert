@@ -61,7 +61,10 @@ export class Cita {
   @Column({ nullable: true })
   codigoEntrega: string;
 
-  @ManyToOne(() => Usuario, { eager: true })
+  @Column({ default: false })
+  esGuest: boolean;
+
+  @ManyToOne(() => Usuario, { eager: true, nullable: true })
   usuario: Usuario;
 
   @ManyToOne(() => Vehiculo, (vehiculo) => vehiculo.citas, {

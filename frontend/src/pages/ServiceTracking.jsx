@@ -7,13 +7,6 @@ const API = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 // ─── Constantes ────────────────────────────────────────────────────────────────
 
-const STAGES = [
-  { id: 'recepcion',   title: 'Recepción' },
-  { id: 'diagnostico', title: 'Diagnóstico' },
-  { id: 'proceso',     title: 'En Proceso' },
-  { id: 'finalizado',  title: 'Finalizado' },
-];
-
 const STAGE_MAP_REVERSE = {
   recepcion:   'RECEPCION',
   diagnostico: 'DIAGNOSTICO',
@@ -99,70 +92,48 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
   const initStages = useCallback(async () => {
     const { data } = await axios.patch(`${API}/citas/${citaId}/stages/init`, {}, { headers: getHeaders() });
     setRawStages(data);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [citaId]);
 
   const fetchStages = useCallback(async ({ silent } = { silent: false }) => {
     if (!citaId) return;
     try {
-      if (!silent && !hasLoadedRef.current) {
-        setLoading(true);
-      }
+      if (!silent && !hasLoadedRef.current) setLoading(true);
       const { data } = await axios.get(`${API}/citas/${citaId}/stages`, { headers: getHeaders() });
       if (Array.isArray(data) && data.length === 0) {
-        if (allowInit) {
-          await initStages();
-        } else {
-          setRawStages([]);
-        }
+        if (allowInit) await initStages();
+        else setRawStages([]);
       } else {
         setRawStages(data);
       }
       hasLoadedRef.current = true;
     } catch (e) {
       if (e?.response?.status === 404) {
-        if (allowInit) {
-          await initStages();
-        } else {
-          setRawStages([]);
-        }
+        if (allowInit) await initStages();
+        else setRawStages([]);
       } else {
         setError(e.message);
       }
     } finally {
-      if (!silent && !hasLoadedRef.current) {
-        setLoading(false);
-      }
-      if (!silent && hasLoadedRef.current) {
-        setLoading(false);
-      }
+      if (!silent || hasLoadedRef.current) setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [citaId, initStages, allowInit]);
 
   const fetchCurrentStatus = useCallback(async () => {
     if (!citaId) return false;
     try {
-      const { data } = await axios.get(`${API}/api/appointments/${citaId}/current-status`, {
-        headers: getHeaders(),
-      });
-      if (Array.isArray(data?.stages)) {
-        setRawStages(data.stages);
-        hasLoadedRef.current = true;
-        return true;
-      }
+      const { data } = await axios.get(`${API}/api/appointments/${citaId}/current-status`, { headers: getHeaders() });
+      if (Array.isArray(data?.stages)) { setRawStages(data.stages); hasLoadedRef.current = true; return true; }
       return false;
-    } catch (e) {
+    } catch {
       try {
-        const { data } = await axios.get(`${API}/citas/${citaId}/current-status`, {
-          headers: getHeaders(),
-        });
-        if (Array.isArray(data?.stages)) {
-          setRawStages(data.stages);
-          hasLoadedRef.current = true;
-          return true;
-        }
+        const { data } = await axios.get(`${API}/citas/${citaId}/current-status`, { headers: getHeaders() });
+        if (Array.isArray(data?.stages)) { setRawStages(data.stages); hasLoadedRef.current = true; return true; }
       } catch {}
       return false;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [citaId]);
 
   const updateStage = useCallback(async (localId, payload) => {
@@ -174,12 +145,14 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
     );
     setRawStages((prev) => prev.map((s) => (s.stage === stageKey ? data : s)));
     return data;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [citaId]);
 
   const addUpdate = useCallback(async (text) => {
     return updateStage('proceso', { updates: [{ text, timestamp: nowIso() }] });
   }, [updateStage]);
 
+  // Carga inicial
   useEffect(() => {
     if (!citaId) return;
     let cancelled = false;
@@ -198,15 +171,14 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
     return () => { cancelled = true; };
   }, [citaId, fetchCurrentStatus, fetchStages]);
 
+  // Polling solo para el cliente (no empleado)
   useEffect(() => {
-    if (!citaId) return;
-    if (allowInit) return;
-    const interval = setInterval(() => {
-      fetchStages({ silent: true });
-    }, 4000);
+    if (!citaId || allowInit) return;
+    const interval = setInterval(() => fetchStages({ silent: true }), 4000);
     return () => clearInterval(interval);
-  }, [citaId, fetchStages]);
+  }, [citaId, fetchStages, allowInit]);
 
+  // ─── WebSocket ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token || !citaId) return;
@@ -228,7 +200,8 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
       socketRef.current = null;
     }
 
-    const socket = io(API, {
+    // ✅ FIX: Conectar al namespace /service-tracking para no colisionar con otros gateways
+    const socket = io(`${API}/service-tracking`, {
       auth: { token },
       reconnection: true,
       reconnectionAttempts: 5,
@@ -272,11 +245,6 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
       showUpdated();
     };
 
-    const onDisconnect = () => {
-      if (!hasEverConnectedRef.current) return;
-      setSocketStatus('reconnecting');
-    };
-
     const onConnect = () => {
       hasEverConnectedRef.current = true;
       setSocketStatus('connected');
@@ -284,13 +252,21 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
       joinAppointment();
     };
 
+    const onDisconnect = () => {
+      if (!hasEverConnectedRef.current) return;
+      setSocketStatus('reconnecting');
+    };
+
+    const onConnectError = () => {
+      if (!hasEverConnectedRef.current) return;
+      setSocketStatus('reconnecting');
+    };
+
     const onReconnect = async () => {
       setSocketStatus('connected');
       try {
         const ok = await fetchCurrentStatus();
-        if (!ok) {
-          fetchStages({ silent: true });
-        }
+        if (!ok) fetchStages({ silent: true });
         showSynced();
       } catch {
         fetchStages({ silent: true });
@@ -299,14 +275,7 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
       }
     };
 
-    const onConnectError = () => {
-      if (!hasEverConnectedRef.current) return;
-      setSocketStatus('reconnecting');
-    };
-
-    const onReconnectFailed = () => {
-      setSocketStatus('failed');
-    };
+    const onReconnectFailed = () => setSocketStatus('failed');
 
     socket.on('connect', onConnect);
     socket.on('connect_error', onConnectError);
@@ -333,7 +302,6 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
     };
   }, [citaId, fetchStages, fetchCurrentStatus]);
 
-  // Convierte rawStages del backend → formato de stages local
   const stages = useMemo(() => {
     const TITLES = { recepcion: 'Recepción', diagnostico: 'Diagnóstico', proceso: 'En Proceso', finalizado: 'Finalizado' };
     const ORDER  = ['recepcion', 'diagnostico', 'proceso', 'finalizado'];
@@ -366,17 +334,7 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
     });
   }, [rawStages]);
 
-  return {
-    stages,
-    rawStages,
-    loading,
-    error,
-    updateStage,
-    addUpdate,
-    socketStatus,
-    showUpdatedBadge,
-    showSyncedBadge,
-  };
+  return { stages, rawStages, loading, error, updateStage, addUpdate, socketStatus, showUpdatedBadge, showSyncedBadge };
 }
 
 function useCita(citaId) {
@@ -388,19 +346,12 @@ function useCita(citaId) {
     const token = localStorage.getItem('token');
     if (!token || !citaId) return;
     let cancelled = false;
-
     const run = async () => {
       try {
         setLoading(true);
-        const { data } = await axios.get(`${API}/citas/${citaId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const { data } = await axios.get(`${API}/citas/${citaId}`, { headers: { Authorization: `Bearer ${token}` } });
         if (cancelled) return;
-        if (!data) {
-          setCita(null);
-          setError('No autorizado o cita no encontrada');
-          return;
-        }
+        if (!data) { setCita(null); setError('No autorizado o cita no encontrada'); return; }
         setCita(data);
         setError(null);
       } catch (e) {
@@ -410,11 +361,8 @@ function useCita(citaId) {
         if (!cancelled) setLoading(false);
       }
     };
-
     run();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [citaId]);
 
   return { cita, loading, error };
@@ -512,8 +460,7 @@ const Gallery = ({ images }) => {
   if (!images?.length) return null;
   const isVideo = (src) =>
     typeof src === 'string' &&
-    (src.startsWith('data:video') ||
-      /\.(mp4|webm|ogg)(\?|#|$)/i.test(src));
+    (src.startsWith('data:video') || /\.(mp4|webm|ogg)(\?|#|$)/i.test(src));
   return (
     <div className="flex gap-3 overflow-x-auto pb-1">
       {images.map((src, idx) => (
@@ -550,64 +497,36 @@ const SidebarContent = ({ stages, cita, startedAt, elapsed }) => {
         <div className="mt-4 space-y-4">
           <div className="space-y-1">
             <div className="text-[10px] font-black uppercase tracking-widest text-white/45">Cliente</div>
-            <div className="text-sm font-black text-white">
-              {cita?.usuario?.nombre || '—'}
-            </div>
-            <div className="text-xs font-bold text-white/60">
-              {phoneRaw || 'Sin teléfono'}
-            </div>
+            <div className="text-sm font-black text-white">{cita?.usuario?.nombre || '—'}</div>
+            <div className="text-xs font-bold text-white/60">{phoneRaw || 'Sin teléfono'}</div>
           </div>
-
           <div className="space-y-1">
             <div className="text-[10px] font-black uppercase tracking-widest text-white/45">Vehículo</div>
-            <div className="text-sm font-black text-white">
-              {(cita?.vehiculo?.placa || '—').toUpperCase()}
-            </div>
-            <div className="text-xs font-bold text-white/60">
-              {cita?.vehiculo?.marca || '—'} {cita?.vehiculo?.modelo || ''}
-            </div>
+            <div className="text-sm font-black text-white">{(cita?.vehiculo?.placa || '—').toUpperCase()}</div>
+            <div className="text-xs font-bold text-white/60">{cita?.vehiculo?.marca || '—'} {cita?.vehiculo?.modelo || ''}</div>
           </div>
-
           <div className="space-y-1">
             <div className="text-[10px] font-black uppercase tracking-widest text-white/45">Servicio</div>
-            <div className="text-sm font-black text-white">
-              {cita?.servicio?.nombre || '—'}
-            </div>
+            <div className="text-sm font-black text-white">{cita?.servicio?.nombre || '—'}</div>
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl border border-white/10 bg-[#0f172a]/40 px-4 py-3">
               <div className="text-[10px] font-black uppercase tracking-widest text-white/45">Inicio</div>
-              <div className="mt-1 text-xs font-black text-white">
-                {startedAt ? formatDateTime(startedAt) : '—'}
-              </div>
+              <div className="mt-1 text-xs font-black text-white">{startedAt ? formatDateTime(startedAt) : '—'}</div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-[#0f172a]/40 px-4 py-3">
               <div className="text-[10px] font-black uppercase tracking-widest text-white/45">Tiempo</div>
-              <div className="mt-1 text-xs font-black text-white">
-                {elapsed || '—'}
-              </div>
+              <div className="mt-1 text-xs font-black text-white">{elapsed || '—'}</div>
             </div>
           </div>
-
           {(waLink || telLink) && (
             <div className="grid grid-cols-2 gap-3">
-              <a
-                href={waLink || '#'}
-                target="_blank"
-                rel="noreferrer"
-                className={`h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-center text-[10px] font-black uppercase tracking-widest ${
-                  waLink ? 'text-white' : 'text-white/30 pointer-events-none'
-                }`}
-              >
+              <a href={waLink || '#'} target="_blank" rel="noreferrer"
+                className={`h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-center text-[10px] font-black uppercase tracking-widest ${waLink ? 'text-white' : 'text-white/30 pointer-events-none'}`}>
                 WhatsApp
               </a>
-              <a
-                href={telLink || '#'}
-                className={`h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-center text-[10px] font-black uppercase tracking-widest ${
-                  telLink ? 'text-white' : 'text-white/30 pointer-events-none'
-                }`}
-              >
+              <a href={telLink || '#'}
+                className={`h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-center text-[10px] font-black uppercase tracking-widest ${telLink ? 'text-white' : 'text-white/30 pointer-events-none'}`}>
                 Llamar
               </a>
             </div>
@@ -653,11 +572,10 @@ const MobileSummary = ({ stages, cita, startedAt, elapsed, open, onToggle }) => 
 
 // ─── Vista Empleado ────────────────────────────────────────────────────────────
 
-const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, addUpdate, showToast, socketReady }) => {
-  const [entered, setEntered]     = useState(false);
-  const [viewVisible, setViewVisible] = useState(true);
+const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, addUpdate, showToast }) => {
+  const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
   const [summaryOpen, setSummaryOpen] = useState(false);
-  const [saving, setSaving]       = useState(false);
+  const [saving, setSaving] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   const [recepcionNote, setRecepcionNote] = useState('');
@@ -667,7 +585,6 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
   const [procUpdate, setProcUpdate] = useState('');
   const [procLog, setProcLog] = useState([]);
   const [procMedia, setProcMedia] = useState([]);
-  const [finalPrice, setFinalPrice] = useState('');
   const [finalNote, setFinalNote] = useState('');
   const [finalMedia, setFinalMedia] = useState([]);
 
@@ -681,8 +598,6 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
   const procDirtyRef = useRef(false);
   const finalDirtyRef = useRef(false);
 
-  useEffect(() => { const t = setTimeout(() => setEntered(true), 50); return () => clearTimeout(t); }, []);
-
   useEffect(() => {
     const r = stages.find((s) => s.id === 'recepcion');
     if (r?.status === 'done' && !recepcionDirtyRef.current) {
@@ -690,6 +605,7 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
       setRecepcionMedia(r.data.photos || []);
     }
   }, [stages]);
+
   useEffect(() => {
     const d = stages.find((s) => s.id === 'diagnostico');
     if (d?.status === 'done' && !diagDirtyRef.current) {
@@ -697,22 +613,21 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
       setDiagMedia(d.data.media || []);
     }
   }, [stages]);
+
   useEffect(() => {
     const p = stages.find((s) => s.id === 'proceso');
-    if (!p) return;
-    if (procDirtyRef.current) return;
+    if (!p || procDirtyRef.current) return;
     const serverMedia = Array.isArray(p.data?.media) ? p.data.media : [];
     const serverUpdates = Array.isArray(p.data?.updates) ? p.data.updates : [];
     if (p.status === 'done') {
       if (serverMedia.length > 0) setProcMedia(serverMedia);
       if (serverUpdates.length > 0) setProcLog(serverUpdates);
-      return;
-    }
-    if (p.status === 'active') {
+    } else if (p.status === 'active') {
       if (serverMedia.length > 0) setProcMedia((prev) => (prev.length > 0 ? prev : serverMedia));
       if (serverUpdates.length > 0) setProcLog((prev) => (prev.length > 0 ? prev : serverUpdates));
     }
   }, [stages]);
+
   useEffect(() => {
     const f = stages.find((s) => s.id === 'finalizado');
     if (f?.status === 'done' && !finalDirtyRef.current) {
@@ -721,6 +636,7 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
     }
   }, [stages]);
 
+  // ✅ FIX: Handlers de archivos sin dependencia de socketReady
   const handleRecepcionFiles = async (e) => {
     recepcionDirtyRef.current = true;
     const urls = await readFilesAsDataUrls(e.target.files, 4);
@@ -749,27 +665,21 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
   const saveRecepcion = async () => {
     try {
       setSaving(true);
-      await updateStage('recepcion', {
-        observation: recepcionNote,
-        images: recepcionMedia,
-        completed: true,
-      });
+      // ✅ Asegurar que los stages existen antes de guardar
+      try { await axios.patch(`${API}/citas/${citaId}/stages/init`, {}, { headers: getHeaders() }); } catch {}
+      await updateStage('recepcion', { observation: recepcionNote, images: recepcionMedia, completed: true });
       recepcionDirtyRef.current = false;
-    }
-    catch (e) { alert('Error: ' + e.message); } finally { setSaving(false); }
+    } catch (e) { alert('Error: ' + e.message); } finally { setSaving(false); }
   };
+
   const saveDiagnostico = async () => {
     try {
       setSaving(true);
-      await updateStage('diagnostico', {
-        observation: diagText,
-        images: diagMedia,
-        completed: true,
-      });
+      await updateStage('diagnostico', { observation: diagText, images: diagMedia, completed: true });
       diagDirtyRef.current = false;
-    }
-    catch (e) { alert('Error: ' + e.message); } finally { setSaving(false); }
+    } catch (e) { alert('Error: ' + e.message); } finally { setSaving(false); }
   };
+
   const addProcessUpdate = async () => {
     const text = procUpdate.trim();
     if (!text) return;
@@ -781,49 +691,47 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
       setProcUpdate('');
     } catch (e) { alert('Error: ' + e.message); } finally { setSaving(false); }
   };
+
   const saveProceso = async () => {
     try {
       setSaving(true);
       await updateStage('proceso', { images: procMedia, completed: true });
       procDirtyRef.current = false;
-    }
-    catch (e) { alert('Error: ' + e.message); } finally { setSaving(false); }
+    } catch (e) { alert('Error: ' + e.message); } finally { setSaving(false); }
   };
+
   const confirmFinalizar = async () => {
     try {
       setSaving(true);
-      await updateStage('finalizado', {
-        observation: finalNote,
-        images: finalMedia,
-        completed: true,
-      });
+      await updateStage('finalizado', { observation: finalNote, images: finalMedia, completed: true });
       finalDirtyRef.current = false;
       setShowCompletionModal(true);
     } catch (e) {
       alert('Error: ' + (e?.response?.data?.message || e.message));
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   const btnClass = `w-full h-11 rounded-2xl bg-gradient-to-r from-[#6366f1] to-[#3b82f6]
     disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest transition-all`;
 
+  // Clase para botones secundarios (subir fotos)
+  const uploadBtnClass = `h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 disabled:bg-white/5 disabled:text-white/30
+    disabled:cursor-not-allowed border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors`;
+
   return (
-    <div className={`mt-8 md:mt-10 transition-all duration-300 ${viewVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
+    <div className="mt-8 md:mt-10">
       {showCompletionModal && cita ? (
         <ServiceCompletionModal
           cita={cita}
           onClose={() => setShowCompletionModal(false)}
           onSuccess={() => {
             setShowCompletionModal(false);
-            try {
-              window.dispatchEvent(new CustomEvent('motoexpert:refresh_notifications'));
-            } catch {}
+            try { window.dispatchEvent(new CustomEvent('motoexpert:refresh_notifications')); } catch {}
           }}
           showToast={showToast || (() => {})}
         />
       ) : null}
+
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
         <div className="md:col-span-8 space-y-5 md:space-y-6">
           {stages.map((s) => {
@@ -852,6 +760,7 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                 <div className="mt-5 text-sm font-bold text-white/50">Completa la etapa anterior para habilitar esta sección.</div>
               );
 
+              // ── RECEPCIÓN ──────────────────────────────────────────────────
               if (s.id === 'recepcion') {
                 if (isDone) return (
                   <div className="mt-5 space-y-4">
@@ -862,10 +771,10 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                 return (
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center justify-between gap-3">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos / video de llegada (1–4)</div>
-                      <button type="button" onClick={() => socketReady && recepcionRef.current?.click()}
-                        disabled={!socketReady || saving}
-                        className="h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos / video de llegada (opcional, máx. 4)</div>
+                      {/* ✅ FIX: onClick sin socketReady, disabled solo por saving */}
+                      <button type="button" onClick={() => recepcionRef.current?.click()}
+                        disabled={saving} className={uploadBtnClass}>
                         Subir fotos
                       </button>
                       <input ref={recepcionRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleRecepcionFiles} />
@@ -873,18 +782,21 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                     <Gallery images={recepcionMedia} />
                     <div className="space-y-2">
                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Observación</div>
-                      <textarea rows={4} value={recepcionNote} onChange={(e) => { recepcionDirtyRef.current = true; setRecepcionNote(e.target.value); }}
+                      <textarea rows={4} value={recepcionNote}
+                        onChange={(e) => { recepcionDirtyRef.current = true; setRecepcionNote(e.target.value); }}
                         placeholder="Ej. Rayón en carenado izquierdo, nivel de combustible bajo..."
                         className="w-full rounded-2xl bg-[#0f172a]/60 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#6366f1]/50 transition-colors resize-none" />
                     </div>
+                    {/* ✅ FIX: Solo requiere nota, fotos opcionales, sin socketReady */}
                     <button type="button" onClick={saveRecepcion}
-                      disabled={!socketReady || saving || recepcionMedia.length === 0 || !recepcionNote.trim()} className={btnClass}>
+                      disabled={saving || !recepcionNote.trim()} className={btnClass}>
                       {saving ? 'Guardando...' : 'Avanzar a siguiente etapa'}
                     </button>
                   </div>
                 );
               }
 
+              // ── DIAGNÓSTICO ────────────────────────────────────────────────
               if (s.id === 'diagnostico') {
                 if (isDone) return (
                   <div className="mt-5 space-y-4">
@@ -896,28 +808,31 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                   <div className="mt-5 space-y-4">
                     <div className="space-y-2">
                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Diagnóstico técnico</div>
-                      <textarea rows={6} value={diagText} onChange={(e) => { diagDirtyRef.current = true; setDiagText(e.target.value); }}
+                      <textarea rows={6} value={diagText}
+                        onChange={(e) => { diagDirtyRef.current = true; setDiagText(e.target.value); }}
                         placeholder="Describe hallazgos, causas probables, recomendaciones, repuestos..."
                         className="w-full rounded-2xl bg-[#0f172a]/60 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#6366f1]/50 transition-colors resize-none" />
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Foto o video opcional</div>
-                      <button type="button" onClick={() => socketReady && diagRef.current?.click()}
-                        disabled={!socketReady || saving}
-                        className="h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors">
+                      {/* ✅ FIX: sin socketReady */}
+                      <button type="button" onClick={() => diagRef.current?.click()}
+                        disabled={saving} className={uploadBtnClass}>
                         Subir
                       </button>
                       <input ref={diagRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleDiagFile} />
                     </div>
                     <Gallery images={diagMedia} />
+                    {/* ✅ FIX: sin socketReady */}
                     <button type="button" onClick={saveDiagnostico}
-                      disabled={!socketReady || saving || !diagText.trim()} className={btnClass}>
+                      disabled={saving || !diagText.trim()} className={btnClass}>
                       {saving ? 'Guardando...' : 'Avanzar a siguiente etapa'}
                     </button>
                   </div>
                 );
               }
 
+              // ── EN PROCESO ─────────────────────────────────────────────────
               if (s.id === 'proceso') {
                 if (isDone) return (
                   <div className="mt-5 space-y-3">
@@ -937,20 +852,22 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos o videos (0–4)</div>
-                      <button type="button" onClick={() => socketReady && procRef.current?.click()}
-                        disabled={!socketReady || saving}
-                        className="h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors">
+                      {/* ✅ FIX: sin socketReady */}
+                      <button type="button" onClick={() => procRef.current?.click()}
+                        disabled={saving} className={uploadBtnClass}>
                         Subir
                       </button>
                       <input ref={procRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleProcFiles} />
                     </div>
                     <Gallery images={procMedia} />
                     <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
-                      <input value={procUpdate} onChange={(e) => { procDirtyRef.current = true; setProcUpdate(e.target.value); }}
-                        onKeyDown={(e) => e.key === 'Enter' && socketReady && addProcessUpdate()}
+                      <input value={procUpdate}
+                        onChange={(e) => { procDirtyRef.current = true; setProcUpdate(e.target.value); }}
+                        onKeyDown={(e) => e.key === 'Enter' && addProcessUpdate()}
                         placeholder="Ej. Se cambió el aceite, se revisaron frenos..."
                         className="h-11 rounded-2xl bg-[#0f172a]/60 border border-white/10 px-4 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#6366f1]/50 transition-colors" />
-                      <button type="button" onClick={addProcessUpdate} disabled={!socketReady || saving}
+                      {/* ✅ FIX: sin socketReady */}
+                      <button type="button" onClick={addProcessUpdate} disabled={saving}
                         className="h-11 px-5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors">
                         Agregar
                       </button>
@@ -969,14 +886,16 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                         ))
                       }
                     </div>
+                    {/* ✅ FIX: sin socketReady */}
                     <button type="button" onClick={saveProceso}
-                      disabled={!socketReady || saving || procLog.length === 0} className={btnClass}>
+                      disabled={saving || procLog.length === 0} className={btnClass}>
                       {saving ? 'Guardando...' : 'Avanzar a siguiente etapa'}
                     </button>
                   </div>
                 );
               }
 
+              // ── FINALIZADO ─────────────────────────────────────────────────
               if (isDone) return (
                 <div className="mt-5 space-y-4">
                   <Gallery images={s.data.photos} />
@@ -986,40 +905,25 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
               return (
                 <div className="mt-5 space-y-4">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos o video del resultado (1–4)</div>
-                    <button type="button" onClick={() => socketReady && finalRef.current?.click()}
-                      disabled={!socketReady || saving}
-                      className="h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 disabled:bg-white/5 disabled:text-white/30 disabled:cursor-not-allowed border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos o video del resultado (opcional, máx. 4)</div>
+                    {/* ✅ FIX: sin socketReady */}
+                    <button type="button" onClick={() => finalRef.current?.click()}
+                      disabled={saving} className={uploadBtnClass}>
                       Subir fotos
                     </button>
                     <input ref={finalRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFinalFiles} />
                   </div>
                   <Gallery images={finalMedia} />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Precio final</div>
-                      <input
-                        value={finalPrice}
-                        onChange={(e) => { finalDirtyRef.current = true; setFinalPrice(e.target.value); }}
-                        placeholder="Ej. 120000"
-                        className="h-11 w-full rounded-2xl bg-[#0f172a]/60 border border-white/10 px-4 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#6366f1]/50 transition-colors"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Estado</div>
-                      <div className="h-11 w-full rounded-2xl bg-[#0f172a]/40 border border-white/10 px-4 flex items-center text-sm font-black text-emerald-300">
-                        Listo para finalizar
-                      </div>
-                    </div>
-                  </div>
                   <div className="space-y-2">
                     <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Observación final</div>
-                    <textarea rows={4} value={finalNote} onChange={(e) => { finalDirtyRef.current = true; setFinalNote(e.target.value); }}
+                    <textarea rows={4} value={finalNote}
+                      onChange={(e) => { finalDirtyRef.current = true; setFinalNote(e.target.value); }}
                       placeholder="Ej. Prueba de ruta OK, se recomienda control a los 500 km..."
                       className="w-full rounded-2xl bg-[#0f172a]/60 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#6366f1]/50 transition-colors resize-none" />
                   </div>
+                  {/* ✅ FIX: sin socketReady, fotos opcionales */}
                   <button type="button" onClick={confirmFinalizar}
-                    disabled={!socketReady || saving || finalMedia.length === 0 || !finalNote.trim()} className={btnClass}>
+                    disabled={saving || !finalNote.trim()} className={btnClass}>
                     {saving ? 'Guardando...' : 'Confirmar y Finalizar'}
                   </button>
                 </div>
@@ -1038,12 +942,10 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
           <div className="hidden md:block md:sticky md:top-24 border border-white/10 bg-[#1e293b]/60 rounded-3xl p-6">
             <SidebarContent stages={stages} cita={cita} startedAt={startedAt} elapsed={elapsed} />
             <div className="mt-5">
-              <button
-                type="button"
-                onClick={() => setShowCompletionModal(true)}
-                disabled={!socketReady || !cita || (cita?.estado || '').toString().toUpperCase() !== 'EN PROCESO'}
-                className="w-full h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-white/10 disabled:text-white/30 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest transition-colors"
-              >
+              {/* ✅ FIX: FINALIZAR SERVICIO sin socketReady */}
+              <button type="button" onClick={() => setShowCompletionModal(true)}
+                disabled={!cita || (cita?.estado || '').toString().toUpperCase() !== 'EN PROCESO'}
+                className="w-full h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-white/10 disabled:text-white/30 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest transition-colors">
                 FINALIZAR SERVICIO
               </button>
             </div>
@@ -1058,14 +960,10 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
 // ─── Vista Cliente ─────────────────────────────────────────────────────────────
 
 const ClientView = ({ stages, cita, startedAt, elapsed, live }) => {
-  const [entered, setEntered]     = useState(false);
-  const [viewVisible, setViewVisible] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(false);
 
-  useEffect(() => { const t = setTimeout(() => setEntered(true), 50); return () => clearTimeout(t); }, []);
-
   return (
-    <div className={`mt-8 md:mt-10 transition-all duration-300 ${viewVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
+    <div className="mt-8 md:mt-10">
       <ProgressBar stages={stages} live={live} />
       <div className="mt-6 md:mt-8 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
         <div className="md:col-span-8 space-y-5 md:space-y-6">
@@ -1121,9 +1019,7 @@ const ClientView = ({ stages, cita, startedAt, elapsed, live }) => {
                     return (
                       <div className="mt-5 space-y-4">
                         <Gallery images={s.data.photos} />
-                        {String(s.data.note || '').trim() ? (
-                          <div className="text-sm font-bold text-white/80">{s.data.note}</div>
-                        ) : null}
+                        {String(s.data.note || '').trim() ? <div className="text-sm font-bold text-white/80">{s.data.note}</div> : null}
                       </div>
                     );
                   }
@@ -1137,9 +1033,7 @@ const ClientView = ({ stages, cita, startedAt, elapsed, live }) => {
                     return (
                       <div className="mt-5 space-y-4">
                         <Gallery images={s.data.media} />
-                        {String(s.data.text || '').trim() ? (
-                          <div className="text-sm font-bold text-white/80 whitespace-pre-wrap">{s.data.text}</div>
-                        ) : null}
+                        {String(s.data.text || '').trim() ? <div className="text-sm font-bold text-white/80 whitespace-pre-wrap">{s.data.text}</div> : null}
                       </div>
                     );
                   }
@@ -1168,6 +1062,7 @@ const ClientView = ({ stages, cita, startedAt, elapsed, live }) => {
               </CardShell>
             );
 
+            // Etapa completada (done)
             const content = (() => {
               if (s.id === 'recepcion' || s.id === 'finalizado') return (
                 <div className="mt-5 space-y-4">
@@ -1233,28 +1128,18 @@ const ClientView = ({ stages, cita, startedAt, elapsed, live }) => {
 export default function ServiceTracking({ citaId = 123, userRole = 'cliente', onBack, showToast }) {
   const isEmployee = userRole === 'empleado' || userRole === 'trabajador';
   const {
-    stages,
-    rawStages,
-    loading: stagesLoading,
-    error: stagesError,
-    updateStage,
-    addUpdate,
-    socketStatus,
-    showUpdatedBadge,
-    showSyncedBadge,
-  } = useServiceStages(
-    citaId,
-    { allowInit: isEmployee },
-  );
+    stages, rawStages,
+    loading: stagesLoading, error: stagesError,
+    updateStage, addUpdate,
+    socketStatus, showUpdatedBadge, showSyncedBadge,
+  } = useServiceStages(citaId, { allowInit: isEmployee });
+
   const { cita, loading: citaLoading, error: citaError } = useCita(citaId);
   const [entered, setEntered] = useState(false);
   const [tick, setTick] = useState(Date.now());
 
   useEffect(() => { const t = setTimeout(() => setEntered(true), 50); return () => clearTimeout(t); }, []);
-  useEffect(() => {
-    const i = setInterval(() => setTick(Date.now()), 1000);
-    return () => clearInterval(i);
-  }, []);
+  useEffect(() => { const i = setInterval(() => setTick(Date.now()), 1000); return () => clearInterval(i); }, []);
 
   const handleBack = () => {
     if (typeof onBack === 'function') { onBack(); return; }
@@ -1263,8 +1148,7 @@ export default function ServiceTracking({ citaId = 123, userRole = 'cliente', on
 
   const startedAt = useMemo(() => {
     const rec = rawStages?.find?.((s) => s?.stage === 'RECEPCION')?.createdAt;
-    const fallback = rawStages?.[0]?.createdAt;
-    const iso = rec || fallback;
+    const iso = rec || rawStages?.[0]?.createdAt;
     const d = iso ? new Date(iso) : null;
     return d && Number.isFinite(d.getTime()) ? d.toISOString() : null;
   }, [rawStages]);
@@ -1298,7 +1182,8 @@ export default function ServiceTracking({ citaId = 123, userRole = 'cliente', on
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
-      {socketStatus === 'reconnecting' ? (
+      {/* Banners de estado del socket */}
+      {socketStatus === 'reconnecting' && (
         <div className="fixed top-16 left-0 right-0 z-50">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm font-bold text-yellow-200">
@@ -1306,55 +1191,48 @@ export default function ServiceTracking({ citaId = 123, userRole = 'cliente', on
             </div>
           </div>
         </div>
-      ) : null}
-      {socketStatus === 'failed' ? (
+      )}
+      {socketStatus === 'failed' && (
         <div className="fixed top-16 left-0 right-0 z-50">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 flex items-center justify-between gap-4">
-              <div className="text-sm font-bold text-red-200">
-                ❌ No se pudo reconectar. Por favor recarga la página.
-              </div>
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                className="h-9 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest transition-colors"
-              >
+              <div className="text-sm font-bold text-red-200">❌ No se pudo reconectar. Por favor recarga la página.</div>
+              <button type="button" onClick={() => window.location.reload()}
+                className="h-9 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest transition-colors">
                 Recargar
               </button>
             </div>
           </div>
         </div>
-      ) : null}
-      {showUpdatedBadge ? (
+      )}
+      {showUpdatedBadge && (
         <div className="fixed top-24 right-4 z-50">
           <div className="px-3 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs font-black uppercase tracking-widest">
             ✅ Actualizado
           </div>
         </div>
-      ) : null}
-      {showSyncedBadge ? (
+      )}
+      {showSyncedBadge && (
         <div className="fixed top-24 right-4 z-50">
           <div className="px-3 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs font-black uppercase tracking-widest">
             ✅ Sincronizado
           </div>
         </div>
-      ) : null}
+      )}
+
+      {/* Fondo decorativo */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-32 -left-32 w-[520px] h-[520px] rounded-full bg-[#6366f1]/20 blur-3xl" />
         <div className="absolute -bottom-40 -right-28 w-[560px] h-[560px] rounded-full bg-[#3b82f6]/15 blur-3xl" />
       </div>
 
       <div className={`relative max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-10 transition-opacity duration-500 ${entered ? 'opacity-100' : 'opacity-0'}`}>
-
         {/* Header */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <button type="button" onClick={handleBack}
-              className="h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors">
-              ← Volver
-            </button>
-          </div>
-
+          <button type="button" onClick={handleBack}
+            className="h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors">
+            ← Volver
+          </button>
           <div className="flex flex-col gap-3">
             <div className="inline-flex items-center gap-2 w-fit px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/70">
               MotoExpert · Seguimiento
@@ -1376,7 +1254,6 @@ export default function ServiceTracking({ citaId = 123, userRole = 'cliente', on
               updateStage={updateStage}
               addUpdate={addUpdate}
               showToast={showToast}
-              socketReady={socketStatus === 'connected'}
             />
           ) : (
             <ClientView
