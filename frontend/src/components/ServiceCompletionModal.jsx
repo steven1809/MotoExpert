@@ -46,33 +46,25 @@ const ServiceCompletionModal = ({ cita, onClose, onSuccess, showToast }) => {
       }
 
       // 2. Validar el código con el servidor
-      const validateRes = await fetch(`${API_BASE_URL}/payments/validate`, {
+      const validateRes = await fetch(`${API_BASE_URL}/citas/${cita.id}/verificar-entrega`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ tokenCode: sanitized }),
+        body: JSON.stringify({ codigo: sanitized }),
       });
 
       if (!validateRes.ok) {
-        if (validateRes.status === 404) {
-          setTokenError('Código no encontrado');
-        } else if (validateRes.status === 409) {
-          setTokenError('Código ya fue usado');
-        } else if (validateRes.status === 410) {
-          setTokenError('Código expirado');
-        } else {
-          const errData = await validateRes.json().catch(() => null);
-          setTokenError(errData?.message || 'No se pudo validar el código');
-        }
+        const errData = await validateRes.json().catch(() => null);
+        setTokenError(errData?.message || 'No se pudo validar el código');
         setIsSubmitting(false);
         return;
       }
 
       const validated = await validateRes.json().catch(() => null);
-      if (!validated || validated.valid !== true) {
-        setTokenError('No se pudo validar el código');
+      if (!validated || validated.valido !== true) {
+        setTokenError('Código incorrecto');
         setIsSubmitting(false);
         return;
       }

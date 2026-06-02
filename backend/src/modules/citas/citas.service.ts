@@ -253,6 +253,24 @@ export class CitasService {
         'Servicio Programado Exitosamente',
         `Tu servicio de ${servicio.nombre} para el vehículo ${vehiculo.placa} ha sido agendado para el ${formattedFecha} a las ${dto.hora_inicio}. Tu código de entrega es: ${deliveryCode}`,
       );
+      
+      // Enviar WhatsApp si el usuario tiene teléfono
+      const telefono = usuario.telefono || (dto.guestData?.telefono);
+      if (telefono) {
+        const empleadoNombre = empleadoAsignado.usuario 
+          ? `${empleadoAsignado.usuario.nombre} ${empleadoAsignado.usuario.apellidos || ''}`.trim()
+          : 'Nuestro especialista';
+          
+        const mensaje = `🔧 MotoExpert - Cita Confirmada!\n` +
+          `Servicio: ${servicio.nombre}\n` +
+          `Vehículo: ${vehiculo.placa}\n` +
+          `Especialista: ${empleadoNombre}\n` +
+          `Fecha: ${formattedFecha}\n` +
+          `Hora: ${dto.hora_inicio}\n` +
+          `🎫 Código de entrega: ${deliveryCode}`;
+          
+        await this.notificacionesService.sendWhatsApp(telefono, mensaje);
+      }
     } catch (error) {
       console.error('Error al generar código de entrega o notificar:', error);
     }
