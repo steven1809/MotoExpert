@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --primary: #1a1a2e;
+  --accent: #e94560;
+  --bg: #16213e;
+  --text: #ffffff;
+  --text-muted: #94a3b8;
+  --card-bg: #0f3460;
+  --bottom-nav-height: 70px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--primary);
+  color: var(--text);
+  overflow-x: hidden;
+  touch-action: manipulation;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 800;
+}
+
+input, button {
+  font-family: inherit;
+  border: none;
+  outline: none;
+}
+
+/* Mobile-first resets */
+button:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.page-container {
+  min-height: 100vh;
+  padding: 20px;
+  padding-bottom: calc(var(--bottom-nav-height) + 30px);
+}
