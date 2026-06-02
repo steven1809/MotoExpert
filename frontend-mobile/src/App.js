@@ -11,10 +11,33 @@ import Servicios from './pages/Servicios';
 import Notificaciones from './pages/Notificaciones';
 import BottomNavbar from './components/BottomNavbar';
 
-// Componente para proteger rutas
-const PrivateRoute = ({ children }) => {
-  const isAuthenticated = !!localStorage.getItem('token');
-  return isAuthenticated ? children : <Navigate to="/login" />;
+// Componente para proteger rutas por rol
+const PrivateRoute = ({ children, allowedRoles = [] }) => {
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  let user = null;
+  
+  try {
+    user = userStr && userStr !== 'undefined' ? JSON.parse(userStr) : null;
+  } catch (e) {
+    console.error("Error parsing user from localStorage", e);
+    user = null;
+  }
+
+  if (!token || !user) {
+    return <Navigate to="/login" />;
+  }
+
+  // Normalizar el rol para la comparación
+  const userRole = (user.role || user.rol || '').toLowerCase();
+  const normalizedAllowedRoles = allowedRoles.map(r => r.toLowerCase());
+
+  if (normalizedAllowedRoles.length > 0 && !normalizedAllowedRoles.includes(userRole)) {
+    console.warn(`Access denied for role: ${userRole}. Allowed: ${normalizedAllowedRoles}`);
+    return <Navigate to="/" />;
+  }
+
+  return children;
 };
 
 function App() {
@@ -43,7 +66,7 @@ function App() {
           } />
 
           <Route path="/vehiculos" element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={['usuario', 'user', 'admin']}>
               <>
                 <Vehiculos />
                 <BottomNavbar />
@@ -52,7 +75,7 @@ function App() {
           } />
 
           <Route path="/servicios" element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={['usuario', 'user', 'admin']}>
               <>
                 <Servicios />
                 <BottomNavbar />
@@ -61,7 +84,7 @@ function App() {
           } />
 
           <Route path="/resenas" element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={['usuario', 'user']}>
               <>
                 <Resenas />
                 <BottomNavbar />

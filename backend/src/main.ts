@@ -12,9 +12,18 @@ async function bootstrap() {
   const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3002';
 
   app.enableCors({
-    origin: [frontendUrl, 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://127.0.0.1:3002'],
+    origin: [
+      frontendUrl, 
+      'http://localhost:3000', 
+      'http://localhost:3001', 
+      'http://localhost:3002', 
+      'http://localhost:3003',
+      'http://127.0.0.1:3002',
+      'http://127.0.0.1:3003'
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   });
   app.useGlobalPipes(
     new ValidationPipe({

@@ -5,13 +5,46 @@ import { Home, Calendar, User, Car, Star, Package, Bell } from 'lucide-react';
 const BottomNavbar = () => {
   const location = useLocation();
   const [showMore, setShowMore] = useState(false);
+  const [role, setRole] = useState('usuario');
 
-  const mainItems = [
-    { icon: <Home size={22} />, label: 'Inicio', path: '/' },
-    { icon: <Calendar size={22} />, label: 'Citas', path: '/citas' },
-    { icon: <Car size={22} />, label: 'Vehículos', path: '/vehiculos' },
-    { icon: <User size={22} />, label: 'Perfil', path: '/perfil' },
-  ];
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setRole(user.role || user.rol || 'usuario');
+    }
+    setShowMore(false);
+  }, [location.pathname]);
+
+  // Definir items principales por rol
+  const getMainItems = () => {
+    const normalizedRole = role.toLowerCase();
+    if (normalizedRole === 'admin') {
+      return [
+        { icon: <Home size={22} />, label: 'Panel', path: '/' },
+        { icon: <Calendar size={22} />, label: 'Citas', path: '/citas' },
+        { icon: <Car size={22} />, label: 'Flota', path: '/vehiculos' },
+        { icon: <User size={22} />, label: 'Perfil', path: '/perfil' },
+      ];
+    } else if (normalizedRole === 'empleado' || normalizedRole === 'trabajador') {
+      return [
+        { icon: <Home size={22} />, label: 'Tareas', path: '/' },
+        { icon: <Calendar size={22} />, label: 'Agenda', path: '/citas' },
+        { icon: <Bell size={22} />, label: 'Avisos', path: '/notificaciones' },
+        { icon: <User size={22} />, label: 'Perfil', path: '/perfil' },
+      ];
+    } else {
+      // Usuario o User
+      return [
+        { icon: <Home size={22} />, label: 'Inicio', path: '/' },
+        { icon: <Calendar size={22} />, label: 'Citas', path: '/citas' },
+        { icon: <Car size={22} />, label: 'Motos', path: '/vehiculos' },
+        { icon: <User size={22} />, label: 'Perfil', path: '/perfil' },
+      ];
+    }
+  };
+
+  const mainItems = getMainItems();
 
   const moreItems = [
     { icon: <Package size={22} />, label: 'Catálogo', path: '/servicios' },
@@ -19,15 +52,13 @@ const BottomNavbar = () => {
     { icon: <Bell size={22} />, label: 'Avisos', path: '/notificaciones' },
   ];
 
-  // Cerrar menú al cambiar de ruta
-  useEffect(() => {
-    setShowMore(false);
-  }, [location.pathname]);
+  const normalizedRole = role.toLowerCase();
+  const isUser = normalizedRole === 'usuario' || normalizedRole === 'user';
 
   return (
     <>
-      {/* Menú Expandible (More) */}
-      {showMore && (
+      {/* Menú Expandible (Solo para Usuario) */}
+      {showMore && isUser && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 900 }} onClick={() => setShowMore(false)}>
           <div className="animate-in slide-in-from-bottom duration-300" style={{ 
             position: 'absolute', 
@@ -81,7 +112,7 @@ const BottomNavbar = () => {
               textDecoration: 'none',
               color: isActive ? '#2563EB' : '#94A3B8',
               transition: 'all 0.2s ease',
-              width: '20%'
+              width: isUser ? '20%' : '25%'
             })}
           >
             {item.icon}
@@ -89,28 +120,29 @@ const BottomNavbar = () => {
           </NavLink>
         ))}
 
-        {/* Botón Central More */}
-        <button 
-          onClick={() => setShowMore(!showMore)}
-          style={{ 
-            width: '56px', 
-            height: '56px', 
-            backgroundColor: '#2563EB', 
-            borderRadius: '18px', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            border: 'none', 
-            color: 'white', 
-            boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)',
-            marginTop: '-25px',
-            transition: 'transform 0.2s'
-          }}
-          className={showMore ? 'rotate-45' : ''}
-        >
-          <Plus size={28} />
-          <style>{`.rotate-45 { transform: rotate(45deg); }`}</style>
-        </button>
+        {/* Botón Central More (Solo para Usuario) */}
+        {isUser && (
+          <button 
+            onClick={() => setShowMore(!showMore)}
+            style={{ 
+              width: '56px', 
+              height: '56px', 
+              backgroundColor: '#2563EB', 
+              borderRadius: '18px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              border: 'none', 
+              color: 'white', 
+              boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)',
+              marginTop: '-25px',
+              transition: 'transform 0.2s'
+            }}
+            className={showMore ? 'rotate-45' : ''}
+          >
+            <Plus size={28} />
+          </button>
+        )}
 
         {mainItems.slice(2, 4).map((item) => (
           <NavLink
@@ -124,7 +156,7 @@ const BottomNavbar = () => {
               textDecoration: 'none',
               color: isActive ? '#2563EB' : '#94A3B8',
               transition: 'all 0.2s ease',
-              width: '20%'
+              width: isUser ? '20%' : '25%'
             })}
           >
             {item.icon}
@@ -132,6 +164,7 @@ const BottomNavbar = () => {
           </NavLink>
         ))}
       </nav>
+      <style>{`.rotate-45 { transform: rotate(45deg); }`}</style>
     </>
   );
 };
