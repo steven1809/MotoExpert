@@ -1,5 +1,4 @@
 import React, { useEffect, useCallback, useMemo, useRef, useState } from 'react';
-import axios from 'axios';
 import { io } from 'socket.io-client';
 import ServiceCompletionModal from '../components/ServiceCompletionModal';
 
@@ -90,7 +89,15 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
   const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 
   const initStages = useCallback(async () => {
-    const { data } = await axios.patch(`${API}/citas/${citaId}/stages/init`, {}, { headers: getHeaders() });
+    const response = await fetch(`${API}/citas/${citaId}/stages/init`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getHeaders(),
+      },
+      body: JSON.stringify({}),
+    });
+    const data = await response.json();
     setRawStages(data);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [citaId]);
@@ -98,24 +105,37 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
   const fetchStages = useCallback(async ({ silent } = { silent: false }) => {
     if (!citaId) return;
     try {
-      if (!silent && !hasLoadedRef.current) setLoading(true);
-      const { data } = await axios.get(`${API}/citas/${citaId}/stages`, { headers: getHeaders() });
+      if (!silent && !hasLoadedRef.current) {
+        setLoading(true);
+      }
+      const response = await fetch(`${API}/citas/${citaId}/stages`, {
+        headers: getHeaders(),
+      });
+      const data = await response.json();
       if (Array.isArray(data) && data.length === 0) {
-        if (allowInit) await initStages();
-        else setRawStages([]);
+        if (allowInit) {
+          await initStages();
+        } else {
+          setRawStages([]);
+        }
       } else {
         setRawStages(data);
       }
       hasLoadedRef.current = true;
     } catch (e) {
-      if (e?.response?.status === 404) {
-        if (allowInit) await initStages();
-        else setRawStages([]);
+      if (e?.status === 404) {
+        if (allowInit) {
+          await initStages();
+        } else {
+          setRawStages([]);
+        }
       } else {
         setError(e.message);
       }
     } finally {
-      if (!silent || hasLoadedRef.current) setLoading(false);
+      if (!silent || hasLoadedRef.current) {
+        setLoading(false);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [citaId, initStages, allowInit]);
@@ -123,13 +143,27 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
   const fetchCurrentStatus = useCallback(async () => {
     if (!citaId) return false;
     try {
-      const { data } = await axios.get(`${API}/api/appointments/${citaId}/current-status`, { headers: getHeaders() });
-      if (Array.isArray(data?.stages)) { setRawStages(data.stages); hasLoadedRef.current = true; return true; }
+      const response = await fetch(`${API}/api/appointments/${citaId}/current-status`, {
+        headers: getHeaders(),
+      });
+      const data = await response.json();
+      if (Array.isArray(data?.stages)) {
+        setRawStages(data.stages);
+        hasLoadedRef.current = true;
+        return true;
+      }
       return false;
     } catch {
       try {
-        const { data } = await axios.get(`${API}/citas/${citaId}/current-status`, { headers: getHeaders() });
-        if (Array.isArray(data?.stages)) { setRawStages(data.stages); hasLoadedRef.current = true; return true; }
+        const response = await fetch(`${API}/citas/${citaId}/current-status`, {
+          headers: getHeaders(),
+        });
+        const data = await response.json();
+        if (Array.isArray(data?.stages)) {
+          setRawStages(data.stages);
+          hasLoadedRef.current = true;
+          return true;
+        }
       } catch {}
       return false;
     }
@@ -138,11 +172,18 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
 
   const updateStage = useCallback(async (localId, payload) => {
     const stageKey = STAGE_MAP_REVERSE[localId];
-    const { data } = await axios.patch(
+    const response = await fetch(
       `${API}/citas/${citaId}/stages/${stageKey}`,
-      payload,
-      { headers: getHeaders() },
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getHeaders(),
+        },
+        body: JSON.stringify(payload),
+      },
     );
+    const data = await response.json();
     setRawStages((prev) => prev.map((s) => (s.stage === stageKey ? data : s)));
     return data;
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -349,7 +390,10 @@ function useCita(citaId) {
     const run = async () => {
       try {
         setLoading(true);
-        const { data } = await axios.get(`${API}/citas/${citaId}`, { headers: { Authorization: `Bearer ${token}` } });
+        const response = await fetch(`${API}/citas/${citaId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
         if (cancelled) return;
         if (!data) { setCita(null); setError('No autorizado o cita no encontrada'); return; }
         setCita(data);
@@ -636,7 +680,7 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
     }
   }, [stages]);
 
-  // ✅ FIX: Handlers de archivos sin dependencia de socketReady
+  // Handlers de archivos
   const handleRecepcionFiles = async (e) => {
     recepcionDirtyRef.current = true;
     const urls = await readFilesAsDataUrls(e.target.files, 4);
@@ -665,8 +709,18 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
   const saveRecepcion = async () => {
     try {
       setSaving(true);
-      // ✅ Asegurar que los stages existen antes de guardar
-      try { await axios.patch(`${API}/citas/${citaId}/stages/init`, {}, { headers: getHeaders() }); } catch {}
+      // Asegurar que los stages existen antes de guardar
+      try {
+        const response = await fetch(`${API}/citas/${citaId}/stages/init`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getHeaders(),
+          },
+          body: JSON.stringify({}),
+        });
+        await response.json();
+      } catch {}
       await updateStage('recepcion', { observation: recepcionNote, images: recepcionMedia, completed: true });
       recepcionDirtyRef.current = false;
     } catch (e) { alert('Error: ' + e.message); } finally { setSaving(false); }
@@ -772,7 +826,6 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos / video de llegada (opcional, máx. 4)</div>
-                      {/* ✅ FIX: onClick sin socketReady, disabled solo por saving */}
                       <button type="button" onClick={() => recepcionRef.current?.click()}
                         disabled={saving} className={uploadBtnClass}>
                         Subir fotos
@@ -787,7 +840,6 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                         placeholder="Ej. Rayón en carenado izquierdo, nivel de combustible bajo..."
                         className="w-full rounded-2xl bg-[#0f172a]/60 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#6366f1]/50 transition-colors resize-none" />
                     </div>
-                    {/* ✅ FIX: Solo requiere nota, fotos opcionales, sin socketReady */}
                     <button type="button" onClick={saveRecepcion}
                       disabled={saving || !recepcionNote.trim()} className={btnClass}>
                       {saving ? 'Guardando...' : 'Avanzar a siguiente etapa'}
@@ -815,7 +867,6 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Foto o video opcional</div>
-                      {/* ✅ FIX: sin socketReady */}
                       <button type="button" onClick={() => diagRef.current?.click()}
                         disabled={saving} className={uploadBtnClass}>
                         Subir
@@ -823,7 +874,6 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                       <input ref={diagRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleDiagFile} />
                     </div>
                     <Gallery images={diagMedia} />
-                    {/* ✅ FIX: sin socketReady */}
                     <button type="button" onClick={saveDiagnostico}
                       disabled={saving || !diagText.trim()} className={btnClass}>
                       {saving ? 'Guardando...' : 'Avanzar a siguiente etapa'}
@@ -852,7 +902,6 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos o videos (0–4)</div>
-                      {/* ✅ FIX: sin socketReady */}
                       <button type="button" onClick={() => procRef.current?.click()}
                         disabled={saving} className={uploadBtnClass}>
                         Subir
@@ -866,16 +915,16 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                         onKeyDown={(e) => e.key === 'Enter' && addProcessUpdate()}
                         placeholder="Ej. Se cambió el aceite, se revisaron frenos..."
                         className="h-11 rounded-2xl bg-[#0f172a]/60 border border-white/10 px-4 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#6366f1]/50 transition-colors" />
-                      {/* ✅ FIX: sin socketReady */}
                       <button type="button" onClick={addProcessUpdate} disabled={saving}
                         className="h-11 px-5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors">
                         Agregar
                       </button>
                     </div>
                     <div className="space-y-3">
-                      {procLog.length === 0
-                        ? <div className="text-sm font-bold text-white/50">Aún no hay updates.</div>
-                        : procLog.map((u) => (
+                      {procLog.length === 0 ? (
+                        <div className="text-sm font-bold text-white/50">Aún no hay updates.</div>
+                      ) : (
+                        procLog.map((u) => (
                           <div key={u.id} className="rounded-2xl border border-white/10 bg-[#0f172a]/40 px-4 py-3">
                             <div className="flex items-center justify-between gap-4">
                               <div className="text-xs font-black text-white/70 uppercase tracking-widest">Update</div>
@@ -884,11 +933,10 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                             <div className="mt-2 text-sm font-bold text-white/80">{u.text}</div>
                           </div>
                         ))
-                      }
+                      )}
                     </div>
-                    {/* ✅ FIX: sin socketReady */}
                     <button type="button" onClick={saveProceso}
-                      disabled={saving || procLog.length === 0} className={btnClass}>
+                      disabled={saving} className={btnClass}>
                       {saving ? 'Guardando...' : 'Avanzar a siguiente etapa'}
                     </button>
                   </div>
@@ -896,375 +944,274 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
               }
 
               // ── FINALIZADO ─────────────────────────────────────────────────
-              if (isDone) return (
-                <div className="mt-5 space-y-4">
-                  <Gallery images={s.data.photos} />
-                  <div className="text-sm font-bold text-white/80">{s.data.note}</div>
-                </div>
-              );
-              return (
-                <div className="mt-5 space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos o video del resultado (opcional, máx. 4)</div>
-                    {/* ✅ FIX: sin socketReady */}
-                    <button type="button" onClick={() => finalRef.current?.click()}
-                      disabled={saving} className={uploadBtnClass}>
-                      Subir fotos
+              if (s.id === 'finalizado') {
+                if (isDone) return (
+                  <div className="mt-5 space-y-4">
+                    <Gallery images={s.data.photos} />
+                    <div className="text-sm font-bold text-white/80">{s.data.note}</div>
+                  </div>
+                );
+                return (
+                  <div className="mt-5 space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos / video (opcional, máx. 4)</div>
+                      <button type="button" onClick={() => finalRef.current?.click()}
+                        disabled={saving} className={uploadBtnClass}>
+                        Subir
+                      </button>
+                      <input ref={finalRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFinalFiles} />
+                    </div>
+                    <Gallery images={finalMedia} />
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Observación final</div>
+                      <textarea rows={4} value={finalNote}
+                        onChange={(e) => { finalDirtyRef.current = true; setFinalNote(e.target.value); }}
+                        placeholder="Descripción final del servicio realizado..."
+                        className="w-full rounded-2xl bg-[#0f172a]/60 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#6366f1]/50 transition-colors resize-none" />
+                    </div>
+                    <button type="button" onClick={confirmFinalizar}
+                      disabled={saving} className={btnClass}>
+                      {saving ? 'Guardando...' : 'Finalizar servicio'}
                     </button>
-                    <input ref={finalRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFinalFiles} />
                   </div>
-                  <Gallery images={finalMedia} />
-                  <div className="space-y-2">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Observación final</div>
-                    <textarea rows={4} value={finalNote}
-                      onChange={(e) => { finalDirtyRef.current = true; setFinalNote(e.target.value); }}
-                      placeholder="Ej. Prueba de ruta OK, se recomienda control a los 500 km..."
-                      className="w-full rounded-2xl bg-[#0f172a]/60 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#6366f1]/50 transition-colors resize-none" />
-                  </div>
-                  {/* ✅ FIX: sin socketReady, fotos opcionales */}
-                  <button type="button" onClick={confirmFinalizar}
-                    disabled={saving || !finalNote.trim()} className={btnClass}>
-                    {saving ? 'Guardando...' : 'Confirmar y Finalizar'}
-                  </button>
-                </div>
-              );
+                );
+              }
+
+              return null;
             })();
 
             return (
-              <CardShell key={s.id} state={isDone ? 'done' : isActive ? 'active' : 'locked'}>
-                {header}{body}
+              <CardShell key={s.id} state={isDone ? 'done' : isActive ? 'active' : 'pending'}>
+                {header}
+                {body}
               </CardShell>
             );
           })}
         </div>
 
-        <div className="md:col-span-4">
-          <div className="hidden md:block md:sticky md:top-24 border border-white/10 bg-[#1e293b]/60 rounded-3xl p-6">
-            <SidebarContent stages={stages} cita={cita} startedAt={startedAt} elapsed={elapsed} />
-            <div className="mt-5">
-              {/* ✅ FIX: FINALIZAR SERVICIO sin socketReady */}
-              <button type="button" onClick={() => setShowCompletionModal(true)}
-                disabled={!cita || (cita?.estado || '').toString().toUpperCase() !== 'EN PROCESO'}
-                className="w-full h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-white/10 disabled:text-white/30 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest transition-colors">
-                FINALIZAR SERVICIO
-              </button>
-            </div>
-          </div>
-          <MobileSummary stages={stages} cita={cita} startedAt={startedAt} elapsed={elapsed} open={summaryOpen} onToggle={() => setSummaryOpen((v) => !v)} />
+        {/* Sidebar Desktop */}
+        <div className="md:col-span-4 hidden md:block">
+          <SidebarContent stages={stages} cita={cita} startedAt={startedAt} elapsed={elapsed} />
         </div>
       </div>
+
+      {/* Mobile Summary */}
+      <MobileSummary
+        stages={stages} cita={cita} startedAt={startedAt} elapsed={elapsed}
+        open={summaryOpen} onToggle={() => setSummaryOpen(!summaryOpen)}
+      />
     </div>
   );
 };
 
 // ─── Vista Cliente ─────────────────────────────────────────────────────────────
 
-const ClientView = ({ stages, cita, startedAt, elapsed, live }) => {
+const ClientView = ({ stages, cita, showToast, socketStatus }) => {
   const [summaryOpen, setSummaryOpen] = useState(false);
+
+  const liveIndicator = socketStatus === 'connected';
 
   return (
     <div className="mt-8 md:mt-10">
-      <ProgressBar stages={stages} live={live} />
-      <div className="mt-6 md:mt-8 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
-        <div className="md:col-span-8 space-y-5 md:space-y-6">
-          {stages.map((s) => {
-            if (s.status === 'pending') return (
-              <CardShell key={s.id} state="locked">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/70 shrink-0">
-                      <StageIcon id={s.id} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm md:text-base font-black text-white/70 uppercase tracking-wide truncate">{s.title}</div>
-                      <div className="text-xs font-bold text-white/45">Aún no inicia</div>
-                    </div>
-                  </div>
-                  <StatusPill state="pending" />
-                </div>
-                <div className="mt-5 h-10 rounded-2xl bg-white/5" />
-              </CardShell>
-            );
+      {/* Badges de conexión */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+        {socketStatus === 'connected' && (
+          <div className="px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-pulse">
+            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+            Conexión en vivo
+          </div>
+        )}
+        {socketStatus === 'reconnecting' && (
+          <div className="px-4 py-2 rounded-full bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 text-xs font-bold flex items-center gap-2 animate-pulse">
+            <div className="w-2 h-2 rounded-full bg-yellow-500" />
+            Reconectando...
+          </div>
+        )}
+        {socketStatus === 'failed' && (
+          <div className="px-4 py-2 rounded-full bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-bold flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-500" />
+            Sin conexión
+          </div>
+        )}
+      </div>
 
-            if (s.status === 'active') return (
-              <CardShell key={s.id} state="active">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#6366f1]/20 to-[#3b82f6]/10 border border-white/10 flex items-center justify-center text-white shrink-0">
-                      <StageIcon id={s.id} />
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
+        <div className="md:col-span-8 space-y-6">
+          {/* Progress Bar */}
+          <ProgressBar stages={stages} live={liveIndicator} />
+
+          {/* Cards de Etapas */}
+          {stages.map((s) => (
+            <CardShell key={s.id} state={s.status}>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#6366f1]/20 to-[#3b82f6]/10 border border-white/10 flex items-center justify-center text-white shrink-0">
+                  <StageIcon id={s.id} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="text-sm md:text-base font-black text-white uppercase tracking-wide">{s.title}</div>
+                    <StatusPill state={s.status} />
+                  </div>
+                  {s.status === 'done' && (
+                    <div className="mt-2 text-xs font-bold text-white/60">
+                      Completado · {formatDateTime(s.completedAt)}
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-sm md:text-base font-black text-white uppercase tracking-wide truncate">{s.title}</div>
-                      {live ? (
-                        <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#3b82f6]/10 border border-[#3b82f6]/30 text-[#93c5fd] text-[10px] font-black uppercase tracking-widest">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#60a5fa] opacity-50" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#60a5fa]" />
-                          </span>
-                          EN VIVO
+                  )}
+                  {s.status === 'active' && (
+                    <div className="mt-2 text-xs font-bold text-[#93c5fd] animate-pulse">
+                      Etapa en proceso
+                    </div>
+                  )}
+
+                  {/* Contenido extra (fotos/texto) si está completada o activa */}
+                  {(s.status === 'done' || s.status === 'active') && (
+                    <div className="mt-4 space-y-4">
+                      {s.data.text && s.id === 'diagnostico' && (
+                        <div className="text-sm font-bold text-white/80 whitespace-pre-wrap">{s.data.text}</div>
+                      )}
+                      {s.data.note && (s.id === 'recepcion' || s.id === 'finalizado') && (
+                        <div className="text-sm font-bold text-white/80">{s.data.note}</div>
+                      )}
+                      {s.id === 'proceso' && s.data.updates?.length > 0 && (
+                        <div className="space-y-3">
+                          {s.data.updates.map((u) => (
+                            <div key={u.id} className="rounded-2xl border border-white/10 bg-[#0f172a]/40 px-4 py-3">
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="text-xs font-black text-white/70 uppercase tracking-widest">Update</div>
+                                <div className="text-[10px] font-black text-white/40">{formatDateTime(u.at)}</div>
+                              </div>
+                              <div className="mt-2 text-sm font-bold text-white/80">{u.text}</div>
+                            </div>
+                          ))}
                         </div>
-                      ) : null}
+                      )}
+                      {/* Galería de fotos/videos (todas las etapas) */}
+                      <Gallery images={
+                        s.id === 'diagnostico' ? s.data.media :
+                        s.id === 'proceso' ? s.data.media :
+                        s.data.photos
+                      } />
                     </div>
-                  </div>
-                  <StatusPill state="active" />
+                  )}
                 </div>
-                {(() => {
-                  if (s.id === 'recepcion' || s.id === 'finalizado') {
-                    const hasContent = (s.data?.photos || []).length > 0 || String(s.data?.note || '').trim().length > 0;
-                    if (!hasContent) return (
-                      <div className="mt-5 rounded-2xl border border-white/10 bg-[#0f172a]/40 px-4 py-4 text-sm font-bold text-white/70">
-                        El taller está trabajando en esta etapa. Verás novedades cuando se registren.
-                      </div>
-                    );
-                    return (
-                      <div className="mt-5 space-y-4">
-                        <Gallery images={s.data.photos} />
-                        {String(s.data.note || '').trim() ? <div className="text-sm font-bold text-white/80">{s.data.note}</div> : null}
-                      </div>
-                    );
-                  }
-                  if (s.id === 'diagnostico') {
-                    const hasContent = (s.data?.media || []).length > 0 || String(s.data?.text || '').trim().length > 0;
-                    if (!hasContent) return (
-                      <div className="mt-5 rounded-2xl border border-white/10 bg-[#0f172a]/40 px-4 py-4 text-sm font-bold text-white/70">
-                        El taller está trabajando en esta etapa. Verás novedades cuando se registren.
-                      </div>
-                    );
-                    return (
-                      <div className="mt-5 space-y-4">
-                        <Gallery images={s.data.media} />
-                        {String(s.data.text || '').trim() ? <div className="text-sm font-bold text-white/80 whitespace-pre-wrap">{s.data.text}</div> : null}
-                      </div>
-                    );
-                  }
-                  const hasMedia = (s.data?.media || []).length > 0;
-                  const hasUpdates = (s.data?.updates || []).length > 0;
-                  if (!hasMedia && !hasUpdates) return (
-                    <div className="mt-5 rounded-2xl border border-white/10 bg-[#0f172a]/40 px-4 py-4 text-sm font-bold text-white/70">
-                      El taller está trabajando en esta etapa. Verás novedades cuando se registren.
-                    </div>
-                  );
-                  return (
-                    <div className="mt-5 space-y-3">
-                      <Gallery images={s.data.media} />
-                      {s.data.updates?.map((u) => (
-                        <div key={u.id} className="rounded-2xl border border-white/10 bg-[#0f172a]/40 px-4 py-3">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="text-xs font-black text-white/70 uppercase tracking-widest">Update</div>
-                            <div className="text-[10px] font-black text-white/40">{formatDateTime(u.at)}</div>
-                          </div>
-                          <div className="mt-2 text-sm font-bold text-white/80">{u.text}</div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </CardShell>
-            );
-
-            // Etapa completada (done)
-            const content = (() => {
-              if (s.id === 'recepcion' || s.id === 'finalizado') return (
-                <div className="mt-5 space-y-4">
-                  <Gallery images={s.data.photos} />
-                  <div className="text-sm font-bold text-white/80">{s.data.note}</div>
-                </div>
-              );
-              if (s.id === 'diagnostico') return (
-                <div className="mt-5 space-y-4">
-                  <Gallery images={s.data.media} />
-                  <div className="text-sm font-bold text-white/80 whitespace-pre-wrap">{s.data.text}</div>
-                </div>
-              );
-              return (
-                <div className="mt-5 space-y-3">
-                  <Gallery images={s.data.media} />
-                  {s.data.updates?.map((u) => (
-                    <div key={u.id} className="rounded-2xl border border-white/10 bg-[#0f172a]/40 px-4 py-3">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="text-xs font-black text-white/70 uppercase tracking-widest">Update</div>
-                        <div className="text-[10px] font-black text-white/40">{formatDateTime(u.at)}</div>
-                      </div>
-                      <div className="mt-2 text-sm font-bold text-white/80">{u.text}</div>
-                    </div>
-                  ))}
-                </div>
-              );
-            })();
-
-            return (
-              <CardShell key={s.id} state="done">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-300 shrink-0">
-                      <StageIcon id={s.id} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm md:text-base font-black text-white uppercase tracking-wide truncate">{s.title}</div>
-                      <div className="text-xs font-bold text-white/60">Completado · {formatDateTime(s.completedAt)}</div>
-                    </div>
-                  </div>
-                  <div className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">✓ OK</div>
-                </div>
-                {content}
-              </CardShell>
-            );
-          })}
+              </div>
+            </CardShell>
+          ))}
         </div>
 
-        <div className="md:col-span-4">
-          <div className="hidden md:block md:sticky md:top-24 border border-white/10 bg-[#1e293b]/60 rounded-3xl p-6">
-            <SidebarContent stages={stages} cita={cita} startedAt={startedAt} elapsed={elapsed} />
-          </div>
-          <MobileSummary stages={stages} cita={cita} startedAt={startedAt} elapsed={elapsed} open={summaryOpen} onToggle={() => setSummaryOpen((v) => !v)} />
+        {/* Sidebar Desktop */}
+        <div className="md:col-span-4 hidden md:block">
+          <SidebarContent
+            stages={stages}
+            cita={cita}
+            startedAt={
+              stages.find((s) => s.completedAt)?.completedAt ||
+              (cita?.fecha ? `${cita.fecha}T${cita.hora}` : null)
+            }
+            elapsed={null}
+          />
         </div>
       </div>
+
+      {/* Mobile Summary */}
+      <MobileSummary
+        stages={stages}
+        cita={cita}
+        startedAt={
+          stages.find((s) => s.completedAt)?.completedAt ||
+          (cita?.fecha ? `${cita.fecha}T${cita.hora}` : null)
+        }
+        elapsed={null}
+        open={summaryOpen}
+        onToggle={() => setSummaryOpen(!summaryOpen)}
+      />
     </div>
   );
 };
 
-// ─── Componente principal ───────────────────────────────────────────────────────
+// ─── Componente Principal ──────────────────────────────────────────────────────
 
-export default function ServiceTracking({ citaId = 123, userRole = 'cliente', onBack, showToast }) {
-  const isEmployee = userRole === 'empleado' || userRole === 'trabajador';
-  const {
-    stages, rawStages,
-    loading: stagesLoading, error: stagesError,
-    updateStage, addUpdate,
-    socketStatus, showUpdatedBadge, showSyncedBadge,
-  } = useServiceStages(citaId, { allowInit: isEmployee });
+export default function ServiceTracking({ citaId, showToast }) {
+  const { cita, loading: loadingCita, error: errorCita } = useCita(citaId);
+  const { stages, loading: loadingStages, error: errorStages, updateStage, addUpdate, socketStatus } = useServiceStages(citaId, {
+    allowInit: !!cita?.esEmpleado,
+  });
 
-  const { cita, loading: citaLoading, error: citaError } = useCita(citaId);
-  const [entered, setEntered] = useState(false);
-  const [tick, setTick] = useState(Date.now());
+  const loading = loadingCita || loadingStages;
+  const error = errorCita || errorStages;
 
-  useEffect(() => { const t = setTimeout(() => setEntered(true), 50); return () => clearTimeout(t); }, []);
-  useEffect(() => { const i = setInterval(() => setTick(Date.now()), 1000); return () => clearInterval(i); }, []);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-[#3b82f6]/30 border-t-[#3b82f6] rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-  const handleBack = () => {
-    if (typeof onBack === 'function') { onBack(); return; }
-    window.history.back();
-  };
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-red-400 text-sm font-bold">Error al cargar el servicio</div>
+          <div className="text-white/50 text-xs mt-2">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
-  const startedAt = useMemo(() => {
-    const rec = rawStages?.find?.((s) => s?.stage === 'RECEPCION')?.createdAt;
-    const iso = rec || rawStages?.[0]?.createdAt;
-    const d = iso ? new Date(iso) : null;
-    return d && Number.isFinite(d.getTime()) ? d.toISOString() : null;
-  }, [rawStages]);
-
-  const elapsed = useMemo(() => {
-    if (!startedAt) return null;
-    const startMs = new Date(startedAt).getTime();
-    if (!Number.isFinite(startMs)) return null;
-    const diff = Math.max(0, tick - startMs);
-    const totalSeconds = Math.floor(diff / 1000);
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${pad(h)}:${pad(m)}:${pad(s)}`;
-  }, [startedAt, tick]);
-
-  const loading = stagesLoading || citaLoading;
-  const error = stagesError || citaError;
-
-  if (loading) return (
-    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-      <div className="text-white text-lg animate-pulse">Cargando seguimiento...</div>
-    </div>
-  );
-  if (error) return (
-    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-      <div className="text-red-400 text-center px-6">{error}</div>
-    </div>
-  );
+  if (!cita) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-white/50 text-sm">Cita no encontrada</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white">
-      {/* Banners de estado del socket */}
-      {socketStatus === 'reconnecting' && (
-        <div className="fixed top-16 left-0 right-0 z-50">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm font-bold text-yellow-200">
-              ⚠️ Conexión perdida. Reconectando...
-            </div>
-          </div>
-        </div>
-      )}
-      {socketStatus === 'failed' && (
-        <div className="fixed top-16 left-0 right-0 z-50">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 flex items-center justify-between gap-4">
-              <div className="text-sm font-bold text-red-200">❌ No se pudo reconectar. Por favor recarga la página.</div>
-              <button type="button" onClick={() => window.location.reload()}
-                className="h-9 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest transition-colors">
-                Recargar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showUpdatedBadge && (
-        <div className="fixed top-24 right-4 z-50">
-          <div className="px-3 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs font-black uppercase tracking-widest">
-            ✅ Actualizado
-          </div>
-        </div>
-      )}
-      {showSyncedBadge && (
-        <div className="fixed top-24 right-4 z-50">
-          <div className="px-3 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs font-black uppercase tracking-widest">
-            ✅ Sincronizado
-          </div>
-        </div>
-      )}
-
-      {/* Fondo decorativo */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-32 -left-32 w-[520px] h-[520px] rounded-full bg-[#6366f1]/20 blur-3xl" />
-        <div className="absolute -bottom-40 -right-28 w-[560px] h-[560px] rounded-full bg-[#3b82f6]/15 blur-3xl" />
-      </div>
-
-      <div className={`relative max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-10 transition-opacity duration-500 ${entered ? 'opacity-100' : 'opacity-0'}`}>
+    <div className="min-h-screen bg-[#0f172a] pb-20">
+      <div className="max-w-5xl mx-auto px-4 pt-8">
         {/* Header */}
-        <div className="space-y-4">
-          <button type="button" onClick={handleBack}
-            className="h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors">
-            ← Volver
-          </button>
-          <div className="flex flex-col gap-3">
-            <div className="inline-flex items-center gap-2 w-fit px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/70">
-              MotoExpert · Seguimiento
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#6366f1]/20 to-[#3b82f6]/10 border border-white/10 flex items-center justify-center text-white">
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 14l4-4m0 0l4 4m-4-4v10" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h16v4" />
+              </svg>
             </div>
-            <div className="text-3xl md:text-4xl font-black tracking-tight text-white">
-              Cita #{citaId}
+            <div>
+              <div className="text-sm md:text-base font-black text-white uppercase tracking-wide">
+                {cita.servicio?.nombre || 'Servicio'}
+              </div>
+              <div className="text-xs font-bold text-white/60">
+                {cita.vehiculo?.marca} {cita.vehiculo?.modelo} · {cita.vehiculo?.placa?.toUpperCase()}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 md:mt-10">
-          {isEmployee ? (
-            <EmployeeView
-              citaId={citaId}
-              stages={stages}
-              cita={cita}
-              startedAt={startedAt}
-              elapsed={elapsed}
-              updateStage={updateStage}
-              addUpdate={addUpdate}
-              showToast={showToast}
-            />
-          ) : (
-            <ClientView
-              stages={stages}
-              cita={cita}
-              startedAt={startedAt}
-              elapsed={elapsed}
-              live={socketStatus === 'connected'}
-            />
-          )}
-        </div>
+        {/* Vista según rol */}
+        {cita.esEmpleado ? (
+          <EmployeeView
+            citaId={citaId}
+            stages={stages}
+            cita={cita}
+            startedAt={stages.find((s) => s.completedAt)?.completedAt || (cita.fecha ? `${cita.fecha}T${cita.hora}` : null)}
+            elapsed={null}
+            updateStage={updateStage}
+            addUpdate={addUpdate}
+            showToast={showToast}
+          />
+        ) : (
+          <ClientView
+            stages={stages}
+            cita={cita}
+            showToast={showToast}
+            socketStatus={socketStatus}
+          />
+        )}
       </div>
     </div>
   );
