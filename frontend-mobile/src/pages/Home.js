@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Car, Star, Shield, Bell, ChevronRight } from 'lucide-react';
+import { Shield, Bell, ChevronRight } from 'lucide-react';
 import api from '../services/api';
 import AdminHome from './AdminHome';
 import EmpleadoHome from './EmpleadoHome';
@@ -83,25 +83,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Quick Access Grid */}
-      <section style={{ marginBottom: '30px' }}>
-        <h3 style={{ fontSize: '12px', color: '#64748B', marginBottom: '15px', letterSpacing: '0.1em' }}>Accesos Rápidos</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
-          {[
-            { label: 'Citas', icon: <Calendar size={24} />, color: '#EFF6FF', iconColor: '#2563EB' },
-            { label: 'Vehículos', icon: <Car size={24} />, color: '#FFF7ED', iconColor: '#EA580C' },
-            { label: 'Reseñas', icon: <Star size={24} />, color: '#FAF5FF', iconColor: '#9333EA' },
-            { label: 'Puntos', icon: <Shield size={24} />, color: '#ECFDF5', iconColor: '#059669' },
-          ].map((item, idx) => (
-            <div key={idx} className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', border: 'none', backgroundColor: 'white' }}>
-              <div style={{ width: '50px', height: '50px', backgroundColor: item.color, borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {React.cloneElement(item.icon, { color: item.iconColor })}
-              </div>
-              <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A' }}>{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+
 
       {/* Next Appointment */}
       <section>
