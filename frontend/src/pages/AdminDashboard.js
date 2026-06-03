@@ -187,8 +187,11 @@ class AdminDashboard extends Component {
       this.setState({
         stats: {
           usuarios: Array.isArray(users) ? users.length : 0,
-          ingresos: 12500.50,
+          ingresos: 0,
           empleadosActivos: Array.isArray(employees) 
+            ? employees.filter(e => e.estado === 'activo').length 
+            : 0,
+          empleadosInactivos: Array.isArray(employees) 
             ? employees.filter(e => e.estado === 'activo').length 
             : 0,
           empleadosInactivos: Array.isArray(employees)
@@ -695,53 +698,7 @@ class AdminDashboard extends Component {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          <div 
-            onClick={() => this.props.setView('users')}
-            className="bg-[#0B1220] border border-white/5 rounded-3xl p-8 cursor-pointer hover:scale-[1.02] hover:border-purple-500/30 transition-all duration-300 group shadow-lg"
-          >
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B] group-hover:text-purple-400 transition-colors">Usuarios Registrados</div>
-            <div className="mt-4 flex items-end justify-between">
-              <div className="text-4xl font-black text-white italic">{stats.usuarios}</div>
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-              </div>
-            </div>
-          </div>
-          <div 
-            onClick={() => this.props.setView('admin_empleados')}
-            className="bg-[#0B1220] border border-white/5 rounded-3xl p-8 cursor-pointer hover:scale-[1.02] hover:border-emerald-500/30 transition-all duration-300 group shadow-lg"
-          >
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B] group-hover:text-emerald-400 transition-colors">Empleados Activos</div>
-            <div className="mt-4 flex items-end justify-between">
-              <div className="text-4xl font-black text-white italic">{stats.empleadosActivos}</div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 2.944V12m0 0l4.5 4.5M12 12l-4.5 4.5" /></svg>
-              </div>
-            </div>
-          </div>
-          <div 
-            onClick={() => this.props.setView('admin_empleados')}
-            className="bg-[#0B1220] border border-white/5 rounded-3xl p-8 cursor-pointer hover:scale-[1.02] hover:border-rose-500/30 transition-all duration-300 group shadow-lg"
-          >
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B] group-hover:text-rose-400 transition-colors">Empleados Inactivos</div>
-            <div className="mt-4 flex items-end justify-between">
-              <div className="text-4xl font-black text-white italic">{stats.empleadosInactivos}</div>
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[#0B1220] border border-white/5 rounded-3xl p-8 shadow-lg">
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-[#64748B]">Dinero Recaudado</div>
-            <div className="mt-4 flex items-end justify-between">
-              <div className="text-4xl font-black text-white italic">${stats.ingresos.toLocaleString()}</div>
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start animate-in fade-in duration-500">
             {/* CARD REGISTRAR VEHÍCULO */}
