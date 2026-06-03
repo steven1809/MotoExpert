@@ -38,7 +38,7 @@ const BottomNavbar = () => {
       return [
         { icon: <Home size={22} />, label: 'Inicio', path: '/' },
         { icon: <Calendar size={22} />, label: 'Citas', path: '/citas' },
-        { icon: <Car size={22} />, label: 'Motos', path: '/vehiculos' },
+        { icon: <Car size={22} />, label: 'Vehículos', path: '/vehiculos' },
         { icon: <User size={22} />, label: 'Perfil', path: '/perfil' },
       ];
     }

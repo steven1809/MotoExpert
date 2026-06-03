@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, MapPin, ChevronRight, Plus, ChevronLeft, Check, Car, User, Settings } from 'lucide-react';
 import api from '../services/api';
 import '../styles/global.css';
 
 const Citas = () => {
+  const navigate = useNavigate();
   const [citas, setCitas] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
   const [servicios, setServicios] = useState([]);
@@ -389,20 +391,24 @@ const Citas = () => {
                   </div>
                 </div>
 
-                <button style={{ 
-                  position: 'absolute', 
-                  right: '20px', 
-                  bottom: '18px', 
-                  backgroundColor: 'none', 
-                  border: 'none', 
-                  color: '#2563EB',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  fontWeight: '800',
-                  fontSize: '11px',
-                  textTransform: 'uppercase'
-                }}>
+                <button 
+                  style={{ 
+                    position: 'absolute', 
+                    right: '20px', 
+                    bottom: '18px', 
+                    backgroundColor: 'none', 
+                    border: 'none', 
+                    color: '#2563EB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: '800',
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => navigate(`/tracking/${cita.id}`)}
+                >
                   Detalles <ChevronRight size={14} />
                 </button>
               </div>

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Shield, Bell, ChevronRight } from 'lucide-react';
 import api from '../services/api';
 import AdminHome from './AdminHome';
 import EmpleadoHome from './EmpleadoHome';
 
 const Home = () => {
+  const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState(null);
   const [upcomingCita, setUpcomingCita] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,10 @@ const Home = () => {
           <p style={{ fontSize: '12px', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Bienvenido de vuelta</p>
           <h1 style={{ fontSize: '26px', color: '#0F172A', fontStyle: 'italic' }}>Hola, {firstName}</h1>
         </div>
-        <div style={{ width: '48px', height: '48px', backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        <div
+          style={{ width: '48px', height: '48px', backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', cursor: 'pointer' }}
+          onClick={() => navigate('/notificaciones')}
+        >
           <Bell size={20} color="#64748B" />
           <div style={{ position: 'absolute', top: '12px', right: '12px', width: '8px', height: '8px', backgroundColor: '#EF4444', borderRadius: '50%', border: '2px solid white' }} />
         </div>
@@ -77,7 +82,7 @@ const Home = () => {
             <span style={{ fontSize: '10px', fontWeight: '900', color: 'white', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cliente {userProfile?.rank || 'Gold'}</span>
           </div>
           <h2 style={{ color: 'white', fontSize: '24px', marginBottom: '10px', textTransform: 'none', fontStyle: 'normal' }}>Tu auto merece<br/>lo mejor</h2>
-          <button style={{ backgroundColor: 'white', color: '#2563EB', border: 'none', padding: '12px 20px', borderRadius: '14px', fontWeight: '800', fontSize: '12px', textTransform: 'uppercase' }}>
+          <button style={{ backgroundColor: 'white', color: '#2563EB', border: 'none', padding: '12px 20px', borderRadius: '14px', fontWeight: '800', fontSize: '12px', textTransform: 'uppercase', cursor: 'pointer' }} onClick={() => navigate('/citas')}>
             Agendar Ahora
           </button>
         </div>
@@ -89,7 +94,7 @@ const Home = () => {
       <section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
           <h3 style={{ fontSize: '12px', color: '#64748B', letterSpacing: '0.1em' }}>Próxima Cita</h3>
-          <span style={{ fontSize: '12px', fontWeight: '800', color: '#2563EB' }}>Ver todas</span>
+          <span style={{ fontSize: '12px', fontWeight: '800', color: '#2563EB', cursor: 'pointer' }} onClick={() => navigate('/citas')}>Ver todas</span>
         </div>
         
         {upcomingCita ? (
@@ -115,7 +120,7 @@ const Home = () => {
         ) : (
           <div className="card" style={{ textAlign: 'center', padding: '30px', borderStyle: 'dashed' }}>
             <p style={{ fontSize: '13px', color: '#64748B', fontWeight: '600' }}>No tienes citas programadas</p>
-            <button style={{ marginTop: '10px', color: '#2563EB', fontWeight: '800', fontSize: '12px', textTransform: 'uppercase', background: 'none', border: 'none' }}>
+            <button style={{ marginTop: '10px', color: '#2563EB', fontWeight: '800', fontSize: '12px', textTransform: 'uppercase', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => navigate('/citas')}>
               + Agendar Ahora
             </button>
           </div>
@@ -124,7 +129,7 @@ const Home = () => {
 
       {/* Loyalty Progress */}
       <section style={{ marginTop: '30px' }}>
-        <div className="card" style={{ backgroundColor: '#F1F5F9', border: 'none' }}>
+        <div className="card" style={{ backgroundColor: '#F1F5F9', border: 'none', cursor: 'pointer' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <span style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A' }}>Programa de Lealtad</span>
             <span style={{ fontSize: '12px', fontWeight: '800', color: '#2563EB' }}>{userProfile?.points || 0} pts</span>
