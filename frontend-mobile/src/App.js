@@ -41,83 +41,87 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
   return children;
 };
 
+import { ThemeProvider } from './context/ThemeContext';
+
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          
-          <Route path="/" element={
-            <PrivateRoute>
-              <>
-                <Home />
-                <BottomNavbar />
-              </>
-            </PrivateRoute>
-          } />
-          
-          <Route path="/citas" element={
-            <PrivateRoute>
-              <>
-                <Citas />
-                <BottomNavbar />
-              </>
-            </PrivateRoute>
-          } />
+    <ThemeProvider>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            
+            <Route path="/" element={
+              <PrivateRoute>
+                <>
+                  <Home />
+                  <BottomNavbar />
+                </>
+              </PrivateRoute>
+            } />
+            
+            <Route path="/citas" element={
+              <PrivateRoute>
+                <>
+                  <Citas />
+                  <BottomNavbar />
+                </>
+              </PrivateRoute>
+            } />
 
-          <Route path="/vehiculos" element={
-            <PrivateRoute allowedRoles={['usuario', 'user', 'admin']}>
-              <>
-                <Vehiculos />
-                <BottomNavbar />
-              </>
-            </PrivateRoute>
-          } />
+            <Route path="/vehiculos" element={
+              <PrivateRoute allowedRoles={['usuario', 'user', 'admin']}>
+                <>
+                  <Vehiculos />
+                  <BottomNavbar />
+                </>
+              </PrivateRoute>
+            } />
 
-          <Route path="/servicios" element={
-            <PrivateRoute allowedRoles={['usuario', 'user', 'admin']}>
-              <>
-                <Servicios />
-                <BottomNavbar />
-              </>
-            </PrivateRoute>
-          } />
+            <Route path="/servicios" element={
+              <PrivateRoute allowedRoles={['usuario', 'user', 'admin']}>
+                <>
+                  <Servicios />
+                  <BottomNavbar />
+                </>
+              </PrivateRoute>
+            } />
 
-          <Route path="/resenas" element={
-            <PrivateRoute allowedRoles={['usuario', 'user']}>
-              <>
-                <Resenas />
-                <BottomNavbar />
-              </>
-            </PrivateRoute>
-          } />
+            <Route path="/resenas" element={
+              <PrivateRoute allowedRoles={['usuario', 'user']}>
+                <>
+                  <Resenas />
+                  <BottomNavbar />
+                </>
+              </PrivateRoute>
+            } />
 
-          <Route path="/notificaciones" element={
-            <PrivateRoute>
-              <>
-                <Notificaciones />
-                <BottomNavbar />
-              </>
-            </PrivateRoute>
-          } />
-          
-          <Route path="/perfil" element={
-            <PrivateRoute>
-              <>
-                <Perfil />
-                <BottomNavbar />
-              </>
-            </PrivateRoute>
-          } />
-          <Route path="/tracking/:citaId" element={
-            <PrivateRoute>
-              <ServiceTracking />
-            </PrivateRoute>
-          } />
-        </Routes>
-      </div>
-    </Router>
+            <Route path="/notificaciones" element={
+              <PrivateRoute>
+                <>
+                  <Notificaciones />
+                  <BottomNavbar />
+                </>
+              </PrivateRoute>
+            } />
+            
+            <Route path="/perfil" element={
+              <PrivateRoute>
+                <>
+                  <Perfil />
+                  <BottomNavbar />
+                </>
+              </PrivateRoute>
+            } />
+            <Route path="/tracking/:citaId" element={
+              <PrivateRoute>
+                <ServiceTracking />
+              </PrivateRoute>
+            } />
+          </Routes>
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }
 

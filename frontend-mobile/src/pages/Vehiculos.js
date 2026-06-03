@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Car, Plus, ChevronLeft, Check, Trash2, Shield, Info, ArrowLeft } from 'lucide-react';
+import { Car, Plus, ChevronLeft, Check, Trash2, Shield, Info, ArrowLeft, X } from 'lucide-react';
 import api from '../services/api';
 import '../styles/global.css';
 
@@ -65,121 +65,148 @@ const Vehiculos = () => {
   if (loading) {
     return (
       <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="loader" />
-      </div>
-    );
-  }
-
-  if (showForm) {
-    return (
-      <div className="page-container" style={{ backgroundColor: 'white' }}>
-        <header style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
-          <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', color: '#0F172A' }}>
-            <ArrowLeft size={28} />
-          </button>
-          <h1 style={{ fontSize: '24px', fontStyle: 'italic', textTransform: 'none' }}>Nuevo Vehículo</h1>
-        </header>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="card" style={{ padding: '25px', border: 'none', backgroundColor: '#F8FAFC', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
-              {['auto', 'suv', 'moto', 'otro'].map(t => (
-                <div key={t} onClick={() => setFormData({ ...formData, tipo: t })} 
-                  style={{ 
-                    padding: '15px', 
-                    borderRadius: '18px', 
-                    textAlign: 'center', 
-                    backgroundColor: formData.tipo === t ? '#2563EB' : 'white',
-                    color: formData.tipo === t ? 'white' : '#64748B',
-                    border: formData.tipo === t ? '2px solid #2563EB' : '1px solid #E2E8F0',
-                    fontSize: '12px',
-                    fontWeight: '800',
-                    textTransform: 'uppercase'
-                  }}>
-                  {t}
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '10px', fontWeight: '900', color: '#64748B', textTransform: 'uppercase', marginLeft: '4px' }}>Marca</label>
-              <input required value={formData.marca} onChange={e => setFormData({ ...formData, marca: e.target.value })} placeholder="Ej: Toyota" 
-                style={{ padding: '16px', borderRadius: '16px', border: '1px solid #E2E8F0', fontSize: '15px', fontWeight: '700' }} />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '10px', fontWeight: '900', color: '#64748B', textTransform: 'uppercase', marginLeft: '4px' }}>Modelo</label>
-              <input required value={formData.modelo} onChange={e => setFormData({ ...formData, modelo: e.target.value })} placeholder="Ej: Corolla" 
-                style={{ padding: '16px', borderRadius: '16px', border: '1px solid #E2E8F0', fontSize: '15px', fontWeight: '700' }} />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '10px', fontWeight: '900', color: '#64748B', textTransform: 'uppercase', marginLeft: '4px' }}>Año</label>
-                <input required type="number" value={formData.anio} onChange={e => setFormData({ ...formData, anio: e.target.value })} 
-                  style={{ padding: '16px', borderRadius: '16px', border: '1px solid #E2E8F0', fontSize: '15px', fontWeight: '700' }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '10px', fontWeight: '900', color: '#64748B', textTransform: 'uppercase', marginLeft: '4px' }}>Placa</label>
-                <input required value={formData.placa} onChange={e => setFormData({ ...formData, placa: e.target.value })} placeholder="ABC-123" 
-                  style={{ padding: '16px', borderRadius: '16px', border: '1px solid #E2E8F0', fontSize: '15px', fontWeight: '700', textTransform: 'uppercase' }} />
-              </div>
-            </div>
-          </div>
-
-          <button type="submit" className="btn-primary" style={{ height: '60px', marginTop: '10px' }}>Registrar Vehículo</button>
-        </form>
+        <div style={{ width: '40px', height: '40px', border: '4px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   return (
     <div className="page-container">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-        <h1 style={{ fontSize: '26px', color: '#0F172A', fontStyle: 'italic' }}>Mis Vehículos</h1>
-        <button onClick={() => setShowForm(true)} style={{ width: '48px', height: '48px', backgroundColor: '#2563EB', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', color: 'white', boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)' }}>
-          <Plus size={24} />
-        </button>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', paddingTop: '10px' }}>
+        <div>
+          <p style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>GESTIÓN DE FLOTA</p>
+          <h1 style={{ fontSize: '28px', color: 'var(--text)', fontStyle: 'italic' }}>Vehículos</h1>
+        </div>
+        {!showForm && (
+          <button 
+            onClick={() => setShowForm(true)}
+            style={{ 
+              width: '52px', height: '52px', background: 'var(--gradient-primary)', border: 'none', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-md)', cursor: 'pointer'
+            }}
+          >
+            <Plus size={24} color="white" />
+          </button>
+        )}
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         {vehiculos.length > 0 ? (
-          vehiculos.map(v => (
-            <div key={v.id} className="card" style={{ padding: '20px', border: 'none', backgroundColor: 'white' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-                <div style={{ width: '60px', height: '60px', backgroundColor: '#F8FAFC', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E2E8F0' }}>
-                  <Car size={28} color="#2563EB" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <h4 style={{ fontSize: '17px', fontWeight: '800', color: '#0F172A', textTransform: 'none', fontStyle: 'normal' }}>{v.marca} {v.modelo}</h4>
-                    <span style={{ padding: '4px 8px', backgroundColor: '#F1F5F9', borderRadius: '6px', fontSize: '10px', fontWeight: '900', color: '#64748B' }}>{v.anio}</span>
+          vehiculos.map((v) => (
+            <div key={v.id} className="card" style={{ padding: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                  <div style={{ width: '56px', height: '56px', backgroundColor: 'var(--bg)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
+                    <Car size={28} color="var(--primary)" />
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Shield size={14} color="#2563EB" />
-                    <span style={{ fontSize: '13px', fontWeight: '900', color: '#2563EB', letterSpacing: '0.05em' }}>{v.placa}</span>
+                  <div>
+                    <h4 style={{ fontSize: '17px', fontWeight: '800', color: 'var(--text)', marginBottom: '4px', textTransform: 'none', fontStyle: 'normal' }}>{v.marca} {v.modelo}</h4>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>PLACA: {v.placa}</p>
                   </div>
                 </div>
+                <button 
+                  onClick={() => handleDelete(v.id)}
+                  style={{ background: 'none', border: 'none', color: 'var(--status-error)', opacity: 0.6, padding: '8px', cursor: 'pointer' }}
+                >
+                  <Trash2 size={20} />
+                </button>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '15px', borderTop: '1px solid #F1F5F9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748B' }}>
-                  <Info size={14} />
-                  <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase' }}>{v.tipo}</span>
+              <div style={{ display: 'flex', gap: '10px', paddingTop: '15px', borderTop: '1px solid var(--border)' }}>
+                <div style={{ padding: '6px 12px', borderRadius: '8px', backgroundColor: 'var(--bg)', fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  AÑO: {v.anio}
                 </div>
-                <button onClick={() => handleDelete(v.id)} style={{ padding: '8px', backgroundColor: '#FEF2F2', borderRadius: '10px', border: 'none', color: '#EF4444' }}>
-                  <Trash2 size={18} />
-                </button>
+                <div style={{ padding: '6px 12px', borderRadius: '8px', backgroundColor: 'var(--bg)', fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  TIPO: {v.tipo}
+                </div>
               </div>
             </div>
           ))
-        ) : (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94A3B8' }}>
-            <Car size={48} style={{ marginBottom: '20px', opacity: 0.3 }} />
-            <p style={{ fontWeight: '600' }}>No tienes vehículos registrados</p>
+        ) : !showForm && (
+          <div className="card" style={{ textAlign: 'center', padding: '60px 20px', borderStyle: 'dashed', borderWidth: '2px', background: 'transparent' }}>
+            <Car size={48} color="var(--text-muted)" style={{ marginBottom: '20px', opacity: 0.3 }} />
+            <p style={{ fontWeight: '700', color: 'var(--text-muted)', fontSize: '15px' }}>No tienes vehículos registrados</p>
+            <button className="btn-primary" style={{ width: 'auto', display: 'inline-flex', padding: '12px 24px', marginTop: '16px' }} onClick={() => setShowForm(true)}>
+              + REGISTRAR VEHÍCULO
+            </button>
           </div>
         )}
       </div>
+
+      {/* Add Vehicle Modal */}
+      {showForm && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 2000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(10px)' }}>
+          <div className="card" style={{ width: '100%', borderBottomLeftRadius: '0', borderBottomRightRadius: '0', padding: '30px', paddingBottom: 'calc(30px + env(safe-area-inset-bottom))', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+              <h2 style={{ fontSize: '22px', textTransform: 'none', color: 'var(--text)', margin: '0' }}>Nuevo Vehículo</h2>
+              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)' }}><X size={26} /></button>
+            </div>
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                {['auto', 'suv', 'moto', 'otro'].map(t => (
+                  <div key={t} onClick={() => setFormData({ ...formData, tipo: t })} 
+                    style={{ 
+                      padding: '16px', 
+                      borderRadius: '16px', 
+                      textAlign: 'center', 
+                      backgroundColor: formData.tipo === t ? 'var(--primary)' : 'var(--bg)',
+                      color: formData.tipo === t ? 'white' : 'var(--text)',
+                      border: formData.tipo === t ? '2px solid var(--primary)' : '1px solid var(--border)',
+                      fontSize: '12px',
+                      fontWeight: '800',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}>
+                    {t}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <input 
+                  type="text" 
+                  placeholder="Marca (Ej: Toyota)" 
+                  value={formData.marca}
+                  onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid var(--border)', backgroundColor: 'var(--bg)', color: 'var(--text)', fontSize: '15px', fontWeight: '600' }}
+                />
+                <input 
+                  type="text" 
+                  placeholder="Modelo (Ej: Corolla)" 
+                  value={formData.modelo}
+                  onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid var(--border)', backgroundColor: 'var(--bg)', color: 'var(--text)', fontSize: '15px', fontWeight: '600' }}
+                />
+                <input 
+                  type="number" 
+                  placeholder="Año" 
+                  value={formData.anio}
+                  onChange={(e) => setFormData({ ...formData, anio: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid var(--border)', backgroundColor: 'var(--bg)', color: 'var(--text)', fontSize: '15px', fontWeight: '600' }}
+                />
+                <input 
+                  type="text" 
+                  placeholder="Placa" 
+                  value={formData.placa}
+                  onChange={(e) => setFormData({ ...formData, placa: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid var(--border)', backgroundColor: 'var(--bg)', color: 'var(--text)', fontSize: '15px', fontWeight: '600' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>CANCELAR</button>
+                <button type="submit" className="btn-primary">GUARDAR VEHÍCULO</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

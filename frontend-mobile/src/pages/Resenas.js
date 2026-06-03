@@ -16,7 +16,6 @@ const Resenas = () => {
 
       const response = await api.get('/ratings');
       const allRatings = response.data.data || response.data;
-      // Filtrar por el usuario actual
       const userRatings = allRatings.filter(r => String(r.usuario?.id) === String(user.id));
       setResenas(userRatings);
     } catch (err) {
@@ -37,7 +36,7 @@ const Resenas = () => {
           key={s}
           size={14}
           fill={s <= value ? '#FBBF24' : 'none'}
-          color={s <= value ? '#FBBF24' : '#E2E8F0'}
+          color={s <= value ? '#FBBF24' : 'var(--border)'}
         />
       ))}
     </div>
@@ -46,81 +45,104 @@ const Resenas = () => {
   if (loading) {
     return (
       <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="loader" />
+        <div style={{ width: '40px', height: '40px', border: '4px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   return (
     <div className="page-container">
-      <header style={{ marginBottom: '25px' }}>
-        <h1 style={{ fontSize: '26px', color: '#0F172A', fontStyle: 'italic' }}>Mis Reseñas</h1>
-        <p style={{ fontSize: '12px', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tu opinión nos ayuda a mejorar</p>
+      <header style={{ marginBottom: '30px', paddingTop: '10px' }}>
+        <p style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>EXPERIENCIAS PASADAS</p>
+        <h1 style={{ fontSize: '28px', color: 'var(--text)', fontStyle: 'italic' }}>Mis Reseñas</h1>
       </header>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {resenas.length > 0 ? (
           resenas.map((r) => (
-            <div key={r.id} className="card" onClick={() => setSelectedResena(r)} style={{ padding: '20px', backgroundColor: 'white' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+            <div key={r.id} className="card" onClick={() => setSelectedResena(r)} style={{ cursor: 'pointer' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
                 <div style={{ flex: 1 }}>
-                  <h4 style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A', marginBottom: '4px' }}>
-                    {r.cita?.servicio?.nombre || 'Servicio AutoClean'}
+                  <h4 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text)', marginBottom: '6px', textTransform: 'none', fontStyle: 'normal' }}>
+                    {r.cita?.servicio?.nombre || 'Servicio Premium'}
                   </h4>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <StarRating value={Math.round((r.serviceRating + r.specialistRating) / 2)} />
-                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#94A3B8' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)' }}>
                       {new Date(r.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
                     </span>
                   </div>
                 </div>
-                <div style={{ width: '40px', height: '40px', backgroundColor: '#F8FAFC', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FileText size={20} color="#2563EB" />
+                <div style={{ width: '48px', height: '48px', backgroundColor: 'var(--bg)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
+                  <FileText size={22} color="var(--primary)" />
                 </div>
               </div>
               
-              <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6', marginBottom: '15px', fontStyle: 'italic' }}>
+              <p style={{ fontSize: '14px', color: 'var(--text)', lineHeight: '1.6', marginBottom: '18px', fontStyle: 'italic', opacity: 0.9 }}>
                 "{r.comment || 'Sin comentarios adicionales.'}"
               </p>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '15px', borderTop: '1px solid #F1F5F9' }}>
-                <span style={{ fontSize: '10px', fontWeight: '900', color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Especialista: {r.cita?.empleado?.nombre || 'AutoClean'}
-                </span>
-                <ChevronRight size={18} color="#CBD5E1" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '18px', borderTop: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '900' }}>
+                    {r.cita?.empleado?.nombre?.charAt(0) || 'A'}
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                    Especialista: {r.cita?.empleado?.nombre || 'AutoClean'}
+                  </span>
+                </div>
+                <ChevronRight size={18} color="var(--text-muted)" />
               </div>
             </div>
           ))
         ) : (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94A3B8' }}>
-            <Star size={48} style={{ marginBottom: '20px', opacity: 0.2 }} />
-            <p style={{ fontWeight: '600' }}>Aún no has calificado ningún servicio</p>
+          <div className="card" style={{ textAlign: 'center', padding: '60px 20px', borderStyle: 'dashed', borderWidth: '2px', background: 'transparent' }}>
+            <Star size={48} color="var(--text-muted)" style={{ marginBottom: '20px', opacity: 0.3 }} />
+            <p style={{ fontWeight: '700', color: 'var(--text-muted)', fontSize: '15px' }}>Aún no has calificado ningún servicio</p>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>Tu opinión aparecerá aquí después de calificar.</p>
           </div>
         )}
       </div>
 
-      {/* Detalle de Reseña (Modal simple) */}
+      {/* Detail Modal */}
       {selectedResena && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'flex-end' }}>
-          <div className="animate-in slide-in-from-bottom duration-300" style={{ width: '100%', backgroundColor: 'white', borderTopLeftRadius: '30px', borderTopRightRadius: '30px', padding: '30px', paddingBottom: 'calc(30px + env(safe-area-inset-bottom))' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '20px', textTransform: 'none' }}>Detalle de Calificación</h2>
-              <button onClick={() => setSelectedResena(null)} style={{ background: 'none', border: 'none' }}><X size={24} /></button>
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          zIndex: 1000
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '400px', padding: '32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text)', margin: '0', textTransform: 'none', fontStyle: 'normal' }}>Detalle de Reseña</h2>
+              <button onClick={() => setSelectedResena(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)' }}>
+                <X size={24} />
+              </button>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: '700', color: '#64748B' }}>Servicio</span>
+              <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '16px' }}>
+                <p style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>CALIFICACIÓN SERVICIO</p>
                 <StarRating value={selectedResena.serviceRating} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: '700', color: '#64748B' }}>Especialista</span>
+              
+              <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '16px' }}>
+                <p style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>CALIFICACIÓN ESPECIALISTA</p>
                 <StarRating value={selectedResena.specialistRating} />
               </div>
-              <div style={{ backgroundColor: '#F8FAFC', padding: '20px', borderRadius: '20px' }}>
-                <p style={{ fontSize: '14px', color: '#0F172A', fontWeight: '600' }}>{selectedResena.comment}</p>
+
+              <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '16px' }}>
+                <p style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>COMENTARIO</p>
+                <p style={{ fontSize: '14px', color: 'var(--text)', fontStyle: 'italic', margin: '0' }}>"{selectedResena.comment || 'Sin comentarios.'}"</p>
               </div>
-              <button onClick={() => setSelectedResena(null)} className="btn-primary" style={{ width: '100%' }}>Cerrar</button>
+
+              <button className="btn-primary" onClick={() => setSelectedResena(null)}>CERRAR</button>
             </div>
           </div>
         </div>
