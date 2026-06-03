@@ -737,13 +737,7 @@ const UsersList = (props) => {
         </div>
       </div>
 
-      {/* Métricas Rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Total Usuarios</p><p className="text-3xl font-black text-white italic">{users.length}</p></div>
-        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Total Empleados</p><p className="text-3xl font-black text-purple-500 italic">{empleados.length}</p></div>
-        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Pendientes</p><p className="text-3xl font-black text-amber-500 italic">{citasGenerales.filter(c => c.estado === 'PENDIENTE').length}</p></div>
-        <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Finalizadas</p><p className="text-3xl font-black text-emerald-500 italic">{citasGenerales.filter(c => c.estado === 'FINALIZADO').length}</p></div>
-      </div>
+
 
       {/* Tablas de Datos */}
       {activeTab === 'usuarios' && (

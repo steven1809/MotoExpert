@@ -44,18 +44,17 @@ const TrendingIcon = () => (
 );
 
 const AdminEstadisticas = ({ setView, showToast }) => {
-  const [activePeriod, setActivePeriod] = useState(() => {
-    const saved = localStorage.getItem('adminStats_activePeriod');
-    return saved || 'today';
-  });
-  const [currentStats, setCurrentStats] = useState(() => {
-    const saved = localStorage.getItem('adminStats_currentStats');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [summary, setSummary] = useState(() => {
-    const saved = localStorage.getItem('adminStats_summary');
-    return saved ? JSON.parse(saved) : null;
-  });
+  // Limpiar datos antiguos de localStorage
+  useEffect(() => {
+    localStorage.removeItem('adminStats_activePeriod');
+    localStorage.removeItem('adminStats_currentStats');
+    localStorage.removeItem('adminStats_summary');
+    localStorage.removeItem('adminStats_chartData');
+  }, []);
+
+  const [activePeriod, setActivePeriod] = useState('today');
+  const [currentStats, setCurrentStats] = useState(null);
+  const [summary, setSummary] = useState(null);
   const [detailData, setDetailData] = useState(null);
   const [detailDate, setDetailDate] = useState(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -65,10 +64,7 @@ const AdminEstadisticas = ({ setView, showToast }) => {
   const [loading, setLoading] = useState(false);
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
-  const [chartData, setChartData] = useState(() => {
-    const saved = localStorage.getItem('adminStats_chartData');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [chartData, setChartData] = useState([]);
   const [detailPage, setDetailPage] = useState(1);
 
   const getToken = () => localStorage.getItem('token');
@@ -110,14 +106,12 @@ const AdminEstadisticas = ({ setView, showToast }) => {
         const data = await res.json();
         console.log('Datos summary:', data);
         setSummary(data);
-        localStorage.setItem('adminStats_summary', JSON.stringify(data));
         const chart = [
           { label: 'Hoy', value: data.today?.totalIngresos || 0 },
           { label: 'Ayer', value: data.yesterday?.totalIngresos || 0 },
           { label: 'Mes', value: data.month?.totalIngresos || 0 },
         ];
         setChartData(chart);
-        localStorage.setItem('adminStats_chartData', JSON.stringify(chart));
       }
     } catch (err) {
       console.error('Error fetching summary:', err);
@@ -152,7 +146,6 @@ const AdminEstadisticas = ({ setView, showToast }) => {
             if (res.ok) {
               const data = await res.json();
               setCurrentStats(data);
-              localStorage.setItem('adminStats_currentStats', JSON.stringify(data));
             }
             setLoading(false);
             return;
@@ -168,7 +161,6 @@ const AdminEstadisticas = ({ setView, showToast }) => {
           const data = await res.json();
           console.log(`Datos ${endpoint}:`, data);
           setCurrentStats(data);
-          localStorage.setItem('adminStats_currentStats', JSON.stringify(data));
         }
       }
     } catch (err) {
@@ -205,7 +197,6 @@ const AdminEstadisticas = ({ setView, showToast }) => {
 
   useEffect(() => {
     fetchStats(activePeriod);
-    localStorage.setItem('adminStats_activePeriod', activePeriod);
     // Cargar el detalle para el período activo
     const { from, to } = getDateRangeForPeriod(activePeriod);
     setDetailDate(from);
