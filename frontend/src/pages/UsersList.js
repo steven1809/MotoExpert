@@ -383,11 +383,11 @@ const UsersList = (props) => {
       });
 
       if (response.ok) {
-        // Actualizar estado local
-        setUsers(prev => prev.map(u => u.id === userToEditRole.id ? { ...u, role: newRole } : u));
-        
-        // Refrescar lista de empleados para que aparezca el nuevo registro en la pestaña correspondiente
-        fetchAdminData(token);
+        // Refrescar completamente las listas de usuarios y empleados para tener datos frescos
+        await Promise.all([
+          fetchUsers(token),
+          fetchAdminData(token),
+        ]);
         
         setShowRoleModal(false);
         alert('Rol actualizado con éxito');
