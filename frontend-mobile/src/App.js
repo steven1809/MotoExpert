@@ -9,6 +9,7 @@ import Perfil from './pages/Perfil';
 import Resenas from './pages/Resenas';
 import Servicios from './pages/Servicios';
 import Notificaciones from './pages/Notificaciones';
+import ServiceTracking from './pages/ServiceTracking';
 import BottomNavbar from './components/BottomNavbar';
 
 // Componente para proteger rutas por rol
@@ -107,6 +108,11 @@ function App() {
                 <Perfil />
                 <BottomNavbar />
               </>
+            </PrivateRoute>
+          } />
+          <Route path="/tracking/:citaId" element={
+            <PrivateRoute>
+              <ServiceTracking />
             </PrivateRoute>
           } />
         </Routes>
