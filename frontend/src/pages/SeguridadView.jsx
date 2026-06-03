@@ -219,8 +219,17 @@ export default class SeguridadView extends Component {
   } 
 
   componentDidMount() { 
-    // Verificar si ya tiene Face ID registrado localmente 
-    const hasBiometrics = localStorage.getItem('faceId_registered') === 'true'; 
+    // Clean up old global flag if it exists
+    if (localStorage.getItem('faceId_registered')) {
+      localStorage.removeItem('faceId_registered');
+    }
+    
+    // Get current user's email from localStorage
+    const currentEmail = localStorage.getItem('userEmail') || this.state.userEmail;
+    this.setState({ userEmail: currentEmail });
+    
+    // Verify if THIS user has Face ID registered locally 
+    const hasBiometrics = localStorage.getItem(`faceId_registered_${currentEmail}`) === 'true'; 
     this.setState({ isFaceIdRegistered: hasBiometrics }); 
   } 
  
@@ -280,7 +289,8 @@ export default class SeguridadView extends Component {
   handleFaceEnrollSuccess = () => {
     const email = localStorage.getItem('userEmail') || this.state.userEmail;
     
-    localStorage.setItem('faceId_registered', 'true');
+    // Set registration flag tied to THIS user's email
+    localStorage.setItem(`faceId_registered_${email}`, 'true');
     
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
@@ -304,10 +314,11 @@ export default class SeguridadView extends Component {
     
     alert("¡Rostro registrado exitosamente en este dispositivo!");
   };
- 
+
   eliminarFaceID = () => { 
     const email = localStorage.getItem('userEmail') || this.state.userEmail;
-    localStorage.removeItem('faceId_registered');
+    // Remove registration flag tied to THIS user's email
+    localStorage.removeItem(`faceId_registered_${email}`);
     localStorage.removeItem(`faceDescriptor_${email}`);
     localStorage.removeItem(`faceToken_${email}`);
     localStorage.removeItem(`faceRole_${email}`);

@@ -283,9 +283,10 @@ class Login extends Component {
       return;
     }
 
-    const hasFaceId = !!localStorage.getItem(`faceDescriptor_${email}`);
+    // Check if THIS email has Face ID registered
+    const hasFaceId = !!localStorage.getItem(`faceId_registered_${email}`);
     if (!hasFaceId) {
-      this.showMessage('No tienes Face ID configurado. Actívalo desde la sección de Seguridad en tu cuenta.', true);
+      this.showMessage('No tienes Face ID configurado para este correo. Actívalo desde la sección de Seguridad en tu cuenta.', true);
       return;
     }
 
