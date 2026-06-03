@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, LogOut, ChevronRight, Award } from 'lucide-react';
+import { User, Mail, Phone, MapPin, LogOut, ChevronRight, Award, Sun, Moon } from 'lucide-react';
 import { authService } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 
 const Perfil = () => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { isDark, toggleTheme } = useTheme();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -31,57 +33,75 @@ const Perfil = () => {
   if (loading) {
     return (
       <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: '40px', height: '40px', border: '4px solid #E2E8F0', borderTopColor: '#2563EB', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <div style={{ width: '40px', height: '40px', border: '4px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
 
   return (
     <div className="page-container">
-      <header style={{ marginBottom: '30px', textAlign: 'center' }}>
+      <header style={{ marginBottom: '40px', textAlign: 'center', paddingTop: '20px' }}>
         <div style={{ position: 'relative', display: 'inline-block' }}>
           <div style={{ 
-            width: '100px', 
-            height: '100px', 
-            backgroundColor: 'white', 
-            borderRadius: '35px', 
+            width: '120px', 
+            height: '120px', 
+            background: 'var(--card-bg)', 
+            borderRadius: '2.5rem', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
-            border: '4px solid white',
-            boxShadow: '0 15px 35px rgba(0,0,0,0.1)',
-            fontSize: '40px'
+            border: '2px solid var(--border)',
+            boxShadow: 'var(--shadow-lg)',
+            fontSize: '50px'
           }}>
             👤
           </div>
           <div style={{ 
             position: 'absolute', 
-            bottom: '0', 
-            right: '0', 
-            width: '32px', 
-            height: '32px', 
-            backgroundColor: '#2563EB', 
-            borderRadius: '10px', 
+            bottom: '-5px', 
+            right: '-5px', 
+            width: '38px', 
+            height: '38px', 
+            background: 'var(--gradient-primary)', 
+            borderRadius: '1rem', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
-            border: '3px solid white'
+            border: '4px solid var(--bg)',
+            boxShadow: 'var(--shadow-md)'
           }}>
-            <Award size={16} color="white" />
+            <Award size={18} color="white" />
           </div>
         </div>
-        <h1 style={{ fontSize: '24px', color: '#0F172A', marginTop: '15px', marginBottom: '4px' }}>{userProfile?.nombre}</h1>
-        <p style={{ fontSize: '12px', fontWeight: '800', color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cliente {userProfile?.rank || 'Gold'}</p>
+        <h1 style={{ fontSize: '28px', color: 'var(--text)', marginTop: '20px', marginBottom: '6px' }}>{userProfile?.nombre}</h1>
+        <div style={{ 
+          display: 'inline-block',
+          padding: '6px 16px',
+          background: 'rgba(61, 110, 245, 0.1)',
+          borderRadius: '1rem',
+          color: 'var(--primary)',
+          fontSize: '11px',
+          fontWeight: '800',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em'
+        }}>
+          Cliente {userProfile?.rank || 'Gold'}
+        </div>
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
         {/* Info Card */}
         <section className="card" style={{ padding: '0', overflow: 'hidden' }}>
-          <div style={{ padding: '20px', borderBottom: '1px solid #F1F5F9' }}>
-            <h3 style={{ fontSize: '11px', color: '#64748B', letterSpacing: '0.1em', marginBottom: '0' }}>Información de la Cuenta</h3>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', background: 'rgba(0,0,0,0.02)' }}>
+            <h3 style={{ fontSize: '12px', color: 'var(--text-muted)', letterSpacing: '0.05em', margin: '0' }}>INFORMACIÓN PERSONAL</h3>
           </div>
           
-          <div style={{ padding: '10px 20px' }}>
+          <div style={{ padding: '8px 24px' }}>
             {[
               { icon: <Mail size={18} />, label: 'Email', value: userProfile?.email },
               { icon: <Phone size={18} />, label: 'Teléfono', value: userProfile?.telefono || 'No registrado' },
@@ -90,14 +110,25 @@ const Perfil = () => {
               <div key={idx} style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '15px', 
-                padding: '15px 0',
-                borderBottom: idx === 2 ? 'none' : '1px solid #F1F5F9'
+                gap: '18px', 
+                padding: '20px 0',
+                borderBottom: idx === 2 ? 'none' : '1px solid var(--border)'
               }}>
-                <div style={{ color: '#94A3B8' }}>{item.icon}</div>
+                <div style={{ 
+                  width: '40px', 
+                  height: '40px', 
+                  borderRadius: '12px', 
+                  background: 'var(--bg)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: 'var(--primary)' 
+                }}>
+                  {item.icon}
+                </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: '10px', fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', marginBottom: '2px' }}>{item.label}</p>
-                  <p style={{ fontSize: '14px', fontWeight: '700', color: '#0F172A' }}>{item.value}</p>
+                  <p style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.02em' }}>{item.label}</p>
+                  <p style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)' }}>{item.value}</p>
                 </div>
               </div>
             ))}
@@ -105,49 +136,81 @@ const Perfil = () => {
         </section>
 
         {/* Settings List */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {[
-            { label: 'Mis Vehículos', icon: <ChevronRight size={18} /> },
-            { label: 'Historial de Pagos', icon: <ChevronRight size={18} /> },
-            { label: 'Configuración', icon: <ChevronRight size={18} /> },
-          ].map((item, idx) => (
-            <div key={idx} className="card" style={{ 
-              padding: '18px 20px', 
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Theme Toggle Option */}
+          <div 
+            onClick={toggleTheme}
+            className="card" 
+            style={{ 
+              padding: '20px 24px', 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center',
-              border: '1px solid #F1F5F9'
-            }}>
-              <span style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A' }}>{item.label}</span>
-              <div style={{ color: '#CBD5E1' }}>{item.icon}</div>
+              cursor: 'pointer'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ 
+                width: '40px', 
+                height: '40px', 
+                borderRadius: '12px', 
+                background: isDark ? 'rgba(251, 191, 36, 0.1)' : 'rgba(99, 102, 241, 0.1)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                color: isDark ? '#FBBF24' : '#6366F1' 
+              }}>
+                {isDark ? <Sun size={20} /> : <Moon size={20} />}
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '15px', fontWeight: '800', color: 'var(--text)' }}>
+                  {isDark ? 'Modo Claro' : 'Modo Oscuro'}
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Cambiar la apariencia visual
+                </span>
+              </div>
             </div>
-          ))}
-        </section>
+            <div style={{ 
+              width: '50px', 
+              height: '28px', 
+              backgroundColor: isDark ? 'var(--primary)' : 'var(--border)', 
+              borderRadius: '100px',
+              position: 'relative',
+              transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+            }}>
+              <div style={{ 
+                position: 'absolute',
+                top: '4px',
+                left: isDark ? '26px' : '4px',
+                width: '20px',
+                height: '20px',
+                backgroundColor: 'white',
+                borderRadius: '50%',
+                boxShadow: 'var(--shadow-sm)',
+                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+              }} />
+            </div>
+          </div>
 
-        {/* Logout Button */}
-        <button 
-          onClick={handleLogout}
-          style={{ 
-            marginTop: '10px',
-            backgroundColor: '#FEF2F2', 
-            color: '#EF4444', 
-            border: '1px solid #FEE2E2', 
-            padding: '18px', 
-            borderRadius: '20px', 
-            fontWeight: '900', 
-            fontSize: '13px', 
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            width: '100%'
-          }}
-        >
-          <LogOut size={18} />
-          Cerrar Sesión
-        </button>
+          <button 
+            onClick={handleLogout}
+            className="btn-secondary"
+            style={{ 
+              marginTop: '10px',
+              color: '#EF4444',
+              borderColor: 'rgba(239, 68, 68, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              padding: '18px'
+            }}
+          >
+            <LogOut size={20} />
+            CERRAR SESIÓN
+          </button>
+        </section>
       </div>
     </div>
   );
