@@ -1,9 +1,20 @@
 {
   "scripts": {
+<<<<<<< HEAD
     "start:frontend": "npm start --prefix frontend",
     "start:backend": "npm run start:dev --prefix backend",
     "dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
     "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend"
+=======
+    "start:backend": "npm run start:dev --prefix backend",
+    "start:frontend": "npm start --prefix frontend",
+    "start:mobile": "npm start --prefix frontend-mobile",
+    "dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\" \"npm run start:mobile\"",
+    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend && npm install --prefix frontend-mobile",
+    "docker": "docker compose up",
+    "docker:build": "docker compose up --build",
+    "docker:down": "docker compose down"
+>>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
   },
   "dependencies": {
     "@craco/craco": "^7.1.0",
@@ -14,5 +25,25 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+<<<<<<< HEAD
   }
+=======
+  },
+  "name": "motoexpert",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/steven1809/MotoExpert.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/steven1809/MotoExpert/issues"
+  },
+  "homepage": "https://github.com/steven1809/MotoExpert#readme"
+>>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
 }
