@@ -181,7 +181,6 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                       type="date"
                       value={fromDate}
                       onChange={(e) => setFromDate(e.target.value)}
-                      min={today}
                       max={toDate || undefined}
                       className="w-full h-[42px] px-3 bg-[#1a1d27] border border-[#2a2d3a] rounded-xl text-[#F8FAFC] text-xs focus:border-[#2563eb]/50 focus:outline-none transition-all"
                     />
@@ -189,7 +188,7 @@ const AppointmentsSearchAndFilter = ({ citas, onFilterChange, searchPlaceholder 
                       type="date"
                       value={toDate}
                       onChange={(e) => setToDate(e.target.value)}
-                      min={fromDate || today}
+                      min={fromDate || undefined}
                       className="w-full h-[42px] px-3 bg-[#1a1d27] border border-[#2a2d3a] rounded-xl text-[#F8FAFC] text-xs focus:border-[#2563eb]/50 focus:outline-none transition-all"
                     />
                   </div>

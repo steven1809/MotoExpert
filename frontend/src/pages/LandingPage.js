@@ -1193,7 +1193,7 @@ class LandingPage extends Component {
                     <span className="text-blue-400 text-sm">Equipo SENA</span>
                     <h2 className="text-4xl md:text-5xl font-bold tracking-tight mt-4">Nuestro equipo</h2>
                     <p className="text-slate-400 max-w-2xl mx-auto text-lg mt-4">
-                      Estudiantes del SENA que construyeron MotoExpert
+                      Aprendices SENA que diseñaron y desarrollaron MotoExpert
                     </p>
                   </div>
 
@@ -1201,8 +1201,8 @@ class LandingPage extends Component {
                     {[
                       ['Sebastián Pinilla', 'S', ''],
                       ['Andrés Montenegro', 'A', ''],
+                      ['Steven Díaz', 'S', ''],
                       ['Brandon Sánchez', 'B', ''],
-                      ['Stiven Díaz', 'S', ''],
                       ['Alenxandro Lemus', 'A', ''],
                     ].map((m, i) => (
                       <div

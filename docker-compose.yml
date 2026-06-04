@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:18-alpine
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: '12345'
+      POSTGRES_DB: MotoExpert
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./database_backup.sql:/docker-entrypoint-initdb.d/backup.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - '3005:3000'
+    environment:
+      DB_USER: postgres
+      DB_HOST: db
+      DB_PASSWORD: '12345'
+      DB_NAME: MotoExpert
+      DB_PORT: 5432
+      TWILIO_ACCOUNT_SID: REMOVED
+      TWILIO_AUTH_TOKEN: REMOVED
+      TWILIO_FROM_WHATSAPP: 'whatsapp:+14155238886'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: http://localhost:3005
+    ports:
+      - '3001:3001'
+    depends_on:
+      - backend
+
+  frontend-mobile:
+    build:
+      context: ./frontend-mobile
+      args:
+        REACT_APP_API_URL: http://localhost:3005
+    ports:
+      - '3002:3002'
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

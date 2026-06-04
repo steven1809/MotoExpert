@@ -1743,7 +1743,7 @@ const Citas = ({
                         </div>
 
                         <div className="flex items-center gap-2 md:justify-end">
-                          {alert.type === 'in-progress' ? null : alert.type === 'expired' ? (
+                          {alert.cita.estado === 'EN PROCESO' ? null : alert.type === 'in-progress' ? null : alert.type === 'expired' ? (
                             <>
                               <button
                                 type="button"
@@ -1760,15 +1760,7 @@ const Citas = ({
                                 Cancelar
                               </button>
                             </>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleViewAppointment(alert.cita)}
-                              className="h-10 px-4 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
-                            >
-                              Ver detalles
-                            </button>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     );
@@ -2200,33 +2192,37 @@ const Citas = ({
                         </div>
 
                         <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              window.history.pushState({}, '', `/service-tracking/${cita.id}`);
-                              window.dispatchEvent(new PopStateEvent('popstate'));
-                            }}
-                            className="mt-4 w-full h-10 rounded-2xl bg-gradient-to-r from-[#6366f1] to-[#3b82f6] hover:opacity-90 text-white text-[11px] font-black uppercase tracking-widest transition-all"
-                          >
-                            Ver seguimiento del servicio
-                          </button>
+                          {cita.estado === 'EN PROCESO' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                window.history.pushState({}, '', `/service-tracking/${cita.id}`);
+                                window.dispatchEvent(new PopStateEvent('popstate'));
+                              }}
+                              className="mt-4 w-full h-10 rounded-2xl bg-gradient-to-r from-[#6366f1] to-[#3b82f6] hover:opacity-90 text-white text-[11px] font-black uppercase tracking-widest transition-all"
+                            >
+                              Ver seguimiento del servicio
+                            </button>
+                          )}
 
-                          <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleReschedule(cita)}
-                              className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
-                            >
-                              Reprogramar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(cita.id)}
-                              className="flex-1 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 text-[11px] font-black uppercase tracking-widest transition-colors"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
+                          {cita.estado !== 'EN PROCESO' && (
+                            <div className="mt-2 flex flex-col sm:flex-row gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleReschedule(cita)}
+                                className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
+                              >
+                                Reprogramar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(cita.id)}
+                                className="flex-1 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 text-[11px] font-black uppercase tracking-widest transition-colors"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          )}
                         </div>
 
                         <button
@@ -2362,6 +2358,7 @@ const Citas = ({
                         { value: 20, label: '20' }
                       ]}
                       className="w-20"
+                      dropdownPosition="up"
                     />
 
                     <div className="flex items-center gap-1">
