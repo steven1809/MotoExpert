@@ -26,8 +26,8 @@ services:
       DB_PASSWORD: '12345'
       DB_NAME: MotoExpert
       DB_PORT: 5432
-      TWILIO_ACCOUNT_SID: REMOVED
-      TWILIO_AUTH_TOKEN: REMOVED
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_FROM_WHATSAPP: 'whatsapp:+14155238886'
     depends_on:
       db:
