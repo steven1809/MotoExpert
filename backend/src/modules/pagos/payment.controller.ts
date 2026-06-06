@@ -51,7 +51,11 @@ export class PaymentController {
       dto.mockApproved,
     );
 
-    return { payment, tokenCode: payment.tokenCode };
+    return { 
+      payment, 
+      tokenCode: payment.tokenCode,
+      wompiPaymentLink: payment.wompiPaymentLink,
+    };
   }
 
   @Post('validate')
@@ -67,5 +71,17 @@ export class PaymentController {
       req.user.userId,
       Number(appointmentId),
     );
+  }
+
+  // Nuevo endpoint para verificar pago de Wompi
+  @Post(':id/verify-wompi')
+  @UseGuards(JwtAuthGuard, UsuarioRoleGuard)
+  async verifyWompiPayment(@Param('id') id: string) {
+    const payment = await this.paymentService.verifyWompiPayment(id);
+    return { 
+      payment, 
+      tokenCode: payment.tokenCode,
+      status: payment.status,
+    };
   }
 }

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Package, Search, ChevronRight, Info, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // 👈 Importamos el hook de redirección
 import api from '../services/api';
 import '../styles/global.css';
 
 const Servicios = () => {
+  const navigate = useNavigate(); // 👈 Inicializamos la función navigate
   const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

@@ -1,25 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-
-const API = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import api from '../apiConfig';
 
 export function useServiceStages(citaId) {
   const [stages, setStages]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
 
-  const getHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem('token')}`,
-  });
-
   const fetchStages = useCallback(async () => {
     if (!citaId) return;
     try {
       setLoading(true);
-      const { data } = await axios.get(
-        `${API}/citas/${citaId}/stages`,
-        { headers: getHeaders() }
-      );
+      const { data } = await api.get(`/citas/${citaId}/stages`);
       setStages(data);
     } catch (e) {
       setError(e.message);
@@ -32,22 +23,14 @@ export function useServiceStages(citaId) {
 
   // Empleado inicializa las 4 etapas cuando arranca el servicio
   const initStages = async () => {
-    const { data } = await axios.patch(
-      `${API}/citas/${citaId}/stages/init`,
-      {},
-      { headers: getHeaders() }
-    );
+    const { data } = await api.patch(`/citas/${citaId}/stages/init`, {});
     setStages(data);
     return data;
   };
 
   // Empleado actualiza cualquier etapa (fotos, observación, completada)
   const updateStage = async (stage, payload) => {
-    const { data } = await axios.patch(
-      `${API}/citas/${citaId}/stages/${stage}`,
-      payload,
-      { headers: getHeaders() }
-    );
+    const { data } = await api.patch(`/citas/${citaId}/stages/${stage}`, payload);
     setStages(prev => prev.map(s => s.stage === stage ? data : s));
     return data;
   };
@@ -59,7 +42,7 @@ export function useServiceStages(citaId) {
     });
   };
 
-  // Helpers para acceder a etapas por nombre
+  // Helper para acceder a una etapa por nombre
   const getStage = (name) =>
     stages.find(s => s.stage === name) || {
       stage: name, completed: false,

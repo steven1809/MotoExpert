@@ -47,6 +47,16 @@ export class Payment {
   @Column({ name: 'token_expires_at', type: 'timestamp', nullable: true })
   tokenExpiresAt: Date | null;
 
+  // Wompi-specific fields
+  @Column({ name: 'wompi_payment_link', type: 'text', nullable: true })
+  wompiPaymentLink: string | null;
+
+  @Column({ name: 'wompi_transaction_id', type: 'text', nullable: true })
+  wompiTransactionId: string | null;
+
+  @Column({ name: 'wompi_reference', type: 'text', nullable: true })
+  wompiReference: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 }

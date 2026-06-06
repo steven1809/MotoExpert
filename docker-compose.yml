@@ -37,7 +37,7 @@ services:
     build:
       context: ./frontend
       args:
-        REACT_APP_API_URL: http://localhost:3005
+        REACT_APP_API_URL: https://ungodly-outhouse-bondless.ngrok-free.dev
     ports:
       - '3001:3001'
     depends_on:
@@ -47,11 +47,32 @@ services:
     build:
       context: ./frontend-mobile
       args:
-        REACT_APP_API_URL: http://localhost:3005
+        REACT_APP_API_URL: https://ungodly-outhouse-bondless.ngrok-free.dev
     ports:
       - '3002:3002'
     depends_on:
       - backend
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - '8080:80'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - frontend
+      - backend
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    command: http nginx:80
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - '4040:4040'
+    depends_on:
+      - nginx
 
 volumes:
   postgres_data:

@@ -6,6 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomInt } from 'crypto';
 import { Repository } from 'typeorm';
@@ -23,6 +24,7 @@ export class PaymentService {
     @InjectRepository(Cita)
     private readonly citaRepo: Repository<Cita>,
     private readonly activityService: ActivityService,
+    private readonly configService: ConfigService,
   ) {}
 
   async generateToken(
@@ -32,7 +34,7 @@ export class PaymentService {
   ): Promise<Payment> {
     const cita = await this.citaRepo.findOne({
       where: { id: appointmentId },
-      relations: { usuario: true },
+      relations: { usuario: true, servicio: true },
     });
     if (!cita) {
       throw new NotFoundException('Cita no encontrada');
@@ -54,10 +56,17 @@ export class PaymentService {
     });
 
     if (method === PaymentMethod.CASH) {
+      // Efectivo: genera token inmediatamente
       payment.status = PaymentStatus.PENDING;
       const { tokenCode, tokenExpiresAt } = await this.buildToken();
       payment.tokenCode = tokenCode;
       payment.tokenExpiresAt = tokenExpiresAt;
+    } else if (method === PaymentMethod.WOMPI) {
+      // Wompi: genera link de pago
+      const wompiPayment = await this.createWompiPayment(cita);
+      payment.wompiPaymentLink = wompiPayment.paymentLink;
+      payment.wompiReference = wompiPayment.reference;
+      payment.status = PaymentStatus.PENDING;
     } else {
       throw new BadRequestException('Método de pago inválido');
     }
@@ -83,6 +92,77 @@ export class PaymentService {
     });
 
     return full ?? saved;
+  }
+
+  // Método para crear pago en Wompi
+  private async createWompiPayment(cita: Cita) {
+    const wompiBaseUrl = this.configService.get<string>('WOMPI_BASE_URL', 'https://sandbox.wompi.co/v1');
+    const wompiPublicKey = this.configService.get<string>('WOMPI_PUBLIC_KEY');
+    const redirectUrl = this.configService.get<string>('WOMPI_REDIRECT_URL', 'http://localhost:3000/');
+    
+    if (!wompiPublicKey) {
+      throw new BadRequestException('WOMPI_PUBLIC_KEY no está configurada');
+    }
+
+    const reference = `cita_${cita.id}_${Date.now()}`;
+    const amountInCents = Math.round((cita.servicio.precio || 10000) * 100); // Wompi usa centavos
+
+    // Crear link de pago usando Wompi Checkout (redirección)
+    // Documentación: https://docs.wompi.co/docs/checkout
+    const paymentLink = `https://checkout.wompi.co/p/?public-key=${wompiPublicKey}&reference=${reference}&amount-in-cents=${amountInCents}&currency=COP&redirect-url=${encodeURIComponent(redirectUrl)}`;
+
+    return { paymentLink, reference };
+  }
+
+  // Método para verificar estado de pago en Wompi
+  async verifyWompiPayment(paymentId: string): Promise<Payment> {
+    const payment = await this.paymentRepo.findOne({ where: { id: paymentId }, relations: { appointment: true } });
+    if (!payment) {
+      throw new NotFoundException('Pago no encontrado');
+    }
+
+    if (payment.method !== PaymentMethod.WOMPI) {
+      throw new BadRequestException('Este pago no es de tipo Wompi');
+    }
+
+    const wompiBaseUrl = this.configService.get<string>('WOMPI_BASE_URL', 'https://sandbox.wompi.co/v1');
+    const wompiPrivateKey = this.configService.get<string>('WOMPI_PRIVATE_KEY');
+
+    if (!wompiPrivateKey || !payment.wompiReference) {
+      throw new BadRequestException('No se puede verificar el pago (falta configuración o referencia)');
+    }
+
+    try {
+      const response = await fetch(`${wompiBaseUrl}/transactions?reference=${payment.wompiReference}`, {
+        headers: {
+          'Authorization': `Bearer ${wompiPrivateKey}`,
+        },
+      });
+
+      const data = await response.json();
+      
+      if (data.data && data.data.length > 0) {
+        const transaction = data.data[0];
+        payment.wompiTransactionId = transaction.id;
+        
+        if (transaction.status === 'APPROVED') {
+          payment.status = PaymentStatus.PAID;
+          // Si el pago está aprobado, generamos el token de entrega
+          const { tokenCode, tokenExpiresAt } = await this.buildToken();
+          payment.tokenCode = tokenCode;
+          payment.tokenExpiresAt = tokenExpiresAt;
+        } else if (transaction.status === 'DECLINED') {
+          payment.status = PaymentStatus.FAILED;
+        } else if (transaction.status === 'VOIDED') {
+          payment.status = PaymentStatus.FAILED;
+        }
+      }
+
+      return await this.paymentRepo.save(payment);
+    } catch (error) {
+      console.error('Error verifying Wompi payment:', error);
+      throw new BadRequestException('Error al verificar el pago en Wompi');
+    }
   }
 
   async validateToken(tokenCode: string): Promise<{
