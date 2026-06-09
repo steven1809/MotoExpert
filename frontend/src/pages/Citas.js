@@ -2366,10 +2366,7 @@ const Citas = ({
                         { value: 20, label: '20' }
                       ]}
                       className="w-20"
-<<<<<<< HEAD
-=======
                       dropdownPosition="up"
->>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
                     />
 
                     <div className="flex items-center gap-1">

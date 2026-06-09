@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { useState } from 'react';
-import { API_BASE_URL } from '../../apiConfig';
-=======
-import React, { Component } from 'react';
+<import React, { Component } from 'react';
 import emailjs from '@emailjs/browser';
 import { API_BASE_URL } from '../../apiConfig';
 
@@ -21,7 +17,6 @@ class Register extends Component {
       cargando: false
     };
   }
->>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
 
   handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -58,16 +53,6 @@ class Register extends Component {
         message: { text: 'La contraseña debe contener al menos una mayúscula y un número', isError: true },
         cargando: false
       });
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setMessage({ text: 'La contraseña debe tener al menos 8 caracteres', isError: true });
-      return;
-    }
-
-    if (!/(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      setMessage({ text: 'La contraseña debe contener al menos una mayúscula y un número', isError: true });
       return;
     }
 
