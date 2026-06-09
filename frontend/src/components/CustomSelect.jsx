@@ -6,9 +6,6 @@ const CustomSelect = ({
   onChange, 
   placeholder = "Seleccionar...", 
   className = "",
-<<<<<<< HEAD
-  label = ""
-=======
   label = "",
   dropdownPosition = "down" // 'up' or 'down'
 }) => {

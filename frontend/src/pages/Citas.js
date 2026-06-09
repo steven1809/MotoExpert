@@ -2200,35 +2200,6 @@ const Citas = ({
                         </div>
 
                         <div className="mt-4 flex flex-col sm:flex-row gap-2">
-<<<<<<< HEAD
-                          <button
-                            type="button"
-                            onClick={() => {
-                              window.history.pushState({}, '', `/service-tracking/${cita.id}`);
-                              window.dispatchEvent(new PopStateEvent('popstate'));
-                            }}
-                            className="mt-4 w-full h-10 rounded-2xl bg-gradient-to-r from-[#6366f1] to-[#3b82f6] hover:opacity-90 text-white text-[11px] font-black uppercase tracking-widest transition-all"
-                          >
-                            Ver seguimiento del servicio
-                          </button>
-
-                          <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleReschedule(cita)}
-                              className="flex-1 h-10 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-widest transition-colors"
-                            >
-                              Reprogramar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(cita.id)}
-                              className="flex-1 h-10 rounded-2xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 text-[11px] font-black uppercase tracking-widest transition-colors"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-=======
                           {cita.estado === 'EN PROCESO' && (
                             <button
                               type="button"
@@ -2260,7 +2231,6 @@ const Citas = ({
                               </button>
                             </div>
                           )}
->>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
                         </div>
 
                         <button
