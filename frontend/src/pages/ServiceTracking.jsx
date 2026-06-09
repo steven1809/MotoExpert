@@ -2,9 +2,11 @@ import React, { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { io } from 'socket.io-client';
 import ServiceCompletionModal from '../components/ServiceCompletionModal';
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../apiConfig';
 
 // ─── Constantes ────────────────────────────────────────────────────────────────
+
+const API = API_BASE_URL;
 
 const STAGE_MAP_REVERSE = {
   recepcion:   'RECEPCION',
@@ -69,6 +71,16 @@ const backendToLocal = (backendStage) => {
   };
 };
 
+// ─── Headers comunes con ngrok ─────────────────────────────────────────────────
+
+const getAuthHeaders = (extra = {}) => ({
+  'ngrok-skip-browser-warning': 'true',
+  Authorization: `Bearer ${localStorage.getItem('token')}`,
+  ...extra,
+});
+
+const getJsonHeaders = () => getAuthHeaders({ 'Content-Type': 'application/json' });
+
 // ─── Hook de API ───────────────────────────────────────────────────────────────
 
 function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
@@ -86,15 +98,10 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
   const [showUpdatedBadge, setShowUpdatedBadge] = useState(false);
   const [showSyncedBadge, setShowSyncedBadge] = useState(false);
 
-  const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
-
   const initStages = useCallback(async () => {
     const response = await fetch(`${API}/citas/${citaId}/stages/init`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getHeaders(),
-      },
+      headers: getJsonHeaders(),
       body: JSON.stringify({}),
     });
     const data = await response.json();
@@ -109,7 +116,7 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
         setLoading(true);
       }
       const response = await fetch(`${API}/citas/${citaId}/stages`, {
-        headers: getHeaders(),
+        headers: getAuthHeaders(),
       });
       const data = await response.json();
       if (Array.isArray(data) && data.length === 0) {
@@ -144,7 +151,7 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
     if (!citaId) return false;
     try {
       const response = await fetch(`${API}/api/appointments/${citaId}/current-status`, {
-        headers: getHeaders(),
+        headers: getAuthHeaders(),
       });
       const data = await response.json();
       if (Array.isArray(data?.stages)) {
@@ -156,7 +163,7 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
     } catch {
       try {
         const response = await fetch(`${API}/citas/${citaId}/current-status`, {
-          headers: getHeaders(),
+          headers: getAuthHeaders(),
         });
         const data = await response.json();
         if (Array.isArray(data?.stages)) {
@@ -172,17 +179,11 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
 
   const updateStage = useCallback(async (localId, payload) => {
     const stageKey = STAGE_MAP_REVERSE[localId];
-    const response = await fetch(
-      `${API}/citas/${citaId}/stages/${stageKey}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders(),
-        },
-        body: JSON.stringify(payload),
-      },
-    );
+    const response = await fetch(`${API}/citas/${citaId}/stages/${stageKey}`, {
+      method: 'PATCH',
+      headers: getJsonHeaders(),
+      body: JSON.stringify(payload),
+    });
     const data = await response.json();
     setRawStages((prev) => prev.map((s) => (s.stage === stageKey ? data : s)));
     return data;
@@ -241,7 +242,6 @@ function useServiceStages(citaId, { allowInit } = { allowInit: false }) {
       socketRef.current = null;
     }
 
-    // ✅ FIX: Conectar al namespace /service-tracking para no colisionar con otros gateways
     const socket = io(`${API}/service-tracking`, {
       auth: { token },
       reconnection: true,
@@ -391,7 +391,7 @@ function useCita(citaId) {
       try {
         setLoading(true);
         const response = await fetch(`${API}/citas/${citaId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: getAuthHeaders(),
         });
         const data = await response.json();
         if (cancelled) return;
@@ -617,7 +617,6 @@ const MobileSummary = ({ stages, cita, startedAt, elapsed, open, onToggle }) => 
 // ─── Vista Empleado ────────────────────────────────────────────────────────────
 
 const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, addUpdate, showToast }) => {
-  const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -680,7 +679,6 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
     }
   }, [stages]);
 
-  // Handlers de archivos
   const handleRecepcionFiles = async (e) => {
     recepcionDirtyRef.current = true;
     const urls = await readFilesAsDataUrls(e.target.files, 4);
@@ -709,14 +707,10 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
   const saveRecepcion = async () => {
     try {
       setSaving(true);
-      // Asegurar que los stages existen antes de guardar
       try {
         const response = await fetch(`${API}/citas/${citaId}/stages/init`, {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            ...getHeaders(),
-          },
+          headers: getJsonHeaders(),
           body: JSON.stringify({}),
         });
         await response.json();
@@ -768,7 +762,6 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
   const btnClass = `w-full h-11 rounded-2xl bg-gradient-to-r from-[#6366f1] to-[#3b82f6]
     disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest transition-all`;
 
-  // Clase para botones secundarios (subir fotos)
   const uploadBtnClass = `h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 disabled:bg-white/5 disabled:text-white/30
     disabled:cursor-not-allowed border border-white/10 text-white text-xs font-black uppercase tracking-widest transition-colors`;
 
@@ -814,7 +807,6 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                 <div className="mt-5 text-sm font-bold text-white/50">Completa la etapa anterior para habilitar esta sección.</div>
               );
 
-              // ── RECEPCIÓN ──────────────────────────────────────────────────
               if (s.id === 'recepcion') {
                 if (isDone) return (
                   <div className="mt-5 space-y-4">
@@ -826,10 +818,7 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos / video de llegada (opcional, máx. 4)</div>
-                      <button type="button" onClick={() => recepcionRef.current?.click()}
-                        disabled={saving} className={uploadBtnClass}>
-                        Subir fotos
-                      </button>
+                      <button type="button" onClick={() => recepcionRef.current?.click()} disabled={saving} className={uploadBtnClass}>Subir fotos</button>
                       <input ref={recepcionRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleRecepcionFiles} />
                     </div>
                     <Gallery images={recepcionMedia} />
@@ -840,15 +829,13 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                         placeholder="Ej. Rayón en carenado izquierdo, nivel de combustible bajo..."
                         className="w-full rounded-2xl bg-[#0f172a]/60 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#6366f1]/50 transition-colors resize-none" />
                     </div>
-                    <button type="button" onClick={saveRecepcion}
-                      disabled={saving || !recepcionNote.trim()} className={btnClass}>
+                    <button type="button" onClick={saveRecepcion} disabled={saving || !recepcionNote.trim()} className={btnClass}>
                       {saving ? 'Guardando...' : 'Avanzar a siguiente etapa'}
                     </button>
                   </div>
                 );
               }
 
-              // ── DIAGNÓSTICO ────────────────────────────────────────────────
               if (s.id === 'diagnostico') {
                 if (isDone) return (
                   <div className="mt-5 space-y-4">
@@ -867,22 +854,17 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Foto o video opcional</div>
-                      <button type="button" onClick={() => diagRef.current?.click()}
-                        disabled={saving} className={uploadBtnClass}>
-                        Subir
-                      </button>
+                      <button type="button" onClick={() => diagRef.current?.click()} disabled={saving} className={uploadBtnClass}>Subir</button>
                       <input ref={diagRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleDiagFile} />
                     </div>
                     <Gallery images={diagMedia} />
-                    <button type="button" onClick={saveDiagnostico}
-                      disabled={saving || !diagText.trim()} className={btnClass}>
+                    <button type="button" onClick={saveDiagnostico} disabled={saving || !diagText.trim()} className={btnClass}>
                       {saving ? 'Guardando...' : 'Avanzar a siguiente etapa'}
                     </button>
                   </div>
                 );
               }
 
-              // ── EN PROCESO ─────────────────────────────────────────────────
               if (s.id === 'proceso') {
                 if (isDone) return (
                   <div className="mt-5 space-y-3">
@@ -902,10 +884,7 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos o videos (0–4)</div>
-                      <button type="button" onClick={() => procRef.current?.click()}
-                        disabled={saving} className={uploadBtnClass}>
-                        Subir
-                      </button>
+                      <button type="button" onClick={() => procRef.current?.click()} disabled={saving} className={uploadBtnClass}>Subir</button>
                       <input ref={procRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleProcFiles} />
                     </div>
                     <Gallery images={procMedia} />
@@ -935,15 +914,13 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                         ))
                       )}
                     </div>
-                    <button type="button" onClick={saveProceso}
-                      disabled={saving} className={btnClass}>
+                    <button type="button" onClick={saveProceso} disabled={saving} className={btnClass}>
                       {saving ? 'Guardando...' : 'Avanzar a siguiente etapa'}
                     </button>
                   </div>
                 );
               }
 
-              // ── FINALIZADO ─────────────────────────────────────────────────
               if (s.id === 'finalizado') {
                 if (isDone) return (
                   <div className="mt-5 space-y-4">
@@ -955,10 +932,7 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Fotos / video (opcional, máx. 4)</div>
-                      <button type="button" onClick={() => finalRef.current?.click()}
-                        disabled={saving} className={uploadBtnClass}>
-                        Subir
-                      </button>
+                      <button type="button" onClick={() => finalRef.current?.click()} disabled={saving} className={uploadBtnClass}>Subir</button>
                       <input ref={finalRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFinalFiles} />
                     </div>
                     <Gallery images={finalMedia} />
@@ -969,8 +943,7 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
                         placeholder="Descripción final del servicio realizado..."
                         className="w-full rounded-2xl bg-[#0f172a]/60 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#6366f1]/50 transition-colors resize-none" />
                     </div>
-                    <button type="button" onClick={confirmFinalizar}
-                      disabled={saving} className={btnClass}>
+                    <button type="button" onClick={confirmFinalizar} disabled={saving} className={btnClass}>
                       {saving ? 'Guardando...' : 'Finalizar servicio'}
                     </button>
                   </div>
@@ -989,13 +962,11 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
           })}
         </div>
 
-        {/* Sidebar Desktop */}
         <div className="md:col-span-4 hidden md:block">
           <SidebarContent stages={stages} cita={cita} startedAt={startedAt} elapsed={elapsed} />
         </div>
       </div>
 
-      {/* Mobile Summary */}
       <MobileSummary
         stages={stages} cita={cita} startedAt={startedAt} elapsed={elapsed}
         open={summaryOpen} onToggle={() => setSummaryOpen(!summaryOpen)}
@@ -1008,12 +979,10 @@ const EmployeeView = ({ citaId, stages, cita, startedAt, elapsed, updateStage, a
 
 const ClientView = ({ stages, cita, showToast, socketStatus }) => {
   const [summaryOpen, setSummaryOpen] = useState(false);
-
   const liveIndicator = socketStatus === 'connected';
 
   return (
     <div className="mt-8 md:mt-10">
-      {/* Badges de conexión */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
         {socketStatus === 'connected' && (
           <div className="px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-pulse">
@@ -1037,10 +1006,7 @@ const ClientView = ({ stages, cita, showToast, socketStatus }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
         <div className="md:col-span-8 space-y-6">
-          {/* Progress Bar */}
           <ProgressBar stages={stages} live={liveIndicator} />
-
-          {/* Cards de Etapas */}
           {stages.map((s) => (
             <CardShell key={s.id} state={s.status}>
               <div className="flex items-start gap-4">
@@ -1062,8 +1028,6 @@ const ClientView = ({ stages, cita, showToast, socketStatus }) => {
                       Etapa en proceso
                     </div>
                   )}
-
-                  {/* Contenido extra (fotos/texto) si está completada o activa */}
                   {(s.status === 'done' || s.status === 'active') && (
                     <div className="mt-4 space-y-4">
                       {s.data.text && s.id === 'diagnostico' && (
@@ -1085,7 +1049,6 @@ const ClientView = ({ stages, cita, showToast, socketStatus }) => {
                           ))}
                         </div>
                       )}
-                      {/* Galería de fotos/videos (todas las etapas) */}
                       <Gallery images={
                         s.id === 'diagnostico' ? s.data.media :
                         s.id === 'proceso' ? s.data.media :
@@ -1099,7 +1062,6 @@ const ClientView = ({ stages, cita, showToast, socketStatus }) => {
           ))}
         </div>
 
-        {/* Sidebar Desktop */}
         <div className="md:col-span-4 hidden md:block">
           <SidebarContent
             stages={stages}
@@ -1113,7 +1075,6 @@ const ClientView = ({ stages, cita, showToast, socketStatus }) => {
         </div>
       </div>
 
-      {/* Mobile Summary */}
       <MobileSummary
         stages={stages}
         cita={cita}
@@ -1172,7 +1133,6 @@ export default function ServiceTracking({ citaId, showToast }) {
   return (
     <div className="min-h-screen bg-[#0f172a] pb-20">
       <div className="max-w-5xl mx-auto px-4 pt-8">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#6366f1]/20 to-[#3b82f6]/10 border border-white/10 flex items-center justify-center text-white">
@@ -1192,7 +1152,6 @@ export default function ServiceTracking({ citaId, showToast }) {
           </div>
         </div>
 
-        {/* Vista según rol */}
         {cita.esEmpleado ? (
           <EmployeeView
             citaId={citaId}

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Cita } from '../citas/entities/cita.entity';
 import { Pago } from './entities/pago.entity';
@@ -8,7 +9,7 @@ import { PaymentService } from './payment.service';
 import { ActivityModule } from '../activity/activity.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Pago, Payment, Cita]), ActivityModule],
+  imports: [TypeOrmModule.forFeature([Pago, Payment, Cita]), ActivityModule, ConfigModule],
   controllers: [PaymentController],
   providers: [PaymentService, UsuarioRoleGuard, EmpleadoRoleGuard],
   exports: [TypeOrmModule, PaymentService],

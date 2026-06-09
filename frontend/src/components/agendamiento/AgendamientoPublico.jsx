@@ -5,6 +5,7 @@ import {
   getDisponibilidad, 
   crearCita
 } from '../../services/agendamiento.service';
+import { API_BASE_URL } from '../../apiConfig';
 
 const initialForm = { 
   nombre: '', apellido: '', telefono: '', email: '', 
@@ -28,7 +29,10 @@ class AgendamientoPublico extends Component {
       loading: false,
       error: null,
       citaId: null,
-      metodoPago: 'EFECTIVO'
+      paymentId: null,
+      wompiPaymentLink: null,
+      tokenEntrega: null,
+      metodoPago: 'EFECTIVO' // 'EFECTIVO' or 'WOMPI'
     };
   }
 
@@ -116,9 +120,72 @@ class AgendamientoPublico extends Component {
     const { formData, metodoPago } = this.state;
     this.setState({ loading: true, error: null });
     try {
-      const result = await crearCita({ ...formData, metodoPago });
-      this.setState({ citaId: result.id, loading: false });
+      // 1. Create the appointment
+      const result = await crearCita({ 
+        ...formData, 
+        metodoPago: metodoPago === 'EFECTIVO' ? 'EFECTIVO' : 'WOMPI' 
+      });
+      
+      this.setState({ citaId: result.id });
+
+      // 2. Generate payment token or Wompi link
+      const token = localStorage.getItem('token');
+      if (token) { // If user is logged in (though this is public, just in case)
+        const paymentRes = await fetch(`${API_BASE_URL}/payments/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            appointmentId: result.id,
+            method: metodoPago === 'EFECTIVO' ? 'cash' : 'wompi'
+          })
+        });
+
+        if (paymentRes.ok) {
+          const paymentData = await paymentRes.json();
+          this.setState({
+            paymentId: paymentData.payment.id,
+            tokenEntrega: paymentData.tokenCode,
+            wompiPaymentLink: paymentData.wompiPaymentLink,
+            loading: false
+          });
+        }
+      } else {
+        // If no token (public booking), just show the citaId
+        this.setState({ loading: false });
+      }
     } catch (err) {
+      console.error(err);
+      this.setState({ error: err.message, loading: false });
+    }
+  };
+
+  // Function to verify Wompi payment and get token
+  handleVerifyWompiPayment = async () => {
+    const { paymentId } = this.state;
+    this.setState({ loading: true });
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No token found');
+      
+      const res = await fetch(`${API_BASE_URL}/payments/${paymentId}/verify-wompi`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        this.setState({
+          tokenEntrega: data.tokenCode,
+          loading: false
+        });
+      }
+    } catch (err) {
+      console.error(err);
       this.setState({ error: err.message, loading: false });
     }
   };
@@ -128,12 +195,28 @@ class AgendamientoPublico extends Component {
       formData: { ...initialForm },
       step: 1,
       citaId: null,
+      paymentId: null,
+      wompiPaymentLink: null,
+      tokenEntrega: null,
       metodoPago: 'EFECTIVO'
     });
   };
 
   render() {
-    const { step, formData, servicios, employees, slotsDisponibles, slotsOcupados, loading, error, citaId, metodoPago } = this.state;
+    const { 
+      step, 
+      formData, 
+      servicios, 
+      employees, 
+      slotsDisponibles, 
+      slotsOcupados, 
+      loading, 
+      error, 
+      citaId,
+      tokenEntrega,
+      wompiPaymentLink,
+      metodoPago
+    } = this.state;
 
     if (citaId) {
       return (
@@ -145,10 +228,44 @@ class AgendamientoPublico extends Component {
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">¡Reserva confirmada!</h2>
           <p className="text-slate-400 mb-6">Recibirás confirmación a <span className="text-white font-semibold">{formData.email}</span></p>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl px-8 py-4 mb-8">
-            <span className="text-gray-500 text-xs uppercase tracking-widest block mb-1">Código de reserva</span>
-            <code className="text-2xl font-mono text-blue-400">#{citaId}</code>
-          </div>
+          
+          {wompiPaymentLink && !tokenEntrega && (
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6 text-center">
+              <p className="text-gray-400 mb-4">Completa tu pago con Wompi</p>
+              <a 
+                href={wompiPaymentLink} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-block bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-8 rounded-full transition-all mb-4"
+              >
+                Pagar con Wompi
+              </a>
+              <br />
+              <button
+                onClick={this.handleVerifyWompiPayment}
+                disabled={loading}
+                className="text-blue-400 text-sm underline hover:text-blue-300"
+              >
+                {loading ? 'Verificando...' : 'Ya pagué, verificar'}
+              </button>
+            </div>
+          )}
+
+          {tokenEntrega && (
+            <div className="bg-gray-900 border border-gray-800 rounded-xl px-8 py-4 mb-8">
+              <span className="text-gray-500 text-xs uppercase tracking-widest block mb-1">Token de entrega</span>
+              <code className="text-2xl font-mono text-green-400">{tokenEntrega}</code>
+              <p className="text-gray-400 text-xs mt-2">Guarda este código para retirar tu vehículo</p>
+            </div>
+          )}
+
+          {!wompiPaymentLink && !tokenEntrega && (
+            <div className="bg-gray-900 border border-gray-800 rounded-xl px-8 py-4 mb-8">
+              <span className="text-gray-500 text-xs uppercase tracking-widest block mb-1">Código de reserva</span>
+              <code className="text-2xl font-mono text-blue-400">#{citaId}</code>
+            </div>
+          )}
+
           <button 
             onClick={this.resetForm}
             className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-full transition-all"
@@ -414,6 +531,12 @@ class AgendamientoPublico extends Component {
                       <p className="text-white font-medium">{formData.email}</p>
                     </div>
                   </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-gray-800">
+                    <span className="text-xs text-gray-500 uppercase">Total a pagar</span>
+                    <span className="text-xl font-bold text-green-400">
+                      ${(servicios || []).find(s => s.id === formData.servicioId)?.precio.toLocaleString() || '0'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -429,7 +552,7 @@ class AgendamientoPublico extends Component {
                     }`}
                   >
                     <div className="text-left">
-                      <div className="text-white font-bold">EFECTIVO</div>
+                      <div className="text-white font-bold">💵 EFECTIVO</div>
                       <div className="text-gray-400 text-xs">Confirmas ahora, pagas en taller.</div>
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
@@ -441,48 +564,25 @@ class AgendamientoPublico extends Component {
                     </div>
                   </button>
 
-                  {/* Métodos de pago futuros (comentados) */}
-                  {/*
                   <button
                     type="button"
-                    onClick={() => this.setState({ metodoPago: 'TARJETA' })}
+                    onClick={() => this.setState({ metodoPago: 'WOMPI' })}
                     className={`w-full p-6 rounded-2xl border-2 transition-all flex justify-between items-center ${
-                      metodoPago === 'TARJETA' ? 'bg-blue-500/10 border-blue-500' : 'bg-gray-950 border-gray-800 hover:border-gray-700'
+                      metodoPago === 'WOMPI' ? 'bg-purple-500/10 border-purple-500' : 'bg-gray-950 border-gray-800 hover:border-gray-700'
                     }`}
                   >
                     <div className="text-left">
-                      <div className="text-white font-bold">TARJETA</div>
-                      <div className="text-gray-400 text-xs">Pago seguro con tarjeta de crédito/débito.</div>
+                      <div className="text-white font-bold">💳 PAGO DIGITAL (WOMPI)</div>
+                      <div className="text-gray-400 text-xs">Pago seguro con tarjeta, Nequi, Daviplata o transferencia.</div>
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                      metodoPago === 'TARJETA' ? 'border-blue-400 bg-blue-400' : 'border-gray-600'
+                      metodoPago === 'WOMPI' ? 'border-purple-400 bg-purple-400' : 'border-gray-600'
                     }`}>
-                      {metodoPago === 'TARJETA' && (
+                      {metodoPago === 'WOMPI' && (
                         <div className="w-3 h-3 rounded-full bg-white" />
                       )}
                     </div>
                   </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => this.setState({ metodoPago: 'TRANSFERENCIA' })}
-                    className={`w-full p-6 rounded-2xl border-2 transition-all flex justify-between items-center ${
-                      metodoPago === 'TRANSFERENCIA' ? 'bg-blue-500/10 border-blue-500' : 'bg-gray-950 border-gray-800 hover:border-gray-700'
-                    }`}
-                  >
-                    <div className="text-left">
-                      <div className="text-white font-bold">TRANSFERENCIA</div>
-                      <div className="text-gray-400 text-xs">Pago por transferencia bancaria.</div>
-                    </div>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                      metodoPago === 'TRANSFERENCIA' ? 'border-blue-400 bg-blue-400' : 'border-gray-600'
-                    }`}>
-                      {metodoPago === 'TRANSFERENCIA' && (
-                        <div className="w-3 h-3 rounded-full bg-white" />
-                      )}
-                    </div>
-                  </button>
-                  */}
                 </div>
               </div>
             </div>

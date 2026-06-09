@@ -11,6 +11,7 @@ import Servicios from './pages/Servicios';
 import Notificaciones from './pages/Notificaciones';
 import ServiceTracking from './pages/ServiceTracking';
 import BottomNavbar from './components/BottomNavbar';
+import { ThemeProvider } from './context/ThemeContext';
 
 // Componente para proteger rutas por rol
 const PrivateRoute = ({ children, allowedRoles = [] }) => {
@@ -40,8 +41,6 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
 
   return children;
 };
-
-import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
   return (
