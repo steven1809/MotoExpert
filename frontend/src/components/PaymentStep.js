@@ -183,7 +183,7 @@ export default function PaymentStep({ apiBaseUrl, onNavigate }) {
           </div>
 
           <div className="rounded-3xl border border-[#8B5CF6]/20 bg-[#8B5CF6]/5 p-6 space-y-4 text-center">
-            <div className="text-4xl mb-2">💳</div>
+            <div className="text-4xl mb-2"></div>
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Completa tu pago seguro con Wompi
             </p>

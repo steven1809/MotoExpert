@@ -29,6 +29,11 @@ services:
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_FROM_WHATSAPP: 'whatsapp:+14155238886'
+      WOMPI_PUBLIC_KEY: ${WOMPI_PUBLIC_KEY}
+      WOMPI_PRIVATE_KEY: ${WOMPI_PRIVATE_KEY}
+      WOMPI_INTEGRITY_SECRET: ${WOMPI_INTEGRITY_SECRET}
+      WOMPI_BASE_URL: ${WOMPI_BASE_URL}
+      WOMPI_REDIRECT_URL: ${WOMPI_REDIRECT_URL}
     depends_on:
       db:
         condition: service_healthy
@@ -38,6 +43,7 @@ services:
       context: ./frontend
       args:
         REACT_APP_API_URL: https://ungodly-outhouse-bondless.ngrok-free.dev
+        REACT_APP_WOMPI_PUBLIC_KEY: ${WOMPI_PUBLIC_KEY}
     ports:
       - '3001:3001'
     depends_on:
