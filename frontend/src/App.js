@@ -380,13 +380,10 @@ function App() {
         <div className="min-h-screen bg-white dark:bg-[#020617] text-slate-900 dark:text-[#F8FAFC]">
           <InactivityHandler onLogout={handleLogout} />
 
-<<<<<<< HEAD
           <div className="fixed top-4 right-4 md:right-80 z-40">
             <NotificationBell />
           </div>
 
-=======
->>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
           <Navbar 
             setView={setView} 
             view={view}
