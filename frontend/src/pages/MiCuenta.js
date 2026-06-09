@@ -803,18 +803,6 @@ const MiCuenta = ({ setView }) => {
                 </div>
 
                 {vehicles.length > 0 ? (
-<<<<<<< HEAD
-                  <div className="mt-6 overflow-x-auto">
-                    <div className="flex gap-6 min-w-max pb-2">
-                      {vehicles.map((v) => {
-                        const isPrincipal = Boolean(v.principal || (mainVehicle && v.id === mainVehicle.id));
-                        return (
-                          <div key={v.id} className={`w-[320px] shrink-0 ${t('bgCard')} border ${t('border')}`}>
-                            <div className={`relative h-40 overflow-hidden ${t('bgEmpty')}`}>
-                              <img src={v.imagen} alt={v.nombre} className="w-full h-full object-cover opacity-90" />
-                              {isPrincipal && (
-                                <div className={`absolute top-3 left-3 text-[9px] font-black uppercase px-3 py-1 tracking-wider text-white ${t('accentBg')}`}>
-=======
                   <div className="mt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[400px] overflow-y-auto pr-2 pb-2">
                       {vehicles.map((v) => {
@@ -825,7 +813,6 @@ const MiCuenta = ({ setView }) => {
                               <img src={v.imagen} alt={v.nombre} className="w-full h-full object-cover opacity-90" />
                               {isPrincipal && (
                                 <div className={`absolute top-3 left-3 text-[9px] font-black uppercase px-3 py-1 tracking-wider text-white ${t('accentBg')} rounded-full`}>
->>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
                                   PRINCIPAL
                                 </div>
                               )}

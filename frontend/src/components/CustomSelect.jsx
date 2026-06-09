@@ -11,7 +11,6 @@ const CustomSelect = ({
 =======
   label = "",
   dropdownPosition = "down" // 'up' or 'down'
->>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -90,11 +89,11 @@ const CustomSelect = ({
         onKeyDown={handleKeyDown}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-<<<<<<< HEAD
+
         className={`w-full h-12 px-5 flex items-center justify-between rounded-2xl bg-[#0b1220]/50 backdrop-blur-md border border-white/10 text-white focus:outline-none transition-all duration-300 ${
-=======
+
         className={`w-full h-9 px-3 flex items-center justify-between rounded-2xl bg-[#1a1d27] border border-[#2a2d3a] text-white focus:outline-none transition-all duration-300 ${
->>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
+
           isOpen 
             ? 'ring-2 ring-[#2563EB]/40 border-[#2563EB]/50 shadow-[0_0_20px_rgba(37,99,235,0.2)]' 
             : 'hover:bg-white/5 hover:border-white/20'
@@ -115,15 +114,15 @@ const CustomSelect = ({
 
       {isOpen && (
         <div 
-<<<<<<< HEAD
+
           className="absolute top-[calc(100%+8px)] left-0 right-0 z-[100] overflow-hidden rounded-2xl bg-[#0F172A]/95 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] animate-in fade-in zoom-in-95 duration-200"
-=======
+
           className={`absolute ${
             dropdownPosition === "up" 
               ? "bottom-[calc(100%+8px)]" 
               : "top-[calc(100%+8px)]"
           } left-0 z-[120] w-full overflow-hidden rounded-2xl bg-[#0F172A]/95 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] animate-in fade-in zoom-in-95 duration-200`}
->>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
+
         >
           <style>{`
             .custom-select-scrollbar::-webkit-scrollbar {

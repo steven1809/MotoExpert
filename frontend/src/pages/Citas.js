@@ -1743,11 +1743,7 @@ const Citas = ({
                         </div>
 
                         <div className="flex items-center gap-2 md:justify-end">
-<<<<<<< HEAD
-                          {alert.type === 'in-progress' ? null : alert.type === 'expired' ? (
-=======
                           {alert.cita.estado === 'EN PROCESO' ? null : alert.type === 'in-progress' ? null : alert.type === 'expired' ? (
->>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
                             <>
                               <button
                                 type="button"
@@ -1764,7 +1760,6 @@ const Citas = ({
                                 Cancelar
                               </button>
                             </>
-<<<<<<< HEAD
                           ) : (
                             <button
                               type="button"
@@ -1774,9 +1769,6 @@ const Citas = ({
                               Ver detalles
                             </button>
                           )}
-=======
-                          ) : null}
->>>>>>> 904ae239af2591971bbcf43441af60c6ca0ebd3e
                         </div>
                       </div>
                     );
