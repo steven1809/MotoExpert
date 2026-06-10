@@ -637,29 +637,42 @@ const Citas = ({
         'Content-Type': 'application/json',
       };
 
-      const [citasRes, vehiculosRes, serviciosRes, empleadosRes] = await Promise.all([
+      const [citasRes, vehiculosRes, serviciosRes, empleadosRes, paymentsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/citas?limit=100`, { headers }),
         fetch(`${API_BASE_URL}/vehiculos`, { headers }),
         fetch(`${API_BASE_URL}/servicios`, { headers }),
-        fetch(`${API_BASE_URL}/empleados`, { headers })
+        fetch(`${API_BASE_URL}/empleados`, { headers }),
+        fetch(`${API_BASE_URL}/payments`, { headers })
       ]);
 
       if (citasRes.ok && vehiculosRes.ok && serviciosRes.ok && empleadosRes.ok) {
-        const [citasData, vehiculosData, serviciosData, empleadosData] = await Promise.all([
+        const [citasData, vehiculosData, serviciosData, empleadosData, paymentsData] = await Promise.all([
           citasRes.json(),
           vehiculosRes.json(),
           serviciosRes.json(),
-          empleadosRes.json()
+          empleadosRes.json(),
+          paymentsRes.ok ? paymentsRes.json() : []
         ]);
         console.log('[Citas.js] citasData received:', citasData);
         
         const citasArray = Array.isArray(citasData) ? citasData : (citasData.data ?? []);
+        const paymentsArray = Array.isArray(paymentsData) ? paymentsData : (paymentsData.data ?? []);
+        
+        // Create a map of payments by appointment id
+        const paymentsMap = {};
+        paymentsArray.forEach(payment => {
+          if (payment.appointmentId) {
+            paymentsMap[payment.appointmentId] = payment;
+          }
+        });
+        
         console.log('[Citas.js] citasArray length:', citasArray.length);
         console.log('[Citas.js] citasArray:', citasArray);
         
         const serviciosArray = Array.isArray(serviciosData) ? serviciosData : (serviciosData.data ?? []);
         
         setCitas(citasArray);
+        setPaymentByAppointment(paymentsMap);
         setVehiculos(vehiculosData);
         setServicios(dedupeServicios(serviciosArray));
         setEmpleados(empleadosData.filter(e => e.estado === 'activo'));
@@ -2177,6 +2190,34 @@ const Citas = ({
                               <span className="text-[#60A5FA]"><img src={ubicIcon} alt="ubicacion" className="w-4 h-4" /></span>
                               <span className="font-bold">MotoExpert</span>
                             </div>
+                            {/* Payment method display */}
+                            {payment && (
+                              <div className={`inline-flex items-center gap-2 rounded-2xl border px-3 py-2 ${
+                                payment.method?.toLowerCase() === 'wompi' 
+                                  ? 'bg-purple-500/10 border-purple-500/20' 
+                                  : 'bg-amber-500/10 border-amber-500/20'
+                              }`}>
+                                <span className={`font-bold ${
+                                  payment.method?.toLowerCase() === 'wompi' 
+                                    ? 'text-purple-400' 
+                                    : 'text-amber-400'
+                                }`}>
+                                  {payment.method?.toLowerCase() === 'wompi' 
+                                    ? '💳 Pago digital' 
+                                    : '💵 Efectivo'}
+                                </span>
+                                {payment.method?.toLowerCase() === 'wompi' && (
+                                  <span className="text-[10px] text-slate-500 dark:text-[#94A3B8]">
+                                    {payment.status?.toUpperCase() === 'PAID' || payment.status?.toUpperCase() === 'APPROVED' ? '(Pagado)' : '(Pendiente)'}
+                                  </span>
+                                )}
+                                {payment.method?.toLowerCase() === 'cash' && (
+                                  <span className="text-[10px] text-slate-500 dark:text-[#94A3B8]">
+                                    (Pago en punto físico)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

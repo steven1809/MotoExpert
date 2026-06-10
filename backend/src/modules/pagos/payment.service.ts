@@ -120,7 +120,7 @@ export class PaymentService {
     return { paymentLink, reference };
   }
 
-  // Método para verificar estado de pago en Wompi
+  // Método para verificar estado de pago en Wompi (por ID de pago en BD)
   async verifyWompiPayment(paymentId: string): Promise<Payment> {
     const payment = await this.paymentRepo.findOne({ where: { id: paymentId }, relations: { appointment: true } });
     if (!payment) throw new NotFoundException('Pago no encontrado');
@@ -142,7 +142,7 @@ export class PaymentService {
 
       const response = await fetch(url, {
         headers: { 
-          'Authorization': `Basic ${Buffer.from(wompiPrivateKey + ':').toString('base64')}`,
+          'Authorization': `Bearer ${wompiPrivateKey}`,
         },
       });
 
@@ -151,16 +151,7 @@ export class PaymentService {
 
       if (data.data && data.data.length > 0) {
         const transaction = data.data[0];
-        payment.wompiTransactionId = transaction.id;
-
-        if (transaction.status === 'APPROVED') {
-          payment.status = PaymentStatus.PAID;
-          const { tokenCode, tokenExpiresAt } = await this.buildToken();
-          payment.tokenCode = tokenCode;
-          payment.tokenExpiresAt = tokenExpiresAt;
-        } else if (transaction.status === 'DECLINED' || transaction.status === 'VOIDED') {
-          payment.status = PaymentStatus.FAILED;
-        }
+        return this.processWompiTransaction(payment, transaction);
       } else {
         console.log('[WOMPI] No se encontraron transacciones para esta referencia');
       }
@@ -170,6 +161,151 @@ export class PaymentService {
       console.error('[WOMPI] Error al verificar:', error);
       throw new BadRequestException('Error al verificar el pago en Wompi');
     }
+  }
+
+  // Método para verificar estado de pago en Wompi (por ID de transacción de Wompi)
+  async verifyWompiPaymentByTransactionId(wompiTransactionId: string): Promise<Payment> {
+    console.log('[WOMPI] verifyWompiPaymentByTransactionId called with transactionId:', wompiTransactionId);
+    
+    // Primero buscamos si ya existe un pago con este transaction id
+    let payment = await this.paymentRepo.findOne({ 
+      where: { wompiTransactionId: wompiTransactionId }, 
+      relations: { appointment: true } 
+    });
+
+    const wompiBaseUrl = this.configService.get<string>('WOMPI_BASE_URL', 'https://sandbox.wompi.co/v1');
+    const wompiPrivateKey = this.configService.get<string>('WOMPI_PRIVATE_KEY');
+
+    if (!wompiPrivateKey) {
+      throw new BadRequestException('No se puede verificar el pago (falta configuración)');
+    }
+
+    try {
+      // Primero, intenta buscar el pago por la transacción ID
+      let url = `${wompiBaseUrl}/transactions/${wompiTransactionId}`;
+      console.log('[WOMPI] Consultando transacción por ID:', url);
+
+      let response = await fetch(url, {
+        headers: { 
+          'Authorization': `Bearer ${wompiPrivateKey}`,
+        },
+      });
+
+      let data = await response.json();
+      console.log('[WOMPI] Respuesta de transacción por ID:', JSON.stringify(data));
+
+      let transaction = data?.data;
+
+      // Si no encontramos la transacción por ID, intenta buscar por transacciones recientes
+      if (!transaction) {
+        console.log('[WOMPI] Transacción no encontrada por ID, intentando buscar por transacciones recientes');
+        
+        // Si ya tenemos un payment, usamos su referencia para buscar
+        if (payment?.wompiReference) {
+          url = `${wompiBaseUrl}/transactions?reference=${payment.wompiReference}`;
+          console.log('[WOMPI] Consultando transacciones por referencia:', url);
+          
+          response = await fetch(url, {
+            headers: { 
+              'Authorization': `Bearer ${wompiPrivateKey}`,
+            },
+          });
+          
+          data = await response.json();
+          console.log('[WOMPI] Respuesta de transacciones por referencia:', JSON.stringify(data));
+          
+          if (data.data && data.data.length > 0) {
+            transaction = data.data[0];
+          }
+        } 
+        // Si no tenemos payment, intenta buscar todas las transacciones recientes
+        else {
+          url = `${wompiBaseUrl}/transactions`;
+          console.log('[WOMPI] Consultando todas las transacciones recientes:', url);
+          
+          response = await fetch(url, {
+            headers: { 
+              'Authorization': `Bearer ${wompiPrivateKey}`,
+            },
+          });
+          
+          data = await response.json();
+          console.log('[WOMPI] Respuesta de todas las transacciones:', JSON.stringify(data));
+          
+          if (data.data && data.data.length > 0) {
+            // Intenta encontrar la transacción que coincida con el ID (aunque tenga formato diferente)
+            transaction = data.data.find((t: any) => 
+              t.id === wompiTransactionId || 
+              t.id.replace(/-/g, '') === wompiTransactionId.replace(/-/g, '')
+            );
+            
+            // Si no encontramos, usa la más reciente
+            if (!transaction) {
+              transaction = data.data[0];
+            }
+          }
+        }
+      }
+
+      if (!transaction) {
+        throw new NotFoundException('Transacción no encontrada en Wompi');
+      }
+
+      console.log('[WOMPI] Transacción encontrada:', JSON.stringify(transaction));
+
+      // Si no encontramos el pago por transaction id, buscamos por referencia
+      if (!payment) {
+        payment = await this.paymentRepo.findOne({ 
+          where: { wompiReference: transaction.reference }, 
+          relations: { appointment: true } 
+        });
+        
+        // Si aún no lo encontramos, busca el pago más reciente
+        if (!payment) {
+          console.log('[WOMPI] No encontramos pago por referencia, buscando el pago más reciente');
+          const recentPayments = await this.paymentRepo.find({
+            where: { method: PaymentMethod.WOMPI },
+            order: { createdAt: 'DESC' },
+            take: 5,
+            relations: { appointment: true }
+          });
+          
+          if (recentPayments.length > 0) {
+            payment = recentPayments[0];
+          }
+        }
+        
+        if (!payment) {
+          throw new NotFoundException('Pago no encontrado para esta transacción');
+        }
+      }
+
+      return this.processWompiTransaction(payment, transaction);
+    } catch (error) {
+      console.error('[WOMPI] Error al verificar por transaction id:', error);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('Error al verificar el pago en Wompi');
+    }
+  }
+
+  // Método privado para procesar una transacción de Wompi
+  private async processWompiTransaction(payment: Payment, transaction: any): Promise<Payment> {
+    payment.wompiTransactionId = transaction.id;
+
+    if (transaction.status === 'APPROVED') {
+      payment.status = PaymentStatus.PAID;
+      if (!payment.tokenCode) {
+        const { tokenCode, tokenExpiresAt } = await this.buildToken();
+        payment.tokenCode = tokenCode;
+        payment.tokenExpiresAt = tokenExpiresAt;
+      }
+    } else if (transaction.status === 'DECLINED' || transaction.status === 'VOIDED') {
+      payment.status = PaymentStatus.FAILED;
+    }
+
+    return await this.paymentRepo.save(payment);
   }
 
   async validateToken(tokenCode: string): Promise<{
@@ -249,6 +385,26 @@ export class PaymentService {
         tokenExpiresAt: payment.tokenExpiresAt,
       },
     };
+  }
+
+  async findAll(userId: number, userRole: string): Promise<Payment[]> {
+    // Admin can get all payments
+    if (userRole === 'admin') {
+      return this.paymentRepo.find({ relations: ['appointment'] });
+    }
+
+    // Empleado can get all payments? Or only for their appointments?
+    if (userRole === 'empleado' || userRole === 'trabajador') {
+      return this.paymentRepo.find({ relations: ['appointment'] });
+    }
+
+    // Usuario only gets their own payments (via their appointments)
+    const userCitas = await this.citaRepo.find({
+      where: { usuario: { id: userId } },
+      relations: ['payment'],
+    });
+
+    return userCitas.map(c => c.payment).filter(p => !!p);
   }
 
   private async buildToken(): Promise<{

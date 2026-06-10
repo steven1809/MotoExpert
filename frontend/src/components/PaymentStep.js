@@ -109,10 +109,13 @@ export default function PaymentStep({ apiBaseUrl, onNavigate }) {
         throw new Error('No se recibió la información de pago de Wompi');
       }
 
-      setPaymentData({
-        wompiPaymentLink: data.wompiPaymentLink,
-        paymentId: data.payment.id
-      });
+      const paymentData = {
+          wompiPaymentLink: data.wompiPaymentLink,
+          paymentId: data.payment.id
+        };
+        // Store payment info in localStorage so we can retrieve it when we come back from Wompi (even if new tab)
+        localStorage.setItem('wompiPaymentData', JSON.stringify(paymentData));
+        setPaymentData(paymentData);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error de conexión');
     } finally {
@@ -188,11 +191,9 @@ export default function PaymentStep({ apiBaseUrl, onNavigate }) {
               Completa tu pago seguro con Wompi
             </p>
             <a
-              href={paymentData.wompiPaymentLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block w-full bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-black text-xs uppercase tracking-[0.2em] py-4 rounded-2xl shadow-2xl shadow-[#8B5CF6]/20 transition-all active:scale-[0.99]"
-            >
+                              href={paymentData.wompiPaymentLink}
+                              className="inline-block w-full bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-black text-xs uppercase tracking-[0.2em] py-4 rounded-2xl shadow-2xl shadow-[#8B5CF6]/20 transition-all active:scale-[0.99]"
+                            >
               Ir a pagar con Wompi
             </a>
             <div className="mt-4 pt-4 border-t border-[#8B5CF6]/10">

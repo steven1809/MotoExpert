@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useRef } from "react";
-import { io } from "socket.io-client";
-import Login from "./components/Login/Login"; 
-import Servicios from "./pages/Servicios";
-import UsersList from "./pages/UsersList";
-import Vehiculos from "./pages/Vehiculos";
-import Citas from "./pages/Citas";
-import MiCuenta from "./pages/MiCuenta";
-import SeguridadView from "./pages/SeguridadView.jsx";
-import PanelEmpleado from "./pages/PanelEmpleado";
-import Navbar from "./components/Navbar";
+import React, { useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
+import Login from './components/Login/Login'; 
+import Servicios from './pages/Servicios';
+import UsersList from './pages/UsersList';
+import Vehiculos from './pages/Vehiculos';
+import Citas from './pages/Citas';
+import MiCuenta from './pages/MiCuenta';
+import SeguridadView from './pages/SeguridadView.jsx';
+import PanelEmpleado from './pages/PanelEmpleado';
+import Navbar from './components/Navbar';
 import LandingPage from './pages/LandingPage';
 import DashboardAdmin from './pages/DashboardAdmin';
-import InactivityHandler from "./components/InactivityHandler";
-import Toast from "./components/Toast";
+import InactivityHandler from './components/InactivityHandler';
+import Toast from './components/Toast';
 import UserDashboard from './pages/UserDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import OnboardingModal from './components/OnboardingModal';
@@ -30,6 +30,143 @@ import ServiceTracking from './pages/ServiceTracking';
 import EmpleadoHistorial from './pages/EmpleadoHistorial';
 
 import { API_BASE_URL } from './apiConfig';
+
+// Componente para manejar el retorno de Wompi
+function WompiReturnHandler({ apiBaseUrl, onNavigate, onConfirm, showToast }) {
+  const baseUrl = apiBaseUrl || API_BASE_URL;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [tokenCode, setTokenCode] = useState(null);
+
+  useEffect(() => {
+    const verifyPayment = async () => {
+      const params = new URLSearchParams(window.location.search);
+      let transactionId = params.get('id');
+      
+      console.log('[WompiReturnHandler] URL params:', Object.fromEntries(params.entries()));
+      console.log('[WompiReturnHandler] Raw transactionId:', transactionId);
+      
+      // Check localStorage for stored payment data first
+      const storedPaymentDataStr = localStorage.getItem('wompiPaymentData');
+      let storedPaymentData = null;
+      if (storedPaymentDataStr) {
+        try {
+          storedPaymentData = JSON.parse(storedPaymentDataStr);
+          console.log('[WompiReturnHandler] Found stored payment data:', storedPaymentData);
+        } catch (e) {
+          console.error('[WompiReturnHandler] Failed to parse stored payment data:', e);
+        }
+      }
+
+      try {
+        let response, data;
+        
+        // First, try using the stored payment ID to verify
+        if (storedPaymentData?.paymentId) {
+          console.log('[WompiReturnHandler] Verifying using stored payment ID:', storedPaymentData.paymentId);
+          const token = localStorage.getItem('token');
+          response = await fetch(`${baseUrl}/payments/${storedPaymentData.paymentId}/verify-wompi`, {
+            method: 'POST',
+            headers: {
+              Authorization: token ? `Bearer ${token}` : '',
+            }
+          });
+          
+          data = await response.json().catch(() => null);
+          console.log('[WompiReturnHandler] Response from backend (using stored payment ID):', data);
+        }
+        
+        // If that didn't work, try using the transaction ID from Wompi
+        if ((!response || !response.ok) && transactionId) {
+          console.log('[WompiReturnHandler] Falling back to transaction ID:', transactionId);
+          transactionId = transactionId.trim().replace(/\s/g, '');
+          response = await fetch(`${baseUrl}/payments/verify-wompi-transaction/${encodeURIComponent(transactionId)}`, {
+            method: 'POST',
+          });
+          
+          data = await response.json().catch(() => null);
+          console.log('[WompiReturnHandler] Response from backend (using transaction ID):', data);
+        }
+        
+        if (!response || !response.ok) {
+          throw new Error(typeof data?.message === 'string' ? data.message : 'No se pudo verificar el pago');
+        }
+
+        if (data?.tokenCode) {
+          setTokenCode(data.tokenCode);
+          // Clear stored payment data after successful verification
+          localStorage.removeItem('wompiPaymentData');
+        } else {
+          throw new Error('No se recibió el token de entrega');
+        }
+      } catch (e) {
+        console.error('[WompiReturnHandler] Error:', e);
+        setError(e instanceof Error ? e.message : 'Error de conexión');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyPayment();
+  }, [baseUrl]);
+
+  const go = (path, state) => {
+    if (typeof onNavigate === 'function') {
+      onNavigate(path, state);
+      return;
+    }
+    try {
+      window.history.pushState(state || {}, '', path);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } catch {
+      window.location.assign(path);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#020617] px-6 py-10">
+        <div className="mx-auto w-full max-w-md text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#2563EB] border-t-transparent mx-auto"></div>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white">Verificando pago...</h2>
+          <p className="text-slate-600 dark:text-[#94A3B8]">Espera un momento mientras confirmamos tu pago.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#020617] px-6 py-10">
+        <div className="mx-auto w-full max-w-md space-y-6">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="w-14 h-14 rounded-full bg-[#E24B4A]/15 border border-[#E24B4A]/30 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-7 h-7 text-[#E24B4A]" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-black text-slate-900 dark:text-white">Error al verificar el pago</h2>
+            <p className="text-slate-600 dark:text-[#94A3B8]">{error}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => go('/', {})}
+            className="w-full py-4 rounded-2xl bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-black text-xs uppercase tracking-[0.2em]"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (tokenCode) {
+    // Renderizar la confirmación con el token
+    return <PaymentConfirmation onExit={onConfirm} tokenCode={tokenCode} />;
+  }
+
+  return null;
+}
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('token')); 
@@ -75,7 +212,12 @@ function App() {
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    if (routePath.startsWith('/appointments/') && view !== 'citas') {
+    // No reiniciamos la ruta si es la de confirmación de pago o la de pago
+    if (routePath.startsWith('/appointments/') && 
+        view !== 'citas' && 
+        !routePath.includes('/payment-confirmation') && 
+        !routePath.includes('/confirmation') && 
+        !routePath.includes('/payment')) {
       try {
         window.history.pushState({}, '', '/');
         setRoutePath('/');
@@ -480,24 +622,45 @@ function App() {
               )
             )}
 
-            {routePath === '/appointments/confirmation' && (
-              isStandardUser ? (
-                <PaymentConfirmation
-                  onExit={() => {
-                    navigate('/', {});
-                    setView('citas');
-                  }}
-                />
-              ) : (
-                <div className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 text-center space-y-3">
-                  <div className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wide">
-                    No autorizado
+            {/* Rutas para confirmación de pago y retorno de Wompi */}
+            {(routePath === '/appointments/payment-confirmation' || routePath === '/appointments/confirmation') && (
+              (() => {
+                // Verificar si tiene query params de Wompi
+                const params = new URLSearchParams(window.location.search);
+                const hasWompiParams = params.has('id') && params.has('env');
+                
+                if (hasWompiParams) {
+                  return (
+                    <WompiReturnHandler
+                      onNavigate={navigate}
+                      onConfirm={() => {
+                        navigate('/', {});
+                        setView('citas');
+                      }}
+                      showToast={showToast}
+                    />
+                  );
+                }
+                
+                // Si no, es la confirmación normal
+                return isStandardUser ? (
+                  <PaymentConfirmation
+                    onExit={() => {
+                      navigate('/', {});
+                      setView('citas');
+                    }}
+                  />
+                ) : (
+                  <div className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 text-center space-y-3">
+                    <div className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wide">
+                      No autorizado
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
+                      Esta ruta es solo para usuarios.
+                    </div>
                   </div>
-                  <div className="text-sm text-slate-600 dark:text-[#94A3B8]">
-                    Esta ruta es solo para usuarios.
-                  </div>
-                </div>
-              )
+                );
+              })()
             )}
 
             {routePath.startsWith('/appointments/') ||

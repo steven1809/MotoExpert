@@ -42,6 +42,14 @@ export class EmpleadoRoleGuard implements CanActivate {
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async findAll(@Request() req) {
+    const userId = req.user.userId;
+    const userRole = req.user.rol || req.user.role || '';
+    return this.paymentService.findAll(userId, userRole);
+  }
+
   @Post('generate')
   @UseGuards(JwtAuthGuard, UsuarioRoleGuard)
   async generate(@Body() dto: GeneratePaymentDto) {
@@ -73,7 +81,18 @@ export class PaymentController {
     );
   }
 
-  // Nuevo endpoint para verificar pago de Wompi
+  // Endpoint para verificar pago de Wompi por ID de transacción de Wompi (público para redirect)
+  @Post('verify-wompi-transaction/:transactionId')
+  async verifyWompiPaymentByTransactionId(@Param('transactionId') transactionId: string) {
+    const payment = await this.paymentService.verifyWompiPaymentByTransactionId(transactionId);
+    return { 
+      payment, 
+      tokenCode: payment.tokenCode,
+      status: payment.status,
+      appointmentId: payment.appointmentId,
+    };
+  }
+
   @Post(':id/verify-wompi')
   @UseGuards(JwtAuthGuard, UsuarioRoleGuard)
   async verifyWompiPayment(@Param('id') id: string) {
