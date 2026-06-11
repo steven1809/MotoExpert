@@ -610,19 +610,51 @@ class Navbar extends Component {
                       <div className="text-slate-500 text-[10px] font-mono uppercase tracking-[0.15em]">{userRank}</div>
                     </div>
                   </button>
-                
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    this.toggleMenu();
-                  }}
-                  className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-[#ff4d4d]/10 border border-[#ff4d4d]/20 text-[#ff4d4d] font-mono text-xs uppercase tracking-[0.2em] hover:bg-[#ff4d4d]/20 transition-all"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-                  </svg>
-                  <span>Cerrar Sesión</span>
-                </button>
+
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => {
+                        setView("cuenta");
+                        this.toggleMenu();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/[0.03] transition-colors group"
+                    >
+                      <span className="text-slate-400 group-hover:text-[#7b9cff] transition-colors">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                        </svg>
+                      </span>
+                      <span className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-300 group-hover:text-white">Cuenta</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setView("seguridad");
+                        this.toggleMenu();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/[0.03] transition-colors group"
+                    >
+                      <span className="text-slate-400 group-hover:text-[#7b9cff] transition-colors">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                      </span>
+                      <span className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-300 group-hover:text-white">Seguridad</span>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      this.toggleMenu();
+                    }}
+                    className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-[#ff4d4d]/10 border border-[#ff4d4d]/20 text-[#ff4d4d] font-mono text-xs uppercase tracking-[0.2em] hover:bg-[#ff4d4d]/20 transition-all"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                    </svg>
+                    <span>Cerrar Sesión</span>
+                  </button>
               </div>
             </div>
           </div>
