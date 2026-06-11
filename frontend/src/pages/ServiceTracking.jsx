@@ -1092,10 +1092,21 @@ const ClientView = ({ stages, cita, showToast, socketStatus }) => {
 
 // ─── Componente Principal ──────────────────────────────────────────────────────
 
-export default function ServiceTracking({ citaId, showToast }) {
+export default function ServiceTracking({ citaId, showToast, userRole, onBack }) {
+  // Fallback to localStorage if userRole not provided as prop
+  const effectiveUserRole = userRole || localStorage.getItem('role');
+  const isEmployee = effectiveUserRole === 'empleado' || effectiveUserRole === 'trabajador';
+  
+  // Default onBack handler if not provided
+  const handleBack = onBack || (() => {
+    try {
+      window.history.back();
+    } catch {}
+  });
+
   const { cita, loading: loadingCita, error: errorCita } = useCita(citaId);
   const { stages, loading: loadingStages, error: errorStages, updateStage, addUpdate, socketStatus } = useServiceStages(citaId, {
-    allowInit: !!cita?.esEmpleado,
+    allowInit: isEmployee,
   });
 
   const loading = loadingCita || loadingStages;
@@ -1135,24 +1146,35 @@ export default function ServiceTracking({ citaId, showToast }) {
       <div className="max-w-5xl mx-auto px-4 pt-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#6366f1]/20 to-[#3b82f6]/10 border border-white/10 flex items-center justify-center text-white">
+            <button 
+              type="button" 
+              onClick={handleBack} 
+              className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white transition-colors"
+            >
               <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 14l4-4m0 0l4 4m-4-4v10" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h16v4" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
               </svg>
-            </div>
-            <div>
-              <div className="text-sm md:text-base font-black text-white uppercase tracking-wide">
-                {cita.servicio?.nombre || 'Servicio'}
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#6366f1]/20 to-[#3b82f6]/10 border border-white/10 flex items-center justify-center text-white">
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 14l4-4m0 0l4 4m-4-4v10" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h16v4" />
+                </svg>
               </div>
-              <div className="text-xs font-bold text-white/60">
-                {cita.vehiculo?.marca} {cita.vehiculo?.modelo} · {cita.vehiculo?.placa?.toUpperCase()}
+              <div>
+                <div className="text-sm md:text-base font-black text-white uppercase tracking-wide">
+                  {cita.servicio?.nombre || 'Servicio'}
+                </div>
+                <div className="text-xs font-bold text-white/60">
+                  {cita.vehiculo?.marca} {cita.vehiculo?.modelo} · {cita.vehiculo?.placa?.toUpperCase()}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {cita.esEmpleado ? (
+        {isEmployee ? (
           <EmployeeView
             citaId={citaId}
             stages={stages}
