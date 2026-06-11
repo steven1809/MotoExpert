@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-import { API_BASE_URL } from '../apiConfig';
+import { API_BASE_URL, fixImageUrl } from '../apiConfig';
 
 const UsersList = (props) => {
   const { activeTab: propActiveTab } = props;
@@ -804,7 +804,7 @@ const UsersList = (props) => {
                   <div className="flex items-center space-x-5">
                     <div className="relative">
                       {imagenPerfil ? (
-                        <img src={imagenPerfil} alt={usuario.nombre} className="w-16 h-16 rounded-2xl object-cover border border-white/10 shadow-lg" />
+                        <img src={fixImageUrl(imagenPerfil)} alt={usuario.nombre} className="w-16 h-16 rounded-2xl object-cover border border-white/10 shadow-lg" />
                       ) : (
                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-2xl italic shadow-lg">
                           {usuario.nombre?.charAt(0)}
@@ -857,7 +857,7 @@ const UsersList = (props) => {
                       <div className="lg:col-span-4 flex flex-col items-center space-y-8">
                         <div className="relative group/photo">
                           {imagenPerfil ? (
-                            <img src={imagenPerfil} alt={usuario.nombre} className="w-full aspect-square max-w-[280px] rounded-[3rem] object-cover border-4 border-white/5 shadow-2xl transition-transform duration-500 group-hover/photo:scale-[1.02]" />
+                            <img src={fixImageUrl(imagenPerfil)} alt={usuario.nombre} className="w-full aspect-square max-w-[280px] rounded-[3rem] object-cover border-4 border-white/5 shadow-2xl transition-transform duration-500 group-hover/photo:scale-[1.02]" />
                           ) : (
                             <div className="w-full aspect-square max-w-[280px] rounded-[3rem] bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-8xl italic shadow-2xl">
                               {usuario.nombre?.charAt(0)}

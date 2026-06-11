@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, MoreVertical, Trash2, UserRound } from 'lucide-react';
 import FaceAuthModal from '../components/FaceAuthModal';
 import { useWebAuthn } from '../hooks/useWebAuthn';
-import { API_BASE_URL } from '../apiConfig';
+import { API_BASE_URL, fixImageUrl } from '../apiConfig';
 import { t } from '../styles/theme';
 import correoIcon from '../assets/iconos/correo.png';
 import telefonoIcon from '../assets/iconos/telefono.png';
@@ -649,7 +649,7 @@ const MiCuenta = ({ setView }) => {
         <section className={`relative w-full overflow-hidden ${t('bgCard')}`}>
           {bannerImage && (
             <img
-              src={bannerImage}
+              src={fixImageUrl(bannerImage)}
               className="absolute inset-0 w-full h-full object-cover opacity-25"
               alt="Banner"
             />
@@ -734,7 +734,7 @@ const MiCuenta = ({ setView }) => {
               <div className="relative group/avatar cursor-pointer" onClick={() => fileInputRef.current.click()}>
                 <div className="w-28 h-28 md:w-36 md:h-36 rounded-full bg-white dark:bg-[#161b22] border-4 border-white dark:border-[#0f1b2d] overflow-hidden flex items-center justify-center text-5xl font-black text-[#1e90ff] relative">
                   {profile.fotoPerfil ? (
-                    <img src={profile.fotoPerfil} className="w-full h-full object-cover rounded-full" alt="Avatar" />
+                    <img src={fixImageUrl(profile.fotoPerfil)} className="w-full h-full object-cover rounded-full" alt="Avatar" />
                   ) : (
                     profile.nombre.charAt(0)
                   )}
@@ -810,7 +810,7 @@ const MiCuenta = ({ setView }) => {
                         return (
                           <div key={v.id} className={`${t('bgCard')} border ${t('border')} rounded-xl overflow-hidden`}>
                             <div className={`relative h-40 overflow-hidden ${t('bgEmpty')}`}>
-                              <img src={v.imagen} alt={v.nombre} className="w-full h-full object-cover opacity-90" />
+                              <img src={fixImageUrl(v.imagen)} alt={v.nombre} className="w-full h-full object-cover opacity-90" />
                               {isPrincipal && (
                                 <div className={`absolute top-3 left-3 text-[9px] font-black uppercase px-3 py-1 tracking-wider text-white ${t('accentBg')} rounded-full`}>
                                   PRINCIPAL

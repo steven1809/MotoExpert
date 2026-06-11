@@ -16,7 +16,7 @@ import notificacionIcon from '../assets/iconos/notificacion.png';
 
 import { QRCodeCanvas } from 'qrcode.react';
 
-import { API_BASE_URL } from '../apiConfig';
+import { API_BASE_URL, fixImageUrl } from '../apiConfig';
 
 const TokenCodeModal = ({ isOpen, onClose, tokenCode }) => {
   if (!isOpen) return null;
@@ -338,15 +338,7 @@ class UserDashboard extends Component {
     }
   };
 
-  // Helper to get correct vehicle image URL
-  getImageUrl = (imagen) => {
-    if (!imagen) return null;
-    if (imagen.startsWith('http://') || imagen.startsWith('https://')) return imagen;
-    if (imagen.startsWith('/uploads')) return `${API_BASE_URL}${imagen}`;
-    if (imagen.startsWith('uploads/')) return `${API_BASE_URL}/${imagen}`;
-    if (imagen.startsWith('/')) return `${API_BASE_URL}${imagen}`;
-    return `${API_BASE_URL}/uploads/${imagen}`;
-  };
+
   
   // Handle image error (fallback to type-specific placeholder or carHeroImg)
   handleImageError = (e, tipo) => {
@@ -709,10 +701,10 @@ class UserDashboard extends Component {
                     >
                       <div className="absolute inset-0">
                         <img
-                          src={this.getImageUrl(v?.imagen) || carHeroImg}
+                          src={fixImageUrl(v?.imagen) || carHeroImg}
                           alt=""
                           onError={(e) => this.handleImageError(e, v?.tipo)}
-                          className={`w-full h-full object-cover transition-opacity duration-500 ${this.getImageUrl(v?.imagen) ? 'opacity-70' : 'opacity-40'}`}
+                          className={`w-full h-full object-cover transition-opacity duration-500 ${fixImageUrl(v?.imagen) ? 'opacity-70' : 'opacity-40'}`}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
                       </div>

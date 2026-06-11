@@ -2,7 +2,7 @@ import React, { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { io } from 'socket.io-client';
 import ServiceCompletionModal from '../components/ServiceCompletionModal';
 
-import { API_BASE_URL } from '../apiConfig';
+import { API_BASE_URL, fixImageUrl } from '../apiConfig';
 
 // ─── Constantes ────────────────────────────────────────────────────────────────
 
@@ -511,9 +511,9 @@ const Gallery = ({ images }) => {
         <div key={`${idx}-${src.slice(0, 16)}`}
           className="shrink-0 w-[220px] h-[130px] rounded-2xl overflow-hidden border border-white/10 bg-white/5">
           {isVideo(src) ? (
-            <video src={src} controls className="w-full h-full object-cover" />
+            <video src={fixImageUrl(src)} controls className="w-full h-full object-cover" />
           ) : (
-            <img src={src} alt="" className="w-full h-full object-cover" />
+            <img src={fixImageUrl(src)} alt="" className="w-full h-full object-cover" />
           )}
         </div>
       ))}

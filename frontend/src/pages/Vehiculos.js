@@ -3,7 +3,7 @@ import CustomSelect from '../components/CustomSelect';
 import carHeroImg from '../assets/images/1.png';
 import vehiculoIcon from '../assets/iconos/coche.png';
 
-import { API_BASE_URL } from '../apiConfig';
+import { API_BASE_URL, fixImageUrl } from '../apiConfig';
 
 class Vehiculos extends Component {
   constructor(props) {
@@ -90,16 +90,7 @@ class Vehiculos extends Component {
     return 82;
   };
 
-  getImageUrl = (imagen) => {
-    if (!imagen) return null;
-    if (imagen.startsWith('http://') || imagen.startsWith('https://')) return imagen;
-    // Handle both cases: starts with /uploads or just the filename
-    if (imagen.startsWith('/uploads')) return `${API_BASE_URL}${imagen}`;
-    if (imagen.startsWith('uploads/')) return `${API_BASE_URL}/${imagen}`;
-    if (imagen.startsWith('/')) return `${API_BASE_URL}${imagen}`;
-    // If it's just a filename, assume it's in uploads
-    return `${API_BASE_URL}/uploads/${imagen}`;
-  };
+
 
   handleImageError = (e, vehicleId) => {
     e.target.src = carHeroImg;
@@ -659,11 +650,11 @@ class Vehiculos extends Component {
                       <div key={v.id} className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden">
                         <div className="relative h-28 bg-[#0b1220]">
                           <img 
-                            src={this.getImageUrl(v.imagen) || carHeroImg} 
+                            src={fixImageUrl(v.imagen) || carHeroImg} 
                             alt={v.marca} 
                             onError={(e) => this.handleImageError(e, v.id)}
                             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
-                              this.getImageUrl(v.imagen) ? 'opacity-60' : 'opacity-15'
+                              fixImageUrl(v.imagen) ? 'opacity-60' : 'opacity-15'
                             }`} 
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/40 to-transparent" />
