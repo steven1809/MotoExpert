@@ -14,15 +14,23 @@ const STYLE = `
   align-items: center;
   justify-content: center;
   font-family: 'Barlow', sans-serif;
-  overflow: hidden;
+  overflow: auto;
   position: relative;
   z-index: 100;
+  padding: 20px 10px;
+}
+@media (max-width: 500px) {
+  .mxp-login-root {
+    padding: 10px 5px;
+  }
 }
 
 .scene { display: none; }
 
 .back-to-landing {
-  position: absolute; top: 20px; left: 20px; z-index: 110;
+  position: relative;
+  margin-bottom: 20px;
+  align-self: flex-start;
   background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
   border: 1px solid rgba(255,255,255,0.2); color: white;
   padding: 10px 20px; border-radius: 50px; font-weight: 700;
@@ -33,19 +41,32 @@ const STYLE = `
 .back-to-landing:hover { background: rgba(255,255,255,0.2); transform: translateX(-5px); }
 
 .card {
-  position: relative; z-index: 10; width: 480px; min-height: 500px;
-  display: flex; flex-direction: column; border-radius: 32px; overflow: hidden;
+  position: relative; z-index: 10; width: 95%; max-width: 480px; min-height: 500px;
+  display: flex; flex-direction: column; border-radius: 32px; overflow: auto;
   background: rgba(15,23,42,0.65); backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1);
   box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
   animation: card-in 0.8s cubic-bezier(0.16,1,0.3,1) both;
+  max-height: 95vh;
+}
+@media (max-width: 500px) {
+  .card {
+    width: 100%;
+    border-radius: 24px;
+  }
+  .brand-header { padding: 30px 20px 15px; }
+  .brand-name { font-size: 28px; }
+  .form-panel { padding: 0 20px 30px; }
+  .tabs { margin-bottom: 20px; }
+  .tab { font-size: 15px; padding: 8px 20px 12px; }
+  .form-title { font-size: 22px; }
 }
 @keyframes card-in {
   from { opacity: 0; transform: translateY(30px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.brand-header { padding: 40px 40px 20px; text-align: center; }
+.brand-header { padding: 40px 40px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; }
 .brand-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .brand-name {
   font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 900;
@@ -456,13 +477,7 @@ class Login extends Component {
       <div className="mxp-login-root">
         <style>{STYLE}</style>
 
-        <button className="back-to-landing" onClick={() => this.props.onBack && this.props.onBack()}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"/>
-            <polyline points="12 19 5 12 12 5"/>
-          </svg>
-          Volver al Inicio
-        </button>
+
 
         <div className="scene">
           <div className="ripple ripple-1"/>
@@ -506,6 +521,13 @@ class Login extends Component {
 
         <div className="card">
           <div className="brand-header">
+            <button className="back-to-landing" onClick={() => this.props.onBack && this.props.onBack()}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+              </svg>
+              Volver al Inicio
+            </button>
             <div className="brand-logo">
               <div className="brand-name">moto<span>expert</span></div>
             </div>

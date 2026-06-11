@@ -570,30 +570,35 @@ class LandingPage extends Component {
             isScrolled ? 'backdrop-blur-xl bg-[rgba(10,10,30,0.8)] border-b border-white/10' : 'bg-transparent'
           }`}
         >
-          <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="container mx-auto px-3 sm:px-6 py-4 flex items-center justify-between">
 
             {/* LOGO */}
             <div
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => this.setActiveView('inicio')}
             >
-              <div className="w-16 h-22 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-xl">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-xl">
                 <img
                   src={require('../assets/images/logo.png')}
                   alt="MotoExpert"
-                  className="h-30 w-auto object-contain"
+                  className="h-10 w-auto object-contain"
                 />
               </div>
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-xl font-semibold tracking-tight">
                   Moto<span className="text-white">Expert</span>
                 </h1>
                 <p className="text-[11px] text-white/70">Lo mejor para tu vehiculo</p>
               </div>
+              <div className="sm:hidden">
+                <h1 className="text-lg font-semibold tracking-tight">
+                  Moto<span className="text-white">Expert</span>
+                </h1>
+              </div>
             </div>
 
             {/* NAV DESKTOP */}
-            <nav className="hidden md:flex items-center gap-10 text-sm">
+            <nav className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8 text-xs md:text-sm">
               {[
                 ['inicio', 'Inicio'],
                 ['servicios', 'Servicios'],
@@ -608,7 +613,7 @@ class LandingPage extends Component {
                     key={key}
                     type="button"
                     onClick={() => this.setActiveView(key)}
-                    className={`relative text-sm text-white/80 hover:text-white transition-colors after:absolute after:left-0 after:-bottom-2 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-blue-400 after:to-cyan-300 after:transition-transform after:duration-300 hover:after:scale-x-100 ${
+                    className={`relative text-xs md:text-sm text-white/80 hover:text-white transition-colors after:absolute after:left-0 after:-bottom-2 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-gradient-to-r after:from-blue-400 after:to-cyan-300 after:transition-transform after:duration-300 hover:after:scale-x-100 ${
                       isActive ? 'after:scale-x-100' : ''
                     }`}
                   >
@@ -619,16 +624,16 @@ class LandingPage extends Component {
             </nav>
 
             {/* ACTIONS DESKTOP */}
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2 lg:gap-3">
               <button
                 onClick={this.props.onEnterLogin}
-                className="text-sm text-white/80 hover:text-white transition-colors"
+                className="text-xs md:text-sm text-white/80 hover:text-white transition-colors"
               >
                 Iniciar sesión
               </button>
               <button
                 onClick={this.props.onEnterRegister}
-                className="px-6 py-3 rounded-xl bg-transparent border border-white hover:border-blue-600 hover:text-blue-600 transition-all duration-300 shadow-lg"
+                className="px-3 md:px-4 lg:px-6 py-2 md:py-3 rounded-xl bg-transparent border border-white hover:border-blue-600 hover:text-blue-600 transition-all duration-300 shadow-lg text-xs md:text-sm"
               >
                 Registrarse
               </button>
