@@ -338,6 +338,39 @@ class UserDashboard extends Component {
     }
   };
 
+  // Helper to get correct vehicle image URL
+  getImageUrl = (imagen) => {
+    if (!imagen) return null;
+    if (imagen.startsWith('http://') || imagen.startsWith('https://')) return imagen;
+    if (imagen.startsWith('/uploads')) return `${API_BASE_URL}${imagen}`;
+    if (imagen.startsWith('uploads/')) return `${API_BASE_URL}/${imagen}`;
+    if (imagen.startsWith('/')) return `${API_BASE_URL}${imagen}`;
+    return `${API_BASE_URL}/uploads/${imagen}`;
+  };
+  
+  // Handle image error (fallback to type-specific placeholder or carHeroImg)
+  handleImageError = (e, tipo) => {
+    e.target.src = carHeroImg;
+    e.target.style.opacity = '0.4';
+  };
+  
+  getBrandDisplay = (marca) => {
+    if (!marca) return null;
+    const normalizedMarca = marca.trim().toLowerCase();
+    const brandStyles = {
+      'yamaha': { bg: 'bg-[#003399]/20', border: 'border-[#003399]/30', text: 'text-[#003399]' },
+      'honda': { bg: 'bg-[#e50010]/20', border: 'border-[#e50010]/30', text: 'text-[#e50010]' },
+      'suzuki': { bg: 'bg-[#0066cc]/20', border: 'border-[#0066cc]/30', text: 'text-[#0066cc]' },
+      'kawasaki': { bg: 'bg-[#00a651]/20', border: 'border-[#00a651]/30', text: 'text-[#00a651]' },
+      'akt': { bg: 'bg-[#ff6600]/20', border: 'border-[#ff6600]/30', text: 'text-[#ff6600]' },
+      'mazda': { bg: 'bg-[#101010]/20', border: 'border-[#101010]/30', text: 'text-[#101010]' },
+      'chevrolet': { bg: 'bg-[#ffc61d]/20', border: 'border-[#ffc61d]/30', text: 'text-[#ffc61d]' },
+      'toyota': { bg: 'bg-[#eb0a1e]/20', border: 'border-[#eb0a1e]/30', text: 'text-[#eb0a1e]' },
+      'ford': { bg: 'bg-[#0033a0]/20', border: 'border-[#0033a0]/30', text: 'text-[#0033a0]' },
+    };
+    return brandStyles[normalizedMarca] || { bg: 'bg-white/15', border: 'border-white/20', text: 'text-white' };
+  };
+
   fetchInitialFormData = async () => {
     const token = localStorage.getItem('token');
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -664,26 +697,42 @@ class UserDashboard extends Component {
               <section className="rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none">
                 <div className="px-5 pt-5 flex items-center justify-between">
                   <div className="text-sm font-black text-gray-900 dark:text-[#F8FAFC]">Mis vehículos</div>
-                  <button type="button" onClick={() => setView('vehiculos')} className="text-xs text-[#0468BF] hover:text-[#035ca8] transition-colors">Ver todos</button>
+                  <button type="button" onClick={() => this.props.setView('vehiculos')} className="text-xs text-[#0468BF] hover:text-[#035ca8] transition-colors">Ver todos</button>
                 </div>
                 <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
                   {vehiclesPreview.map((v, idx) => (
                     <button
                       key={v?.id || `${v?.placa || 'veh'}-${idx}`}
                       type="button"
-                      onClick={() => setView('vehiculos')}
+                      onClick={() => this.props.setView('vehiculos')}
                       className="group relative overflow-hidden rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1E293B] shadow-sm dark:shadow-none text-left hover:shadow-md transition-shadow"
                     >
                       <div className="absolute inset-0">
                         <img
-                          src={v?.imagen || carHeroImg}
+                          src={this.getImageUrl(v?.imagen) || carHeroImg}
                           alt=""
-                          className={`w-full h-full object-cover transition-opacity duration-500 ${v?.imagen ? 'opacity-70' : 'opacity-40'}`}
+                          onError={(e) => this.handleImageError(e, v?.tipo)}
+                          className={`w-full h-full object-cover transition-opacity duration-500 ${this.getImageUrl(v?.imagen) ? 'opacity-70' : 'opacity-40'}`}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
                       </div>
+                      <div className="absolute top-3 left-3 z-20 inline-flex items-center gap-2">
+                        {v?.marca && (() => {
+                          const brandStyle = this.getBrandDisplay(v.marca);
+                          return (
+                            <span className={`px-2.5 py-1 rounded-full ${brandStyle.bg} ${brandStyle.border} ${brandStyle.text} text-[10px] font-black capitalize`}>
+                              {v.marca}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                      {/* Placa en la esquina superior derecha */}
+                      <div className="absolute top-3 right-3 z-20">
+                        <span className="px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-white text-[10px] font-black uppercase border border-white/30 dark:border-white/10">
+                          {v?.placa || '—'}
+                        </span>
+                      </div>
                       <div className="relative z-10 p-4 space-y-2">
-                        <div className="text-xs text-white/80">{v?.placa || '—'}</div>
                         <div className="text-sm font-black text-white">
                           {(v?.marca || '').trim()} {(v?.modelo || '').trim()} {v?.anio ? String(v.anio) : ''}
                         </div>

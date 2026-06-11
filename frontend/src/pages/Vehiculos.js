@@ -93,8 +93,35 @@ class Vehiculos extends Component {
   getImageUrl = (imagen) => {
     if (!imagen) return null;
     if (imagen.startsWith('http://') || imagen.startsWith('https://')) return imagen;
+    // Handle both cases: starts with /uploads or just the filename
+    if (imagen.startsWith('/uploads')) return `${API_BASE_URL}${imagen}`;
+    if (imagen.startsWith('uploads/')) return `${API_BASE_URL}/${imagen}`;
     if (imagen.startsWith('/')) return `${API_BASE_URL}${imagen}`;
-    return `${API_BASE_URL}/${imagen}`;
+    // If it's just a filename, assume it's in uploads
+    return `${API_BASE_URL}/uploads/${imagen}`;
+  };
+
+  handleImageError = (e, vehicleId) => {
+    e.target.src = carHeroImg;
+    e.target.style.opacity = '0.4';
+  };
+
+  getBrandDisplay = (marca) => {
+    if (!marca) return null;
+    const normalizedMarca = marca.trim().toLowerCase();
+    // Map common brands to display styles
+    const brandStyles = {
+      'yamaha': { bg: 'bg-[#003399]/20', border: 'border-[#003399]/30', text: 'text-[#003399]' },
+      'honda': { bg: 'bg-[#e50010]/20', border: 'border-[#e50010]/30', text: 'text-[#e50010]' },
+      'suzuki': { bg: 'bg-[#0066cc]/20', border: 'border-[#0066cc]/30', text: 'text-[#0066cc]' },
+      'kawasaki': { bg: 'bg-[#00a651]/20', border: 'border-[#00a651]/30', text: 'text-[#00a651]' },
+      'akt': { bg: 'bg-[#ff6600]/20', border: 'border-[#ff6600]/30', text: 'text-[#ff6600]' },
+      'mazda': { bg: 'bg-[#101010]/20', border: 'border-[#101010]/30', text: 'text-[#101010]' },
+      'chevrolet': { bg: 'bg-[#ffc61d]/20', border: 'border-[#ffc61d]/30', text: 'text-[#ffc61d]' },
+      'toyota': { bg: 'bg-[#eb0a1e]/20', border: 'border-[#eb0a1e]/30', text: 'text-[#eb0a1e]' },
+      'ford': { bg: 'bg-[#0033a0]/20', border: 'border-[#0033a0]/30', text: 'text-[#0033a0]' },
+    };
+    return brandStyles[normalizedMarca] || { bg: 'bg-white/15', border: 'border-white/20', text: 'text-white' };
   };
 
   componentDidMount() {
@@ -634,12 +661,21 @@ class Vehiculos extends Component {
                           <img 
                             src={this.getImageUrl(v.imagen) || carHeroImg} 
                             alt={v.marca} 
+                            onError={(e) => this.handleImageError(e, v.id)}
                             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
                               this.getImageUrl(v.imagen) ? 'opacity-60' : 'opacity-15'
                             }`} 
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/40 to-transparent" />
                           <div className="absolute top-3 left-3 inline-flex items-center gap-2">
+                            {v.marca && (() => {
+                              const brandStyle = this.getBrandDisplay(v.marca);
+                              return (
+                                <span className={`px-2.5 py-1 rounded-full ${brandStyle.bg} ${brandStyle.border} ${brandStyle.text} text-[10px] font-black capitalize`}>
+                                  {v.marca}
+                                </span>
+                              );
+                            })()}
                             <span className="px-2.5 py-1 rounded-full bg-[#2563EB]/15 border border-[#2563EB]/20 text-[#60A5FA] text-[10px] font-black">
                               Principal
                             </span>
