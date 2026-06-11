@@ -144,7 +144,7 @@ const EmpleadoDashboard = ({ activeTab: propActiveTab }) => {
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] text-slate-200 font-sans selection:bg-purple-500/30">
-      <main className="p-8 max-w-[1600px] mx-auto">
+      <main className="p-4 md:p-8 w-full">
         <EmpleadoHeader 
           employeeName={employeeInfo.nombre} 
           assignedToday={stats.today} 

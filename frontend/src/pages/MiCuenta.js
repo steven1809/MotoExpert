@@ -657,7 +657,7 @@ const MiCuenta = ({ setView }) => {
           <div className="absolute inset-0 bg-gradient-to-br from-[#0f1b2d]/90 via-[#1a2d4a]/70 to-[#0f1b2d]/90" />
           <div className="absolute inset-0 backdrop-blur-[2px]" />
 
-          <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-10">
+          <div className="relative w-full px-4 md:px-8 pt-16 pb-10">
             <div className="absolute top-3 right-3 z-[60]">
               <button
                 type="button"
@@ -759,7 +759,7 @@ const MiCuenta = ({ setView }) => {
           </div>
         </section>
 
-        <div className="max-w-7xl mx-auto px-6 py-10">
+        <div className="w-full px-4 md:px-8 py-10">
           <div className="grid grid-cols-1 lg:grid-cols-10 gap-10">
             <div className="lg:col-span-7 space-y-10">
               <section className={`border-b ${t('border')} pb-10`}>

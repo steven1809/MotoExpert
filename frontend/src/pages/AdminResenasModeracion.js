@@ -169,7 +169,7 @@ const AdminResenasModeracion = ({ showToast }) => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#020617] py-8 px-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full px-4 md:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-black text-slate-900 dark:text-[#F8FAFC] mb-2">
             Moderación de Reseñas

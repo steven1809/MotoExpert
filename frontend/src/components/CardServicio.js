@@ -5,6 +5,7 @@ import interiorImg from "../assets/services/limpiezap.jpeg";
 import motorImg from "../assets/services/motor.jpeg";
 import protectionImg from "../assets/services/proteccionc.jpeg";
 import pulidoImg from "../assets/services/pulidop.jpeg";
+import { fixImageUrl } from "../apiConfig";
 
 const SERVICIO_INFO = {
   especial: {
@@ -218,7 +219,7 @@ export default function CardServicio({ servicio, isAdmin, onEdit, onDelete, auto
       isHighlighted ? "ring-4 ring-[#2563EB]/30 border-[#2563EB]/30" : "border-slate-200 dark:border-white/10"
     } bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10`}>
       <div className="relative h-40 bg-[#0b1220]">
-        <img src={info.imagen} alt={info.nombre} className="absolute inset-0 w-full h-full object-cover" />
+        <img src={fixImageUrl(info.imagen)} alt={info.nombre} className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/70 to-transparent" />
 
         <div className="absolute top-4 left-4 flex items-center gap-2">

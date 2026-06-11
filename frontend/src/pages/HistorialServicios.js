@@ -44,7 +44,7 @@ class HistorialServicios extends Component {
     const { historial, loading, error } = this.state;
 
     return (
-      <div className="max-w-6xl mx-auto p-4 md:p-8 animate-in fade-in duration-500 bg-white dark:bg-[#020617]">
+      <div className="w-full px-4 md:px-8 p-4 md:p-8 animate-in fade-in duration-500 bg-white dark:bg-[#020617]">
         <div className="mb-10">
           <h1 className="text-4xl font-bold text-slate-900 dark:text-white bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent italic tracking-tighter">
             Historial de Servicios

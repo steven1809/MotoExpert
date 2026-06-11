@@ -386,7 +386,7 @@ export default function Servicios({ setView }) {
 
         <section className="relative overflow-hidden bg-gradient-to-r from-[#1A2526] via-[#0468BF] to-[#1A2526] px-6 md:px-10 py-10 md:py-14 -mt-16 pt-24 md:pt-28">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08),transparent_60%)]"></div>
-          <div className="relative z-10 max-w-6xl mx-auto">
+          <div className="relative z-10 w-full px-4 md:px-8">
             <h1 className="text-3xl md:text-4xl font-black text-white">
               Servicios
             </h1>
@@ -396,7 +396,7 @@ export default function Servicios({ setView }) {
           </div>
         </section>
 
-        <div className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
+        <div className="w-full px-4 md:px-8 pt-8 space-y-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="relative w-full lg:max-w-[520px]">
               <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">

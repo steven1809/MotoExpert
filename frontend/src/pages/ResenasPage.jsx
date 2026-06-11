@@ -355,7 +355,7 @@ const ResenasPage = () => {
       <div className="space-y-10">
         <section className="relative overflow-hidden bg-gradient-to-r from-[#1A2526] via-[#0468BF] to-[#1A2526] px-6 md:px-10 py-10 md:py-14 -mt-16 pt-24 md:pt-28">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08),transparent_60%)]"></div>
-          <div className="relative z-10 max-w-6xl mx-auto">
+          <div className="relative z-10 w-full px-4 md:px-8">
             <h1 className="text-3xl md:text-4xl font-black text-white">
               Opiniones de clientes
             </h1>
@@ -365,7 +365,7 @@ const ResenasPage = () => {
           </div>
         </section>
 
-        <div className="max-w-6xl mx-auto space-y-10">
+        <div className="w-full px-4 md:px-8 space-y-10">
 
           {error && (
             <div className="p-6 bg-red-900/10 border border-red-500/20 rounded-3xl text-red-400">

@@ -110,7 +110,7 @@ class EmpleadoHistorial extends Component {
     }
 
     return (
-      <div className="max-w-7xl mx-auto p-6 animate-in fade-in duration-500">
+      <div className="w-full px-4 md:px-8 p-6 animate-in fade-in duration-500">
         <div className="mb-8">
           <h1 className="text-4xl font-black text-white mb-2 italic bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
             Historial de Servicios
