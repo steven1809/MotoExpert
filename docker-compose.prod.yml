@@ -7,6 +7,7 @@ services:
       - .env.production  # <-- Le indica a Docker que use este archivo
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
+      DB_USERNAME: ${DB_USER:-postgres} 
       POSTGRES_PASSWORD: ${DB_PASSWORD:-12345}
       POSTGRES_DB: ${DB_NAME:-MotoExpert}
     volumes:
@@ -33,6 +34,7 @@ services:
       DB_PORT: 5432
       PORT: 3000
       APP_URL: https://motoexpert.proyectoscampus.top
+      FRONTEND_URL: https://motoexpert.proyectoscampus.top
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_FROM_WHATSAPP: ${TWILIO_FROM_WHATSAPP:-whatsapp:+14155238886}
@@ -41,6 +43,7 @@ services:
       WOMPI_INTEGRITY_SECRET: ${WOMPI_INTEGRITY_SECRET}
       WOMPI_BASE_URL: ${WOMPI_BASE_URL:-https://sandbox.wompi.co/v1}
       WOMPI_REDIRECT_URL: ${WOMPI_REDIRECT_URL:-https://motoexpert.proyectoscampus.top/appointments/payment-confirmation}
+      JWT_SECRET: ${JWT_SECRET}
     volumes:
       - ./backend/uploads:/app/uploads
     depends_on:

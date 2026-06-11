@@ -20,6 +20,8 @@ async function bootstrap() {
       'http://localhost:3003',
       'http://127.0.0.1:3002',
       'http://127.0.0.1:3003',
+      'https://motoexpert.proyectoscampus.top',
+      'http://motoexpert.proyectoscampus.top',
       /\.ngrok-free\.app$/,   // cualquier subdominio ngrok .app
       /\.ngrok-free\.dev$/,   // cualquier subdominio ngrok .dev
     ],
@@ -37,7 +39,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
       transform: true,
     }),
   );
