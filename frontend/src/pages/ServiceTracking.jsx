@@ -983,7 +983,7 @@ const ClientView = ({ stages, cita, showToast, socketStatus }) => {
 
   return (
     <div className="mt-8 md:mt-10">
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+      <div className="fixed top-20 right-4 z-[9999] flex flex-col gap-2">
         {socketStatus === 'connected' && (
           <div className="px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-pulse">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />

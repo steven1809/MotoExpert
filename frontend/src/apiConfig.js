@@ -9,6 +9,9 @@ export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3
 export const fixImageUrl = (url) => {
   if (!url) return null;
   
+  // If it's a data URL (base64), return as is
+  if (url.startsWith('data:')) return url;
+  
   // If it's a full URL
   if (url.startsWith('http://') || url.startsWith('https://')) {
     // Check if it's using localhost and we're using a different base URL
