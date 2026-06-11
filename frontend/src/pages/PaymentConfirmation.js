@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 import { API_BASE_URL } from '../apiConfig';
 
-const PaymentConfirmation = ({ onExit }) => {
+const PaymentConfirmation = ({ onExit, tokenCode: initialTokenCode }) => {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(null);
   const [appointmentId, setAppointmentId] = useState(null);
+  const [tokenCode, setTokenCode] = useState(initialTokenCode || null);
 
   // Obtener parámetros de la URL manualmente ya que no hay Router
   const getQueryParams = () => {
@@ -20,13 +22,18 @@ const PaymentConfirmation = ({ onExit }) => {
   const { id: transactionId } = getQueryParams();
 
   useEffect(() => {
+    if (initialTokenCode) {
+      setLoading(false);
+      setStatus('APPROVED');
+      return;
+    }
     if (transactionId) {
       verifyTransaction();
     } else {
       setLoading(false);
       setStatus('ERROR');
     }
-  }, [transactionId]);
+  }, [transactionId, initialTokenCode]);
 
   const verifyTransaction = async () => {
     try {
@@ -35,6 +42,7 @@ const PaymentConfirmation = ({ onExit }) => {
       
       setStatus(data.status);
       setAppointmentId(data.appointmentId);
+      setTokenCode(data.tokenCode);
 
       // Limpiar sessionStorage si el pago fue exitoso
       if (data.status === 'APPROVED') {
@@ -69,7 +77,7 @@ const PaymentConfirmation = ({ onExit }) => {
           </div>
         ) : (
           <>
-            {status === 'APPROVED' ? (
+            {status === 'APPROVED' || tokenCode ? (
               <div className="space-y-6 animate-in fade-in zoom-in duration-500">
                 <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(34,197,94,0.3)]">
                   <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,8 +86,29 @@ const PaymentConfirmation = ({ onExit }) => {
                 </div>
                 <div className="space-y-2">
                   <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">¡Pago Exitoso!</h2>
-                  <p className="text-slate-400 text-sm">Tu cita #{appointmentId} ha sido confirmada y pagada correctamente.</p>
+                  {appointmentId && <p className="text-slate-400 text-sm">Tu cita #{appointmentId} ha sido confirmada y pagada correctamente.</p>}
                 </div>
+                
+                {tokenCode && (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-[#0b0d12] border border-white/10">
+                      <p className="text-xs text-slate-400 uppercase tracking-widest mb-2">Código de entrega</p>
+                      <p className="text-3xl font-black text-white font-mono tracking-[0.25em]">{tokenCode}</p>
+                    </div>
+                    <div className="flex justify-center">
+                      <div className="p-4 rounded-2xl border border-white/10 bg-[#0b0d12]">
+                        <QRCodeCanvas
+                          value={tokenCode}
+                          size={176}
+                          includeMargin
+                          fgColor="#FFFFFF"
+                          bgColor="#0b0d12"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <button 
                   onClick={handleExit}
                   className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-xs rounded-2xl transition-all shadow-lg shadow-blue-600/20"

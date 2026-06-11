@@ -15,7 +15,7 @@ import relojIcon from '../assets/iconos/reloj.png';
 import ubicIcon from '../assets/iconos/ubicacion.png';
 
 
-import { API_BASE_URL } from '../apiConfig';
+import { API_BASE_URL, fixImageUrl } from '../apiConfig';
 
 const getConditionStyle = (condition) => {
   switch (condition?.toLowerCase()) {
@@ -1858,8 +1858,8 @@ const Citas = ({
                                 >
                                   <div className="relative h-20 bg-[#0b1220]">
                                     <img 
-                                      src={v.imagen || carHeroImg} 
-                                      alt="" 
+                                      src={fixImageUrl(v.imagen) || carHeroImg} 
+                                      alt={v.modelo}
                                       className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${v.imagen ? 'opacity-40' : 'opacity-15'}`} 
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-[#0b1220] via-[#0b1220]/80 to-transparent" />
@@ -2225,8 +2225,8 @@ const Citas = ({
                       <div className="px-5 pb-5">
                         <div className="relative h-28 rounded-2xl overflow-hidden border border-white/10 bg-[#0b1220]">
                           <img 
-                            src={cita.vehiculo?.imagen || carHeroImg} 
-                            alt="" 
+                            src={fixImageUrl(cita.vehiculo?.imagen) || carHeroImg} 
+                            alt={cita.vehiculo?.modelo}
                             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${cita.vehiculo?.imagen ? 'opacity-40' : 'opacity-15'}`} 
                           />
                           <div className="absolute inset-0 bg-gradient-to-r from-[#0b1220] via-[#0b1220]/85 to-transparent" />
