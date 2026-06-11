@@ -46,6 +46,7 @@ async function bootstrap() {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-  await app.listen(3000, '0.0.0.0');
+  const port = configService.get<number>('PORT') || 3000;
+  await app.listen(port, '0.0.0.0');
 }
 void bootstrap();
