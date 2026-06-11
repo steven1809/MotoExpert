@@ -730,8 +730,8 @@ const MiCuenta = ({ setView }) => {
               )}
             </div>
 
-            <div className="flex flex-col md:flex-row md:items-end gap-8">
-              <div className="relative group/avatar cursor-pointer" onClick={() => fileInputRef.current.click()}>
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              <div className="relative group/avatar cursor-pointer flex-shrink-0" onClick={() => fileInputRef.current.click()}>
                 <div className="w-28 h-28 md:w-36 md:h-36 rounded-full bg-white dark:bg-[#161b22] border-4 border-white dark:border-[#0f1b2d] overflow-hidden flex items-center justify-center text-5xl font-black text-[#1e90ff] relative">
                   {profile.fotoPerfil ? (
                     <img src={fixImageUrl(profile.fotoPerfil)} className="w-full h-full object-cover rounded-full" alt="Avatar" />
@@ -747,9 +747,9 @@ const MiCuenta = ({ setView }) => {
                 </div>
               </div>
 
-              <div className="min-w-0">
-                <div className="flex items-center gap-3">
-                  <h1 className={`text-4xl md:text-5xl font-black tracking-tight truncate ${t('textPrimary')}`}>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className={`text-4xl md:text-5xl font-black tracking-tight ${t('textPrimary')}`}>
                     {profile.nombre}
                   </h1>
                   <span className="text-yellow-400 text-2xl">★</span>

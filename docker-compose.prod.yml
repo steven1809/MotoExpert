@@ -1,0 +1,74 @@
+services:
+  db:
+    image: postgres:18-alpine
+    ports:
+      - '5432:5432'
+    env_file:
+      - .env.production  # <-- Le indica a Docker que use este archivo
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-12345}
+      POSTGRES_DB: ${DB_NAME:-MotoExpert}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./database_backup.sql:/docker-entrypoint-initdb.d/backup.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env.production  # <-- Le indica a Docker que use este archivo
+    environment:
+      DB_USER: ${DB_USER:-postgres}
+      DB_HOST: db
+      DB_PASSWORD: ${DB_PASSWORD:-12345}
+      DB_NAME: ${DB_NAME:-MotoExpert}
+      DB_PORT: 5432
+      PORT: 3000
+      APP_URL: https://motoexpert.proyectoscampus.top
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_FROM_WHATSAPP: ${TWILIO_FROM_WHATSAPP:-whatsapp:+14155238886}
+      WOMPI_PUBLIC_KEY: ${WOMPI_PUBLIC_KEY}
+      WOMPI_PRIVATE_KEY: ${WOMPI_PRIVATE_KEY}
+      WOMPI_INTEGRITY_SECRET: ${WOMPI_INTEGRITY_SECRET}
+      WOMPI_BASE_URL: ${WOMPI_BASE_URL:-https://sandbox.wompi.co/v1}
+      WOMPI_REDIRECT_URL: ${WOMPI_REDIRECT_URL:-https://motoexpert.proyectoscampus.top/appointments/payment-confirmation}
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - '8000:80'
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        REACT_APP_API_URL: https://motoexpert.proyectoscampus.top
+        REACT_APP_WOMPI_PUBLIC_KEY: ${WOMPI_PUBLIC_KEY}
+    env_file:
+      - .env.production  # <-- Necesario para pasarle las variables de Wompi al build de React
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
