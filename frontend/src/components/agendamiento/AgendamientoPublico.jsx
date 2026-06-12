@@ -132,7 +132,7 @@ class AgendamientoPublico extends Component {
         const servicioNombre = (this.state.servicios || []).find(s => s.id === formData.servicioId)?.nombre || '';
         await emailjs.send(
           'service_1zw6lr5',
-          'template_bjvk49d',
+          'bjvk49d',
           {
             to_email: formData.email,
             cliente_nombre: `${formData.nombre} ${formData.apellido}`,
