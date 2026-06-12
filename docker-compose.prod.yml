@@ -23,7 +23,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - '3000:3000'
+      - '3005:3000'
     env_file:
       - .env.production  # <-- Le indica a Docker que use este archivo
     volumes:

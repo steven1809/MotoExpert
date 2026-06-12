@@ -8,5 +8,5 @@ backend/dist/
 .env
 **/.env
 frontend/build/
-
+.env.production
 replacements.txt

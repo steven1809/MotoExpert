@@ -6,6 +6,7 @@ import {
   crearCita
 } from '../../services/agendamiento.service';
 import { API_BASE_URL } from '../../apiConfig';
+import emailjs from '@emailjs/browser';
 
 const initialForm = { 
   nombre: '', apellido: '', telefono: '', email: '', 
@@ -127,6 +128,26 @@ class AgendamientoPublico extends Component {
       });
       
       this.setState({ citaId: result.id });
+      try {
+        const servicioNombre = (this.state.servicios || []).find(s => s.id === formData.servicioId)?.nombre || '';
+        await emailjs.send(
+          'service_1zw6lr5',
+          'template_bjvk49d',
+          {
+            to_email: formData.email,
+            cliente_nombre: `${formData.nombre} ${formData.apellido}`,
+            cita_id: result.id,
+            servicio: servicioNombre,
+            fecha: formData.fecha,
+            hora: formData.hora,
+            vehiculo: `${formData.marca} ${formData.modelo} (${formData.placa})`,
+            metodo_pago: metodoPago === 'EFECTIVO' ? 'Efectivo en taller' : 'Pago digital Wompi',
+          },
+          'DnCU3e4N9NdapUEmI'
+        );
+      } catch (emailErr) {
+        console.error('Error enviando email:', emailErr);
+      }
 
       // 2. Generate payment token or Wompi link
       const token = localStorage.getItem('token');
