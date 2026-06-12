@@ -26,24 +26,6 @@ services:
       - '3000:3000'
     env_file:
       - .env.production  # <-- Le indica a Docker que use este archivo
-    environment:
-      DB_USER: ${DB_USER:-postgres}
-      DB_HOST: db
-      DB_PASSWORD: ${DB_PASSWORD:-12345}
-      DB_NAME: ${DB_NAME:-MotoExpert}
-      DB_PORT: 5432
-      PORT: 3000
-      APP_URL: https://motoexpert.proyectoscampus.top
-      FRONTEND_URL: https://motoexpert.proyectoscampus.top
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
-      TWILIO_FROM_WHATSAPP: ${TWILIO_FROM_WHATSAPP:-whatsapp:+14155238886}
-      WOMPI_PUBLIC_KEY: ${WOMPI_PUBLIC_KEY}
-      WOMPI_PRIVATE_KEY: ${WOMPI_PRIVATE_KEY}
-      WOMPI_INTEGRITY_SECRET: ${WOMPI_INTEGRITY_SECRET}
-      WOMPI_BASE_URL: ${WOMPI_BASE_URL:-https://sandbox.wompi.co/v1}
-      WOMPI_REDIRECT_URL: ${WOMPI_REDIRECT_URL:-https://motoexpert.proyectoscampus.top/appointments/payment-confirmation}
-      JWT_SECRET: ${JWT_SECRET}
     volumes:
       - ./backend/uploads:/app/uploads
     depends_on:
@@ -69,6 +51,7 @@ services:
       args:
         REACT_APP_API_URL: https://motoexpert.proyectoscampus.top
         REACT_APP_WOMPI_PUBLIC_KEY: ${WOMPI_PUBLIC_KEY}
+        REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     env_file:
       - .env.production  # <-- Necesario para pasarle las variables de Wompi al build de React
     restart: unless-stopped

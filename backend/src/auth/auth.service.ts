@@ -173,13 +173,9 @@ export class AuthService {
 
   async googleLogin(googleToken: string) {
     try {
+      // Verificar id_token con Google
       const response = await fetch(
-        'https://www.googleapis.com/oauth2/v3/userinfo',
-        {
-          headers: {
-            Authorization: `Bearer ${googleToken}`,
-          },
-        },
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${googleToken}`,
       );
 
       if (!response.ok) {
@@ -187,6 +183,12 @@ export class AuthService {
       }
 
       const googleUser = await response.json();
+
+      // Verificar que el token es para nuestra app
+      if (googleUser.aud !== process.env.GOOGLE_CLIENT_ID) {
+        throw new UnauthorizedException('Token de Google inválido');
+      }
+
       const {
         sub: googleId,
         email,
