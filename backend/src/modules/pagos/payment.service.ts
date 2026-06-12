@@ -115,7 +115,7 @@ export class PaymentService {
     const signatureString = `${reference}${amountInCents}${currency}${integritySecret}`;
     const integrity = require('crypto').createHash('sha256').update(signatureString).digest('hex');
 
-    const paymentLink = `https://checkout.wompi.co/p/?public-key=${wompiPublicKey}&reference=${reference}&amount-in-cents=${amountInCents}&currency=${currency}&redirect-url=${encodeURIComponent(redirectUrl)}&signature[integrity]=${integrity}`;
+    const paymentLink = `https://checkout.wompi.co/p/?public-key=${wompiPublicKey}&reference=${reference}&amount-in-cents=${amountInCents}&currency=${currency}&redirect-url=${encodeURIComponent(redirectUrl)}&signature%5Bintegrity%5D=${integrity}`;
     return { paymentLink, reference };
   }
 
