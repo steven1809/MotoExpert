@@ -23,6 +23,7 @@ class AgendamientoPublico extends Component {
     this.state = {
       step: 1,
       formData: { ...initialForm },
+      errors: {},
       servicios: [],
       employees: [],
       slotsDisponibles: [],
@@ -94,27 +95,47 @@ class AgendamientoPublico extends Component {
     }));
   };
 
+  // Reemplaza validateStep1, validateStep2, validateStep3 y handleNext:
   validateStep1 = () => {
     const { nombre, apellido, telefono, email, tipoDocumento, numeroDocumento } = this.state.formData;
-    if (!nombre || !apellido || !telefono || !email || !tipoDocumento || !numeroDocumento) return false;
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const errors = {};
+    if (!nombre) errors.nombre = 'Requerido';
+    if (!apellido) errors.apellido = 'Requerido';
+    if (!telefono) errors.telefono = 'Requerido';
+    if (!email) errors.email = 'Requerido';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Email inválido';
+    if (!tipoDocumento) errors.tipoDocumento = 'Requerido';
+    if (!numeroDocumento) errors.numeroDocumento = 'Requerido';
+    this.setState({ errors });
+    return Object.keys(errors).length === 0;
   };
 
   validateStep2 = () => {
     const { tipoVehiculo, marca, modelo, placa, servicioId } = this.state.formData;
-    return !!(tipoVehiculo && marca && modelo && placa && servicioId);
+    const errors = {};
+    if (!tipoVehiculo) errors.tipoVehiculo = 'Requerido';
+    if (!marca) errors.marca = 'Requerido';
+    if (!modelo) errors.modelo = 'Requerido';
+    if (!placa) errors.placa = 'Requerido';
+    if (!servicioId) errors.servicioId = 'Selecciona un servicio';
+    this.setState({ errors });
+    return Object.keys(errors).length === 0;
   };
 
   validateStep3 = () => {
     const { fecha, hora } = this.state.formData;
-    return !!(fecha && hora);
+    const errors = {};
+    if (!fecha) errors.fecha = 'Selecciona una fecha';
+    if (!hora) errors.hora = 'Selecciona un horario';
+    this.setState({ errors });
+    return Object.keys(errors).length === 0;
   };
 
   handleNext = () => {
     const { step } = this.state;
-    if (step === 1 && this.validateStep1()) this.setState({ step: 2 });
-    else if (step === 2 && this.validateStep2()) this.setState({ step: 3 });
-    else if (step === 3 && this.validateStep3()) this.setState({ step: 4 });
+    if (step === 1 && this.validateStep1()) this.setState({ step: 2, errors: {} });
+    else if (step === 2 && this.validateStep2()) this.setState({ step: 3, errors: {} });
+    else if (step === 3 && this.validateStep3()) this.setState({ step: 4, errors: {} });
   };
 
   handleConfirm = async () => {
@@ -226,7 +247,8 @@ class AgendamientoPublico extends Component {
   render() {
     const { 
       step, 
-      formData, 
+      formData,
+      errors = {},
       servicios, 
       employees, 
       slotsDisponibles, 
@@ -325,37 +347,54 @@ class AgendamientoPublico extends Component {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 uppercase mb-2">Nombre</label>
-                  <input name="nombre" value={formData.nombre} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all" placeholder="Ej: Carlos" />
+                  <input name="nombre" value={formData.nombre} onChange={this.handleInputChange}
+                    className={`w-full bg-gray-950 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${errors.nombre ? 'border-red-500 focus:border-red-500' : 'border-gray-800 focus:border-blue-500'}`}
+                    placeholder="Ej: Carlos" />
+                  {errors.nombre && <p className="text-red-400 text-xs mt-1">{errors.nombre}</p>}
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 uppercase mb-2">Apellido</label>
-                  <input name="apellido" value={formData.apellido} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all" placeholder="Ej: Torres" />
+                  <input name="apellido" value={formData.apellido} onChange={this.handleInputChange}
+                    className={`w-full bg-gray-950 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${errors.apellido ? 'border-red-500 focus:border-red-500' : 'border-gray-800 focus:border-blue-500'}`}
+                    placeholder="Ej: Torres" />
+                  {errors.apellido && <p className="text-red-400 text-xs mt-1">{errors.apellido}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 uppercase mb-2">Teléfono</label>
-                  <input name="telefono" type="tel" value={formData.telefono} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all" placeholder="300 123 4567" />
+                  <input name="telefono" type="tel" value={formData.telefono} onChange={this.handleInputChange}
+                    className={`w-full bg-gray-950 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${errors.telefono ? 'border-red-500 focus:border-red-500' : 'border-gray-800 focus:border-blue-500'}`}
+                    placeholder="300 123 4567" />
+                  {errors.telefono && <p className="text-red-400 text-xs mt-1">{errors.telefono}</p>}
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 uppercase mb-2">Email</label>
-                  <input name="email" type="email" value={formData.email} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all" placeholder="carlos@email.com" />
+                  <input name="email" type="email" value={formData.email} onChange={this.handleInputChange}
+                    className={`w-full bg-gray-950 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${errors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-800 focus:border-blue-500'}`}
+                    placeholder="carlos@email.com" />
+                  {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 uppercase mb-2">Tipo Documento</label>
-                  <select name="tipoDocumento" value={formData.tipoDocumento} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all">
+                  <select name="tipoDocumento" value={formData.tipoDocumento} onChange={this.handleInputChange}
+                    className={`w-full bg-gray-950 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${errors.tipoDocumento ? 'border-red-500 focus:border-red-500' : 'border-gray-800 focus:border-blue-500'}`}>
                     <option value="">Selecciona...</option>
                     <option value="Cédula de ciudadanía">Cédula de ciudadanía</option>
                     <option value="NIT">NIT</option>
                     <option value="Pasaporte">Pasaporte</option>
                     <option value="Cédula extranjería">Cédula extranjería</option>
                   </select>
+                  {errors.tipoDocumento && <p className="text-red-400 text-xs mt-1">{errors.tipoDocumento}</p>}
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 uppercase mb-2">Número Documento</label>
-                  <input name="numeroDocumento" value={formData.numeroDocumento} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all" placeholder="1002345678" />
+                  <input name="numeroDocumento" value={formData.numeroDocumento} onChange={this.handleInputChange}
+                    className={`w-full bg-gray-950 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${errors.numeroDocumento ? 'border-red-500 focus:border-red-500' : 'border-gray-800 focus:border-blue-500'}`}
+                    placeholder="1002345678" />
+                  {errors.numeroDocumento && <p className="text-red-400 text-xs mt-1">{errors.numeroDocumento}</p>}
                 </div>
               </div>
             </div>
@@ -366,35 +405,50 @@ class AgendamientoPublico extends Component {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 uppercase mb-2">Tipo Vehículo</label>
-                  <select name="tipoVehiculo" value={formData.tipoVehiculo} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all">
+                  <select name="tipoVehiculo" value={formData.tipoVehiculo} onChange={this.handleInputChange}
+                    className={`w-full bg-gray-950 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${errors.tipoVehiculo ? 'border-red-500' : 'border-gray-800 focus:border-blue-500'}`}>
                     <option value="">Selecciona...</option>
                     <option value="Automóvil">Automóvil</option>
                     <option value="Moto">Moto</option>
                   </select>
+                  {errors.tipoVehiculo && <p className="text-red-400 text-xs mt-1">{errors.tipoVehiculo}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-xs text-gray-500 uppercase mb-2">Marca</label>
-                    <input name="marca" value={formData.marca} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all" placeholder="Chevrolet" />
+                    <input name="marca" value={formData.marca} onChange={this.handleInputChange}
+                      className={`w-full bg-gray-950 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${errors.marca ? 'border-red-500' : 'border-gray-800 focus:border-blue-500'}`}
+                      placeholder="Chevrolet" />
+                    {errors.marca && <p className="text-red-400 text-xs mt-1">{errors.marca}</p>}
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 uppercase mb-2">Modelo</label>
-                    <input name="modelo" value={formData.modelo} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all" placeholder="Spark" />
+                    <input name="modelo" value={formData.modelo} onChange={this.handleInputChange}
+                      className={`w-full bg-gray-950 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${errors.modelo ? 'border-red-500' : 'border-gray-800 focus:border-blue-500'}`}
+                      placeholder="Spark" />
+                    {errors.modelo && <p className="text-red-400 text-xs mt-1">{errors.modelo}</p>}
                   </div>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 uppercase mb-2">Año</label>
-                  <input name="anio" type="number" min="1990" max="2026" value={formData.anio} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all" placeholder="2021" />
+                  <input name="anio" type="number" min="1990" max="2026" value={formData.anio} onChange={this.handleInputChange}
+                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all"
+                    placeholder="2021" />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 uppercase mb-2">Color</label>
-                  <input name="color" value={formData.color} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all" placeholder="Rojo" />
+                  <input name="color" value={formData.color} onChange={this.handleInputChange}
+                    className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all"
+                    placeholder="Rojo" />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 uppercase mb-2">Placa</label>
-                  <input name="placa" value={formData.placa} onChange={this.handleInputChange} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all" placeholder="ABC123" />
+                  <input name="placa" value={formData.placa} onChange={this.handleInputChange}
+                    className={`w-full bg-gray-950 border rounded-xl px-4 py-3 text-white focus:outline-none transition-all ${errors.placa ? 'border-red-500' : 'border-gray-800 focus:border-blue-500'}`}
+                    placeholder="ABC123" />
+                  {errors.placa && <p className="text-red-400 text-xs mt-1">{errors.placa}</p>}
                 </div>
               </div>
 
@@ -405,11 +459,11 @@ class AgendamientoPublico extends Component {
                     [1,2,3,4].map(i => <div key={i} className="h-32 bg-gray-950 animate-pulse border border-gray-800 rounded-2xl" />)
                   ) : (
                     (servicios || []).map(s => (
-                      <button 
-                        key={s.id} 
+                      <button
+                        key={s.id}
                         type="button"
-                        onClick={() => this.setState(prev => ({ formData: { ...prev.formData, servicioId: s.id } }))}
-                        className={`text-left p-6 rounded-2xl border-2 transition-all duration-300 ${formData.servicioId === s.id ? 'bg-blue-500/10 border-blue-500' : 'bg-gray-950 border-gray-800 hover:border-gray-700'}`}
+                        onClick={() => this.setState(prev => ({ formData: { ...prev.formData, servicioId: s.id }, errors: { ...prev.errors, servicioId: null } }))}
+                        className={`text-left p-6 rounded-2xl border-2 transition-all duration-300 ${formData.servicioId === s.id ? 'bg-blue-500/10 border-blue-500' : errors.servicioId ? 'border-red-500/50 bg-gray-950' : 'bg-gray-950 border-gray-800 hover:border-gray-700'}`}
                       >
                         <h4 className="font-bold text-white mb-1">{s.nombre}</h4>
                         <p className="text-gray-500 text-xs mb-4">{s.descripcion || 'Servicio profesional para tu vehículo'}</p>
@@ -421,6 +475,7 @@ class AgendamientoPublico extends Component {
                     ))
                   )}
                 </div>
+                {errors.servicioId && <p className="text-red-400 text-xs mt-2">{errors.servicioId}</p>}
               </div>
             </div>
           )}
@@ -430,7 +485,7 @@ class AgendamientoPublico extends Component {
               <div>
                 <label className="block text-xs text-gray-500 uppercase mb-4 tracking-widest font-bold">Selecciona tu experto</label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => this.setState(prev => ({ formData: { ...prev.formData, empleadoId: null } }))}
                     className={`flex flex-col items-center p-6 rounded-2xl border-2 transition-all ${formData.empleadoId === null ? 'bg-blue-500/10 border-blue-500' : 'bg-gray-950 border-gray-800'}`}
@@ -447,10 +502,9 @@ class AgendamientoPublico extends Component {
                     const iniciales = e.usuario?.nombre
                       ? (e.usuario.nombre[0] + (e.usuario.apellidos?.[0] || '')).toUpperCase()
                       : `E${e.id}`;
-
                     return (
-                      <button 
-                        key={e.id} 
+                      <button
+                        key={e.id}
                         type="button"
                         onClick={() => this.setState(prev => ({ formData: { ...prev.formData, empleadoId: e.id } }))}
                         className={`flex flex-col items-center p-6 rounded-2xl border-2 transition-all ${formData.empleadoId === e.id ? 'bg-blue-500/10 border-blue-500' : 'bg-gray-950 border-gray-800'}`}
@@ -468,14 +522,15 @@ class AgendamientoPublico extends Component {
 
               <div className="max-w-xs mx-auto text-center">
                 <label className="block text-xs text-gray-500 uppercase mb-2">Selecciona la fecha</label>
-                <input 
-                  type="date" 
-                  name="fecha" 
-                  min={new Date().toISOString().split('T')[0]} 
-                  value={formData.fecha} 
-                  onChange={this.handleInputChange} 
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 [color-scheme:dark]" 
+                <input
+                  type="date"
+                  name="fecha"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={formData.fecha}
+                  onChange={this.handleInputChange}
+                  className={`w-full bg-gray-950 border rounded-xl px-4 py-3 text-white outline-none transition-all [color-scheme:dark] ${errors.fecha ? 'border-red-500' : 'border-gray-800 focus:border-blue-500'}`}
                 />
+                {errors.fecha && <p className="text-red-400 text-xs mt-1">{errors.fecha}</p>}
               </div>
 
               <div>
@@ -487,10 +542,10 @@ class AgendamientoPublico extends Component {
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                     {(slotsDisponibles || []).map(h => (
-                      <button 
-                        key={h} 
+                      <button
+                        key={h}
                         type="button"
-                        onClick={() => this.setState(prev => ({ formData: { ...prev.formData, hora: h } }))}
+                        onClick={() => this.setState(prev => ({ formData: { ...prev.formData, hora: h }, errors: { ...prev.errors, hora: null } }))}
                         className={`py-3 rounded-xl border-2 font-bold text-sm transition-all ${formData.hora === h ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-blue-500/50'}`}
                       >
                         {h}
@@ -503,6 +558,7 @@ class AgendamientoPublico extends Component {
                     ))}
                   </div>
                 )}
+                {errors.hora && <p className="text-red-400 text-xs mt-2 text-center">{errors.hora}</p>}
                 {formData.fecha && !loading && (slotsDisponibles || []).length === 0 && (
                   <div className="text-center py-8 text-red-400/70">No hay horarios disponibles para esta fecha</div>
                 )}
