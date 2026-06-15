@@ -1022,26 +1022,9 @@ const Citas = ({
     await doSubmit();
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar esta cita?')) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/citas/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        fetchInitialData();
-      } else {
-        alert('Error al eliminar cita');
-      }
-    } catch (err) {
-      alert('Error de conexión');
-    }
+  const handleDelete = (id) => {
+    const cita = citas.find(c => c.id === id);
+    if (cita) openCancelModal(cita);
   };
 
   const handleFilterChange = useCallback((newFilters) => {
