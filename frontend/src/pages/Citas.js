@@ -568,6 +568,7 @@ const Citas = ({
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [selectedCitaForCancel, setSelectedCitaForCancel] = useState(null);
   const [motivoCancelacion, setMotivoCancelacion] = useState('');
+  const [cancelAviso, setCancelAviso] = useState('');
   const formSectionRef = useRef(null);
   const pendingSectionRef = useRef(null);
   const historySectionRef = useRef(null);
@@ -825,24 +826,24 @@ const Citas = ({
       if (response.ok) {
         const data = await response.json();
         if (data.aviso) {
-          alert(data.aviso);
+          setCancelAviso(data.aviso);
+          return;
         }
         setProcessedCitas(prev => new Set([...prev, citaId]));
         setCitas(prev => prev.map(c => 
           c.id === citaId ? { ...c, estado: 'CANCELADA' } : c
         ));
+        setIsCancelModalOpen(false);
+        setSelectedCitaForCancel(null);
+        setMotivoCancelacion('');
         fetchInitialData();
       } else {
         const errorData = await response.json().catch(() => null);
-        alert(errorData?.message || 'Error al cancelar la cita');
+        setCancelAviso(errorData?.message || 'Error al cancelar la cita');
       }
     } catch (err) {
       console.error('Error canceling cita:', err);
-      alert('Error de conexión al cancelar la cita');
-    } finally {
-      setIsCancelModalOpen(false);
-      setSelectedCitaForCancel(null);
-      setMotivoCancelacion('');
+      setCancelAviso('Error de conexión al cancelar la cita');
     }
   };
 
@@ -1505,6 +1506,13 @@ const Citas = ({
                     />
                   </div>
                 </div>
+
+                {cancelAviso && (
+                  <div className="p-3 rounded-xl border border-orange-500/20 bg-orange-500/10 text-orange-400 text-sm text-center">
+                    {cancelAviso}
+                  </div>
+                )}
+
                 <div className="flex gap-3">
                   <button
                     type="button"
