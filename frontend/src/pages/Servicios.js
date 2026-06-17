@@ -148,7 +148,8 @@ export default function Servicios({ setView }) {
     precio: "",
     duracion: "",
     incluye: "",
-    beneficios: ""
+    beneficios: "",
+    tipoVehiculo: ""
   });
 
   useEffect(() => {
@@ -204,11 +205,12 @@ export default function Servicios({ setView }) {
         precio: servicio.precio,
         duracion: servicio.duracion,
         incluye: Array.isArray(servicio.incluye) ? servicio.incluye.join(", ") : (servicio.incluye || ""),
-        beneficios: Array.isArray(servicio.beneficios) ? servicio.beneficios.join(", ") : (servicio.beneficios || "")
+        beneficios: Array.isArray(servicio.beneficios) ? servicio.beneficios.join(", ") : (servicio.beneficios || ""),
+        tipoVehiculo: servicio.tipoVehiculo || "Cualquiera"
       });
     } else {
       setEditServicio(null);
-      setFormData({ nombre: "", descripcion: "", precio: "", duracion: "", incluye: "", beneficios: "" });
+      setFormData({ nombre: "", descripcion: "", precio: "", duracion: "", incluye: "", beneficios: "", tipoVehiculo: "Cualquiera" });
     }
     setShowModal(true);
   };
@@ -366,6 +368,14 @@ export default function Servicios({ setView }) {
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Duración (min)</label>
                   <input name="duracion" type="number" value={formData.duracion} onChange={handleInputChange} className="w-full p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-600" required />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Tipo de Vehículo</label>
+                  <select name="tipoVehiculo" value={formData.tipoVehiculo} onChange={handleInputChange} className="w-full p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-600" required>
+                    <option value="Cualquiera">Cualquiera</option>
+                    <option value="Automóvil">Automóvil</option>
+                    <option value="Moto">Moto</option>
+                  </select>
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Incluye (separado por comas)</label>

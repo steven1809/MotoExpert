@@ -1262,6 +1262,13 @@ const UsersList = (props) => {
             <p className="text-slate-400 font-bold text-sm mb-6">
               ¿Estás seguro de eliminar a <span className="text-white">{userToDelete.nombre} {userToDelete.apellidos}</span>? Esta acción no se puede deshacer.
             </p>
+
+            {deleteUserError && (
+              <div className="mb-6 p-4 rounded-2xl border border-orange-500/20 bg-orange-500/10 text-orange-400 text-sm font-bold">
+                {deleteUserError}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4 pt-2">
               <button
                 onClick={() => {
