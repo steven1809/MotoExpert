@@ -49,6 +49,7 @@ const UsersList = (props) => {
   const [showDeleteUserModal, setShowDeleteUserModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [deletingUser, setDeletingUser] = useState(false);
+  const [deleteUserError, setDeleteUserError] = useState('');
 
   // Estados para Empleados
   const [expandedEmpleado, setExpandedEmpleado] = useState(null);
@@ -307,6 +308,7 @@ const UsersList = (props) => {
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
     setDeletingUser(true);
+    setDeleteUserError('');
     const token = localStorage.getItem('token');
     try {
       const response = await fetch(`${API_BASE_URL}/auth/${userToDelete.id}`, {
@@ -322,11 +324,10 @@ const UsersList = (props) => {
         setShowDeleteUserModal(false);
         setUserToDelete(null);
       } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.message || 'No se pudo eliminar el usuario'}`);
+        setDeleteUserError('No se pudo eliminar este usuario porque tiene citas o vehículos asociados.');
       }
     } catch (err) {
-      alert('Error de conexión al intentar eliminar el usuario');
+      setDeleteUserError('Error de conexión al intentar eliminar el usuario.');
     } finally {
       setDeletingUser(false);
     }
@@ -1266,6 +1267,7 @@ const UsersList = (props) => {
                 onClick={() => {
                   setShowDeleteUserModal(false);
                   setUserToDelete(null);
+                  setDeleteUserError('');
                 }}
                 className="px-6 py-4 bg-slate-900 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest"
               >
