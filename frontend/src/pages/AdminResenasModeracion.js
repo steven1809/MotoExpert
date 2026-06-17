@@ -29,6 +29,8 @@ const AdminResenasModeracion = ({ showToast }) => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [selectedReview, setSelectedReview] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
   
   const token = localStorage.getItem('token');
 
@@ -97,9 +99,15 @@ const AdminResenasModeracion = ({ showToast }) => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar esta reseña permanentemente?')) return;
-    
+  const handleDelete = (id) => {
+    setReviewToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    const id = reviewToDelete;
+    setShowDeleteModal(false);
+    setReviewToDelete(null);
     setProcessingId(id);
     try {
       const response = await fetch(`${API_BASE_URL}/ratings/${id}`, {
@@ -470,6 +478,45 @@ const AdminResenasModeracion = ({ showToast }) => {
                   </span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-[#050507] border border-white/[0.05] rounded-3xl max-w-md w-full p-6 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                ¿Eliminar esta reseña?
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-[#94A3B8]">
+                Esta acción es permanente y no se puede deshacer.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setReviewToDelete(null);
+                }}
+                className="flex-1 py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-sm font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-black uppercase tracking-widest transition-colors"
+              >
+                Sí, eliminar
+              </button>
             </div>
           </div>
         </div>
