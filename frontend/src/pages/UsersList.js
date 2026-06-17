@@ -46,6 +46,9 @@ const UsersList = (props) => {
   const [userToEditRole, setUserToEditRole] = useState(null);
   const [newRole, setNewRole] = useState('');
   const [updatingRole, setUpdatingRole] = useState(false);
+  const [showDeleteUserModal, setShowDeleteUserModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deletingUser, setDeletingUser] = useState(false);
 
   // Estados para Empleados
   const [expandedEmpleado, setExpandedEmpleado] = useState(null);
@@ -295,13 +298,18 @@ const UsersList = (props) => {
     setUserDetails({ vehiculos: [], citas: [], loading: false });
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.')) {
-      return;
-    }
+  const handleDelete = (id) => {
+    const user = users.find(u => u.id === id);
+    setUserToDelete(user);
+    setShowDeleteUserModal(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    setDeletingUser(true);
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/auth/${userToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -310,14 +318,17 @@ const UsersList = (props) => {
       });
 
       if (response.ok) {
-        setUsers(prev => prev.filter(user => user.id !== id));
-        alert('Usuario eliminado con éxito');
+        setUsers(prev => prev.filter(user => user.id !== userToDelete.id));
+        setShowDeleteUserModal(false);
+        setUserToDelete(null);
       } else {
         const errorData = await response.json();
         alert(`Error: ${errorData.message || 'No se pudo eliminar el usuario'}`);
       }
     } catch (err) {
       alert('Error de conexión al intentar eliminar el usuario');
+    } finally {
+      setDeletingUser(false);
     }
   };
 
@@ -1238,6 +1249,35 @@ const UsersList = (props) => {
                   {submittingAction ? 'ELIMINAR AHORA' : 'CONFIRMAR'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL ELIMINAR USUARIO */}
+      {showDeleteUserModal && userToDelete && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1100] flex items-center justify-center p-4">
+          <div className="bg-[#0B1220] border border-white/10 rounded-[40px] p-10 w-full max-w-md shadow-2xl">
+            <h3 className="text-2xl font-black text-red-500 uppercase tracking-tighter mb-2 italic">Eliminar Usuario</h3>
+            <p className="text-slate-400 font-bold text-sm mb-6">
+              ¿Estás seguro de eliminar a <span className="text-white">{userToDelete.nombre} {userToDelete.apellidos}</span>? Esta acción no se puede deshacer.
+            </p>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <button
+                onClick={() => {
+                  setShowDeleteUserModal(false);
+                  setUserToDelete(null);
+                }}
+                className="px-6 py-4 bg-slate-900 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDeleteUser}
+                disabled={deletingUser}
+                className="px-6 py-4 bg-red-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-600/20 disabled:opacity-50"
+              >
+                {deletingUser ? 'ELIMINANDO...' : 'CONFIRMAR'}
+              </button>
             </div>
           </div>
         </div>
